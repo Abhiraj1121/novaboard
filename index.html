@@ -1,0 +1,3552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>NovaBoard OS</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #090d16;
+    --bg-panel: #0f1420;
+    --cyan: #38bdf8;
+    --indigo: #818cf8;
+    --line: rgba(148, 163, 184, 0.14);
+  }
+  * { box-sizing: border-box; }
+  html, body, #root { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg-deep);
+    color: #e5e9f0;
+    font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    overflow: hidden;
+  }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  /* ---- Splash ---- */
+  .splash-bg {
+    background:
+      radial-gradient(60% 60% at 50% 42%, rgba(56,189,248,0.10) 0%, rgba(56,189,248,0) 70%),
+      radial-gradient(80% 80% at 50% 50%, #0b101c 0%, #090d16 100%);
+  }
+  .orbit-ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    border-radius: 50%;
+    border: 1px solid rgba(56,189,248,0.28);
+    transform: translate(-50%, -50%);
+  }
+  .orbit-ring.r2 { border-color: rgba(129,140,248,0.22); }
+  @keyframes spin-slow { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+  @keyframes spin-rev { from { transform: translate(-50%, -50%) rotate(360deg); } to { transform: translate(-50%, -50%) rotate(0deg); } }
+  .spin-a { animation: spin-slow 6s linear infinite; }
+  .spin-b { animation: spin-rev 9s linear infinite; }
+
+  @keyframes core-pulse {
+    0%, 100% { opacity: 0.65; filter: drop-shadow(0 0 10px rgba(56,189,248,0.6)); transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 1; filter: drop-shadow(0 0 26px rgba(56,189,248,0.95)); transform: translate(-50%, -50%) scale(1.08); }
+  }
+  .core-dot { animation: core-pulse 1.8s ease-in-out infinite; }
+
+  @keyframes fade-up-in {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .fade-up { animation: fade-up-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+  @keyframes splash-exit {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  .splash-exit { animation: splash-exit 0.35s ease forwards; }
+
+  @keyframes track-in {
+    0% { opacity: 0; transform: scale(0.98); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .track-in { animation: track-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+  /* ---- Shared ---- */
+  .glass {
+    background: rgba(24, 29, 43, 0.68);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--line);
+  }
+  .glass-strong {
+    background: rgba(15, 20, 32, 0.86);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+  }
+  .scanline-hairline {
+    background: linear-gradient(90deg, transparent, rgba(56,189,248,0.5), transparent);
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.25); border-radius: 8px; }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.5; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
+    50% { opacity: 1; box-shadow: 0 0 0 4px rgba(52, 211, 153, 0); }
+  }
+  .breathe-dot { animation: breathe 2.2s ease-in-out infinite; }
+
+  .card-hover { transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), border-color 0.25s ease, background 0.25s ease; }
+  .card-hover:hover { transform: translateY(-3px); }
+
+  @keyframes modal-in {
+    0% { opacity: 0; transform: translateY(8px) scale(0.98); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .modal-in { animation: modal-in 0.28s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spin-a, .spin-b, .core-dot, .breathe-dot { animation: none !important; }
+  }
+
+  /* ---- Phase 2: drawing engine ---- */
+  .canvas-stage { position: relative; }
+  .canvas-stage .canvas-container { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; }
+  .canvas-stage canvas { touch-action: none; }
+  .tool-btn {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: #94a3b8; border: 1px solid transparent;
+    transition: all 0.15s ease;
+  }
+  .tool-btn:hover { background: rgba(148,163,184,0.08); color: #cbd5e1; }
+  .tool-btn.active {
+    background: rgba(56,189,248,0.14);
+    border-color: rgba(56,189,248,0.4);
+    color: #38bdf8;
+  }
+  .tool-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .tool-btn:disabled:hover { background: transparent; color: #94a3b8; }
+
+  input[type="range"].nb-slider {
+    -webkit-appearance: none; appearance: none;
+    height: 4px; border-radius: 999px;
+    background: rgba(148,163,184,0.25);
+    outline: none;
+  }
+  input[type="range"].nb-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #38bdf8;
+    box-shadow: 0 0 8px rgba(56,189,248,0.7);
+    cursor: pointer;
+    border: 2px solid #0f1420;
+  }
+  input[type="range"].nb-slider::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #38bdf8; border: 2px solid #0f1420;
+    box-shadow: 0 0 8px rgba(56,189,248,0.7);
+    cursor: pointer;
+  }
+
+  input[type="color"].nb-swatch {
+    -webkit-appearance: none; appearance: none;
+    width: 30px; height: 30px; border-radius: 8px;
+    border: 2px solid rgba(148,163,184,0.3);
+    padding: 0; background: none; cursor: pointer;
+  }
+  input[type="color"].nb-swatch::-webkit-color-swatch-wrapper { padding: 0; border-radius: 6px; }
+  input[type="color"].nb-swatch::-webkit-color-swatch { border: none; border-radius: 6px; }
+
+  .preset-swatch {
+    width: 20px; height: 20px; border-radius: 6px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    transition: transform 0.12s ease;
+    flex-shrink: 0;
+  }
+  .preset-swatch:hover { transform: scale(1.15); }
+  .preset-swatch.active { outline: 2px solid #38bdf8; outline-offset: 2px; }
+
+  /* ---- Phase 4: slides + PDF ---- */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .animate-spin { animation: spin 1s linear infinite; }
+
+  .thumb-strip { transition: width 0.25s cubic-bezier(0.16,1,0.3,1), opacity 0.2s ease; }
+  .thumb-card {
+    border: 2px solid transparent;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+    cursor: pointer;
+  }
+  .thumb-card:hover { transform: translateY(-1px); }
+  .thumb-card.active {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 1px rgba(56,189,248,0.3), 0 0 16px rgba(56,189,248,0.35);
+  }
+  .navdock-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 8px;
+    color: #94a3b8; transition: all 0.15s ease;
+  }
+  .navdock-btn:hover:not(:disabled) { background: rgba(148,163,184,0.1); color: #e2e8f0; }
+  .navdock-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* ---- Phase 5: floating widgets ---- */
+  .widget-window {
+    background: rgba(24, 24, 27, 0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(63, 63, 70, 0.7);
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);
+  }
+  .widget-header { cursor: grab; user-select: none; touch-action: none; }
+  .widget-header:active { cursor: grabbing; }
+  .widget-pill {
+    background: rgba(24, 24, 27, 0.92);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(63, 63, 70, 0.7);
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+  }
+  .calc-key {
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px; font-size: 15px; font-weight: 500;
+    background: rgba(148,163,184,0.08); color: #e2e8f0;
+    transition: background 0.1s ease, transform 0.1s ease;
+    user-select: none;
+  }
+  .calc-key:hover { background: rgba(148,163,184,0.16); }
+  .calc-key:active { transform: scale(0.94); }
+  .calc-key.op { background: rgba(56,189,248,0.16); color: #7dd3fc; }
+  .calc-key.op:hover { background: rgba(56,189,248,0.26); }
+  .calc-key.fn { background: rgba(148,163,184,0.05); color: #94a3b8; font-size: 12px; }
+  .calc-key.accent { background: linear-gradient(135deg, #38bdf8, #818cf8); color: #0b1220; }
+
+  .laser-trail-canvas { position: absolute; inset: 0; pointer-events: auto; z-index: 25; cursor: crosshair; }
+
+  @keyframes ring-dash { to { stroke-dashoffset: var(--ring-target, 0); } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, useImperativeHandle } = React;
+
+/* ============================== UTIL ============================== */
+
+function useClock() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
+
+function formatClock(d) {
+  let h = d.getHours();
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  if (h === 0) h = 12;
+  return { time: `${String(h).padStart(2, '0')}:${m}:${s}`, ampm };
+}
+
+function formatDateLong(d) {
+  return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
+function greetingFor(d) {
+  const h = d.getHours();
+  if (h < 5) return 'Still up';
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  if (h < 21) return 'Good evening';
+  return 'Good evening';
+}
+
+function timeAgo(ts) {
+  const diff = Date.now() - ts;
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  return `${day}d ago`;
+}
+
+function uid() {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+const SESSIONS_KEY = 'novaboard.sessions.v1';
+
+function loadSessions() {
+  try {
+    const raw = window.localStorage.getItem(SESSIONS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveSessions(sessions) {
+  try {
+    window.localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+  } catch (e) {
+    /* storage unavailable — fail silently, session list just won't persist */
+  }
+}
+
+/* ============================== ICONS ============================== */
+/* Inline SVG icon set (Lucide-style, hand-drawn to match) — self-contained,
+   no external icon package dependency needed for this artifact runtime. */
+
+const Svg = ({ children, size = 18, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24"
+       fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+       className={className} style={{ pointerEvents: 'none' }}>
+    {children}
+  </svg>
+);
+const IPlus = (p) => <Svg {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Svg>;
+const IUpload = (p) => <Svg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></Svg>;
+const IClock = (p) => <Svg {...p}><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></Svg>;
+const IChevronRight = (p) => <Svg {...p}><polyline points="9 18 15 12 9 6"/></Svg>;
+const IChevronLeft = (p) => <Svg {...p}><polyline points="15 18 9 12 15 6"/></Svg>;
+const IX = (p) => <Svg {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></Svg>;
+const ICheck = (p) => <Svg {...p}><polyline points="20 6 9 17 4 12"/></Svg>;
+const IArrowLeft = (p) => <Svg {...p}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></Svg>;
+const ISparkles = (p) => <Svg {...p}><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4L12 3z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z"/></Svg>;
+const ILayers = (p) => <Svg {...p}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></Svg>;
+const IFileText = (p) => <Svg {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></Svg>;
+const IGrid = (p) => <Svg {...p}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></Svg>;
+const IPalette = (p) => <Svg {...p}><circle cx="13.5" cy="6.5" r="0.5" fill="currentColor"/><circle cx="17.5" cy="10.5" r="0.5" fill="currentColor"/><circle cx="8.5" cy="7.5" r="0.5" fill="currentColor"/><circle cx="6.5" cy="12.5" r="0.5" fill="currentColor"/><path d="M12 2a10 10 0 1 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.4-.3-.4-.5-.9-.5-1.4 0-1.1.9-2 2-2h2.4c1.7 0 3.1-1.4 3.1-3.1C20.5 6.4 16.7 2 12 2z"/></Svg>;
+const ITrash = (p) => <Svg {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></Svg>;
+const IDot = (p) => <Svg {...p}><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></Svg>;
+
+/* ============================== SPLASH ============================== */
+
+function SplashScreen({ onDone }) {
+  const [exiting, setExiting] = useState(false);
+
+  useEffect(() => {
+    const exitTimer = setTimeout(() => setExiting(true), 1450);
+    const doneTimer = setTimeout(() => onDone(), 1800);
+    return () => { clearTimeout(exitTimer); clearTimeout(doneTimer); };
+  }, [onDone]);
+
+  return (
+    <div className={`splash-bg fixed inset-0 flex items-center justify-center ${exiting ? 'splash-exit' : ''}`}>
+      <div className="relative" style={{ width: 260, height: 260 }}>
+        <div className="orbit-ring spin-a" style={{ width: 220, height: 220 }} />
+        <div className="orbit-ring r2 spin-b" style={{ width: 160, height: 160 }} />
+        <div className="orbit-ring" style={{ width: 100, height: 100, borderColor: 'rgba(56,189,248,0.15)' }} />
+        <div
+          className="core-dot absolute rounded-full"
+          style={{
+            top: '50%', left: '50%', width: 14, height: 14,
+            background: 'radial-gradient(circle, #7dd3fc 0%, #38bdf8 60%, transparent 100%)',
+          }}
+        />
+      </div>
+      <div className="absolute bottom-[30%] left-1/2 -translate-x-1/2 text-center fade-up" style={{ animationDelay: '0.35s', opacity: 0 }}>
+        <div className="text-2xl tracking-[0.2em] font-semibold" style={{
+          backgroundImage: 'linear-gradient(90deg, #e5e9f0, #a5b4fc)',
+          WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent'
+        }}>
+          NOVABOARD OS
+        </div>
+        <div className="mono text-[11px] text-slate-500 mt-2 tracking-wider">initializing canvas kernel…</div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================== HOME ============================== */
+
+function HeroGreeting() {
+  const now = useClock();
+  return (
+    <div>
+      <div className="mono text-xs text-cyan-400/80 tracking-wider mb-2">{formatDateLong(now).toUpperCase()}</div>
+      <h1 className="text-4xl sm:text-5xl font-semibold text-slate-100 leading-tight">
+        {greetingFor(now)}.
+      </h1>
+      <p className="text-slate-400 mt-2 max-w-md">
+        Pick up where you left off, or start a fresh board.
+      </p>
+    </div>
+  );
+}
+
+const BG_PRESETS = [
+  { id: 'chalk-green', label: 'Chalkboard Green', hex: '#0d3824' },
+  { id: 'blueprint', label: 'Blueprint Blue', hex: '#0b2545' },
+  { id: 'charcoal', label: 'Matte Charcoal', hex: '#18181b' },
+  { id: 'white', label: 'Pure White', hex: '#ffffff' },
+];
+
+function NewBoardModal({ onClose, onCreate }) {
+  const [selected, setSelected] = useState('chalk-green');
+  const [customHex, setCustomHex] = useState('#38bdf8');
+  const [useCustom, setUseCustom] = useState(false);
+  const [title, setTitle] = useState('Untitled Board');
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const activeHex = useCustom ? customHex : (BG_PRESETS.find(p => p.id === selected)?.hex || '#0d3824');
+  const hexValid = /^#([0-9A-Fa-f]{6})$/.test(customHex);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="new-board-title">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div ref={dialogRef} className="glass-strong modal-in relative w-full max-w-md rounded-2xl p-6 shadow-2xl">
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <h2 id="new-board-title" className="text-lg font-semibold text-slate-100">New blank board</h2>
+            <p className="text-sm text-slate-400 mt-1">Choose a canvas tone to start on.</p>
+          </div>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 transition-colors focus-ring rounded-md p-1" aria-label="Close dialog">
+            <IX size={18} />
+          </button>
+        </div>
+
+        <label className="block text-xs text-slate-400 mb-1.5 mono tracking-wide">BOARD NAME</label>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full mb-5 rounded-lg bg-slate-950/60 border border-slate-700/60 px-3 py-2 text-sm text-slate-100 focus-ring focus:border-cyan-500/50 outline-none"
+          placeholder="Untitled Board"
+        />
+
+        <label className="block text-xs text-slate-400 mb-2 mono tracking-wide">CANVAS TONE</label>
+        <div className="grid grid-cols-4 gap-2.5 mb-4">
+          {BG_PRESETS.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => { setSelected(p.id); setUseCustom(false); }}
+              className={`group relative aspect-square rounded-xl border-2 transition-all focus-ring ${
+                !useCustom && selected === p.id ? 'border-cyan-400 scale-[1.03]' : 'border-slate-700/60 hover:border-slate-500'
+              }`}
+              style={{ background: p.hex }}
+              aria-label={p.label}
+              title={p.label}
+            >
+              {!useCustom && selected === p.id && (
+                <span className="absolute -top-1.5 -right-1.5 bg-cyan-400 rounded-full p-0.5 text-slate-950">
+                  <ICheck size={11} />
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={() => setUseCustom(v => !v)}
+          className={`w-full flex items-center gap-2.5 rounded-lg border px-3 py-2.5 mb-1 transition-colors focus-ring ${
+            useCustom ? 'border-cyan-500/50 bg-cyan-500/5' : 'border-slate-700/60 hover:border-slate-500'
+          }`}
+        >
+          <span className="rounded-md w-6 h-6 border border-slate-600 flex-shrink-0" style={{ background: hexValid ? customHex : '#333' }} />
+          <span className="text-sm text-slate-300">Custom hex</span>
+          {useCustom && (
+            <input
+              value={customHex}
+              onChange={(e) => setCustomHex(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              className="ml-auto mono text-xs bg-slate-950/70 border border-slate-700 rounded px-2 py-1 w-24 text-slate-200 outline-none focus:border-cyan-500/50"
+              maxLength={7}
+            />
+          )}
+        </button>
+
+        <div className="flex items-center gap-3 mt-6">
+          <div className="flex items-center gap-2 text-xs text-slate-500 mono">
+            <span className="w-3 h-3 rounded-full border border-slate-600" style={{ background: activeHex }} />
+            preview
+          </div>
+          <button
+            onClick={() => onCreate({ title: title.trim() || 'Untitled Board', bg: activeHex })}
+            disabled={useCustom && !hexValid}
+            className="ml-auto inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-cyan-500 to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 text-sm font-medium text-slate-950 hover:brightness-110 transition-all focus-ring"
+          >
+            Create board <IChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActionCard({ icon: IconCmp, title, desc, onClick, accent = 'cyan' }) {
+  const accentClasses = accent === 'cyan'
+    ? 'group-hover:border-cyan-500/40 group-hover:shadow-[0_0_0_1px_rgba(56,189,248,0.15),0_8px_30px_-8px_rgba(56,189,248,0.25)]'
+    : 'group-hover:border-indigo-500/40 group-hover:shadow-[0_0_0_1px_rgba(129,140,248,0.15),0_8px_30px_-8px_rgba(129,140,248,0.25)]';
+  const iconBg = accent === 'cyan' ? 'bg-cyan-500/10 text-cyan-300' : 'bg-indigo-500/10 text-indigo-300';
+
+  return (
+    <button
+      onClick={onClick}
+      className={`card-hover group glass text-left rounded-2xl p-5 flex flex-col gap-4 border-slate-700/50 ${accentClasses} focus-ring`}
+    >
+      <span className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconBg}`}>
+        <IconCmp size={19} />
+      </span>
+      <div>
+        <div className="text-slate-100 font-medium">{title}</div>
+        <div className="text-sm text-slate-400 mt-1 leading-snug">{desc}</div>
+      </div>
+    </button>
+  );
+}
+
+function RecentSessions({ sessions, onOpen, onClear }) {
+  if (sessions.length === 0) {
+    return (
+      <div className="glass rounded-2xl p-6 border-slate-700/50 border-dashed flex flex-col items-center justify-center text-center gap-2 min-h-[148px]">
+        <ILayers size={20} className="text-slate-600" />
+        <div className="text-sm text-slate-500">No sessions yet — boards you create will show up here.</div>
+      </div>
+    );
+  }
+  return (
+    <div className="glass rounded-2xl border-slate-700/50 overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-700/40">
+        <span className="text-xs mono text-slate-500 tracking-wide">RECENT SESSIONS</span>
+        <button onClick={onClear} className="text-xs text-slate-600 hover:text-slate-400 transition-colors focus-ring rounded px-1">clear</button>
+      </div>
+      <div className="max-h-64 overflow-y-auto divide-y divide-slate-800/70">
+        {sessions.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => onOpen(s)}
+            className="w-full flex items-center gap-3 px-5 py-3 hover:bg-slate-800/40 transition-colors text-left focus-ring"
+          >
+            <span className="w-8 h-8 rounded-lg border border-slate-700 flex-shrink-0" style={{ background: s.bg }} />
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm text-slate-200 truncate">{s.title}</span>
+              <span className="block text-xs text-slate-500 mono">{timeAgo(s.updatedAt)} · {s.pageCount || 1} page{(s.pageCount || 1) > 1 ? 's' : ''}</span>
+            </span>
+            <IChevronRight size={15} className="text-slate-600 flex-shrink-0" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HomeScreen({ onEnterCanvas, sessions, setSessions }) {
+  const [modal, setModal] = useState(null); // null | 'new' | 'upload'
+  const fileInputRef = useRef(null);
+
+  const createSession = useCallback((meta) => {
+    const session = {
+      id: uid(),
+      title: meta.title,
+      bg: meta.bg,
+      pageCount: 1,
+      updatedAt: Date.now(),
+      source: meta.source || 'blank',
+    };
+    setSessions(prev => {
+      const next = [session, ...prev].slice(0, 12);
+      saveSessions(next);
+      return next;
+    });
+    // pdfFile (a live File object) can't be persisted to localStorage, so it's
+    // attached only to the in-memory session handed to onEnterCanvas, never
+    // to the copy saved into Recent Sessions.
+    onEnterCanvas(meta.pdfFile ? { ...session, pdfFile: meta.pdfFile } : session);
+  }, [onEnterCanvas, setSessions]);
+
+  const handleFilePicked = useCallback((file) => {
+    if (!file) return;
+    createSession({
+      title: file.name.replace(/\.pdf$/i, ''),
+      bg: '#ffffff',
+      source: 'pdf',
+      pdfFile: file,
+    });
+  }, [createSession]);
+
+  return (
+    <div className="track-in relative h-full overflow-y-auto">
+      <div className="max-w-5xl mx-auto px-6 sm:px-10 pt-16 pb-20">
+        <HeroGreeting />
+
+        <div className="grid sm:grid-cols-3 gap-4 mt-10">
+          <ActionCard
+            icon={IPlus}
+            title="New blank board"
+            desc="Start fresh with a canvas tone of your choice."
+            onClick={() => setModal('new')}
+            accent="cyan"
+          />
+          <ActionCard
+            icon={IUpload}
+            title="Open document / PDF"
+            desc="Import a PDF and mark it up page by page."
+            onClick={() => fileInputRef.current?.click()}
+            accent="indigo"
+          />
+          <div className="sm:row-span-1">
+            <ActionCard
+              icon={IClock}
+              title="Recent sessions"
+              desc="Jump back into a board you were working on."
+              onClick={() => {
+                const list = document.getElementById('recent-sessions-anchor');
+                list?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              accent="cyan"
+            />
+          </div>
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          onChange={(e) => handleFilePicked(e.target.files?.[0])}
+        />
+
+        <div id="recent-sessions-anchor" className="mt-10">
+          <RecentSessions
+            sessions={sessions}
+            onOpen={(s) => onEnterCanvas(s)}
+            onClear={() => { setSessions([]); saveSessions([]); }}
+          />
+        </div>
+      </div>
+
+      {modal === 'new' && (
+        <NewBoardModal
+          onClose={() => setModal(null)}
+          onCreate={(meta) => { setModal(null); createSession(meta); }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ============================== CANVAS SHELL ============================== */
+
+function LiveClock() {
+  const now = useClock();
+  const { time, ampm } = formatClock(now);
+  return (
+    <div className="flex items-center gap-2 glass rounded-lg px-3 py-1.5 border-slate-700/50">
+      <span className="relative flex h-2 w-2">
+        <span className="breathe-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+      </span>
+      <span className="mono text-sm text-slate-200 tabular-nums">{time}</span>
+      <span className="mono text-[10px] text-slate-500">{ampm}</span>
+    </div>
+  );
+}
+
+function ConfirmDialog({ title, body, confirmLabel = 'Confirm', danger = false, onConfirm, onCancel }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="alertdialog" aria-modal="true">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+      <div className="glass-strong modal-in relative w-full max-w-sm rounded-2xl p-6">
+        <h3 className="text-base font-medium text-slate-100 mb-2">{title}</h3>
+        <p className="text-sm text-slate-400 mb-6">{body}</p>
+        <div className="flex justify-end gap-2.5">
+          <button onClick={onCancel} className="px-3.5 py-2 text-sm rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800/60 transition-colors focus-ring">
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className={`px-3.5 py-2 text-sm rounded-lg font-medium transition-all focus-ring ${
+              danger
+                ? 'bg-red-500/90 hover:bg-red-500 text-white'
+                : 'bg-gradient-to-r from-cyan-500 to-indigo-500 text-slate-950 hover:brightness-110'
+            }`}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NewPageModal({ onPick, onCancel }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onCancel(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel]);
+
+  const options = [
+    { id: 'slate', label: 'Dark Slate', hex: SLATE_BG, ring: 'rgba(56,189,248,0.45)' },
+    { id: 'white', label: 'Pure White', hex: WHITE_BG, ring: 'rgba(148,163,184,0.6)' },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="New page background">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+      <div className="glass-strong modal-in relative w-full max-w-sm rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-medium text-slate-100">New page</h3>
+          <button onClick={onCancel} className="navdock-btn focus-ring" title="Cancel" aria-label="Cancel"><IX size={15} /></button>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {options.map((o) => (
+            <button
+              key={o.id}
+              onClick={() => onPick(o.hex)}
+              className="group rounded-xl p-2 border border-slate-700/60 hover:border-cyan-500/50 hover:bg-slate-800/40 transition-colors focus-ring text-left"
+            >
+              <div
+                className="rounded-lg w-full mb-2.5"
+                style={{ aspectRatio: '4 / 3', background: o.hex, boxShadow: `inset 0 0 0 1px ${o.ring}` }}
+              />
+              <div className="text-sm text-slate-200 px-0.5">{o.label}</div>
+              <div className="mono text-[10px] text-slate-500 px-0.5 pb-0.5">{o.hex}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ToolPlaceholder({ label }) {
+  return (
+    <button
+      disabled
+      title={`${label} — arriving in a later phase`}
+      className="w-9 h-9 rounded-lg border border-slate-800 text-slate-600 flex items-center justify-center cursor-not-allowed opacity-50"
+    >
+      <span className="w-2 h-2 rounded-full bg-slate-700" />
+    </button>
+  );
+}
+
+function ExportMenu({ onExportPdf, exporting, onClose }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [onClose]);
+  return (
+    <div ref={ref} className="glass-strong modal-in absolute right-0 top-full mt-2 rounded-xl p-1.5 w-52 shadow-2xl z-40">
+      <button
+        onClick={onExportPdf}
+        disabled={exporting}
+        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-slate-200 hover:bg-slate-800/60 transition-colors focus-ring disabled:opacity-50"
+      >
+        {exporting ? <ILoader size={15} className="text-cyan-300" /> : <IFileText size={15} className="text-cyan-300" />}
+        {exporting ? 'Compiling PDF…' : 'Export as PDF'}
+        <span className="ml-auto text-[10px] text-slate-500 mono">all pages</span>
+      </button>
+    </div>
+  );
+}
+
+function CanvasTopBar({ session, onBackHome, onNewBoard, isFullscreen, onToggleFullscreen }) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null); // 'home' | 'new'
+
+  const requestConfirm = (action) => { setConfirmAction(action); setConfirmOpen(true); };
+  const handleConfirmed = () => {
+    setConfirmOpen(false);
+    if (confirmAction === 'home') onBackHome();
+    if (confirmAction === 'new') onNewBoard();
+  };
+
+  return (
+    <div className="glass border-b border-slate-700/40 rounded-none flex items-center gap-3 px-4 py-2.5 flex-shrink-0 relative z-30">
+      <button
+        onClick={() => requestConfirm('home')}
+        className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors focus-ring rounded-md px-2 py-1"
+      >
+        <IArrowLeft size={15} /> Home
+      </button>
+
+      <div className="w-px h-5 bg-slate-700/60" />
+
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="w-3.5 h-3.5 rounded border border-slate-600 flex-shrink-0" style={{ background: session?.bg || '#0d3824' }} />
+        <span className="text-sm text-slate-200 font-medium truncate max-w-[220px]">{session?.title || 'Untitled Board'}</span>
+      </div>
+
+      <button
+        onClick={() => requestConfirm('new')}
+        className="flex items-center gap-1.5 text-xs mono text-slate-500 hover:text-cyan-300 transition-colors focus-ring rounded-md px-2 py-1 ml-1"
+      >
+        <IPlus size={13} /> New board
+      </button>
+
+      <div className="flex-1" />
+
+      <button
+        onClick={onToggleFullscreen}
+        title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+        className="flex items-center gap-1.5 text-xs mono text-slate-400 hover:text-cyan-300 transition-colors focus-ring rounded-md px-2.5 py-1.5 border border-slate-700/60 hover:border-cyan-500/40 mr-2"
+      >
+        <IMaximize size={13} /> {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+      </button>
+
+      <LiveClock />
+
+      {confirmOpen && (
+        <ConfirmDialog
+          title={confirmAction === 'home' ? 'Leave this board?' : 'Start a new board?'}
+          body={
+            confirmAction === 'home'
+              ? 'Your drawing on this board is not saved yet (board persistence arrives in a later phase). Leaving now will discard it.'
+              : 'This will take you back to the dashboard to configure a new board.'
+          }
+          confirmLabel={confirmAction === 'home' ? 'Leave board' : 'Continue'}
+          danger={confirmAction === 'home'}
+          onConfirm={handleConfirmed}
+          onCancel={() => setConfirmOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ============================== PHASE 2: DRAWING ENGINE ============================== */
+
+const PEN_TYPES = {
+  ballpoint: { label: 'Ballpoint' },
+  highlighter: { label: 'Highlighter' },
+  calligraphy: { label: 'Calligraphy' },
+  neon: { label: 'Neon Glow' },
+};
+
+const PRESET_COLORS = [
+  { name: 'White', hex: '#ffffff' },
+  { name: 'Black', hex: '#0a0a0a' },
+  { name: 'Neon Cyan', hex: '#22d3ee' },
+  { name: 'Hot Pink', hex: '#ff2d95' },
+  { name: 'Amber', hex: '#fbbf24' },
+  { name: 'Lime', hex: '#a3e635' },
+  { name: 'Violet', hex: '#a78bfa' },
+  { name: 'Sky', hex: '#38bdf8' },
+];
+
+/* Extra icons for the toolbar */
+const IPenBall = (p) => <Svg {...p}><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.6 7.6"/><circle cx="11" cy="11" r="2"/></Svg>;
+const IHighlighter = (p) => <Svg {...p}><path d="M9 11l-6 6v3h9l3-3"/><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></Svg>;
+const ICalligraphy = (p) => <Svg {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></Svg>;
+const INeon = (p) => <Svg {...p}><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></Svg>;
+const IEraser = (p) => <Svg {...p}><path d="M20 20H9l-5-5a2 2 0 0 1 0-2.8l9-9a2 2 0 0 1 2.8 0l5 5a2 2 0 0 1 0 2.8L13 20"/><path d="M7 11l6 6"/></Svg>;
+const ICursor = (p) => <Svg {...p}><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></Svg>;
+const IUndo = (p) => <Svg {...p}><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></Svg>;
+const IRedo = (p) => <Svg {...p}><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></Svg>;
+const IEraseAll = (p) => <Svg {...p}><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></Svg>;
+const IShapes = (p) => <Svg {...p}><circle cx="8" cy="8" r="5.5"/><path d="M14.5 21.5l4-8 4 8z" transform="translate(-3,-4)"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></Svg>;
+const ILine = (p) => <Svg {...p}><line x1="5" y1="19" x2="19" y2="5"/></Svg>;
+const IArrowsH = (p) => <Svg {...p}><line x1="4" y1="12" x2="20" y2="12"/><polyline points="9 6 4 12 9 18"/><polyline points="15 6 20 12 15 18"/></Svg>;
+const IRect = (p) => <Svg {...p}><rect x="3.5" y="6" width="17" height="12"/></Svg>;
+const IRectRound = (p) => <Svg {...p}><rect x="3.5" y="6" width="17" height="12" rx="3.5"/></Svg>;
+const ICircleShape = (p) => <Svg {...p}><ellipse cx="12" cy="12" rx="8.5" ry="7"/></Svg>;
+const IStar = (p) => <Svg {...p}><polygon points="12 2.5 14.9 9.1 22 9.9 16.7 14.6 18.2 21.6 12 18 5.8 21.6 7.3 14.6 2 9.9 9.1 9.1"/></Svg>;
+const ICube = (p) => <Svg {...p}><polygon points="12 2 21 7 21 17 12 22 3 17 3 7"/><polyline points="3 7 12 12 21 7"/><line x1="12" y1="12" x2="12" y2="22"/></Svg>;
+const ICylinder = (p) => <Svg {...p}><ellipse cx="12" cy="5.5" rx="7.5" ry="3"/><path d="M4.5 5.5v13c0 1.66 3.36 3 7.5 3s7.5-1.34 7.5-3v-13"/></Svg>;
+const ISphere = (p) => <Svg {...p}><circle cx="12" cy="12" r="8.5"/><ellipse cx="12" cy="12" rx="8.5" ry="3.2"/><path d="M3.5 12c0-4.7 3.8-8.5 8.5-8.5"/></Svg>;
+const IPyramid = (p) => <Svg {...p}><polygon points="12 2 21 19 3 19"/><polyline points="12 2 12 19"/><polyline points="3 19 12 11 21 19"/></Svg>;
+const IRotate = (p) => <Svg {...p}><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 3 21 8 16 8"/></Svg>;
+const ISidebar = (p) => <Svg {...p}><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/></Svg>;
+const IChevronDown = (p) => <Svg {...p}><polyline points="6 9 12 15 18 9"/></Svg>;
+const IDownload = (p) => <Svg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></Svg>;
+const ITrash2 = (p) => <Svg {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></Svg>;
+const IChevronUpSmall = (p) => <Svg {...p}><polyline points="18 15 12 9 6 15"/></Svg>;
+const IChevronDownSmall = (p) => <Svg {...p}><polyline points="6 9 12 15 18 9"/></Svg>;
+const ILoader = (p) => <Svg {...p} className={(p.className||'') + ' animate-spin'}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></Svg>;
+const IWidgets = (p) => <Svg {...p}><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></Svg>;
+const ITimerIcon = (p) => <Svg {...p}><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/><path d="M9 2h6"/><path d="M19 5l-1.5 1.5"/></Svg>;
+const ICalcIcon = (p) => <Svg {...p}><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11.01"/><line x1="12" y1="11" x2="12" y2="11.01"/><line x1="16" y1="11" x2="16" y2="11.01"/><line x1="8" y1="15" x2="8" y2="15.01"/><line x1="12" y1="15" x2="12" y2="15.01"/><line x1="16" y1="15" x2="16" y2="15.01"/><line x1="8" y1="19" x2="8" y2="19.01"/><line x1="12" y1="19" x2="12" y2="19.01"/></Svg>;
+const ILaserIcon = (p) => <Svg {...p}><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="7" strokeDasharray="3 3"/></Svg>;
+const IMinimize = (p) => <Svg {...p}><line x1="5" y1="12" x2="19" y2="12"/></Svg>;
+const IMaximize = (p) => <Svg {...p}><rect x="5" y="5" width="14" height="14" rx="2"/></Svg>;
+const IPlay = (p) => <Svg {...p}><polygon points="6 3 20 12 6 21 6 3" fill="currentColor" stroke="none"/></Svg>;
+const IPause = (p) => <Svg {...p}><rect x="6" y="4" width="4" height="16" fill="currentColor" stroke="none"/><rect x="14" y="4" width="4" height="16" fill="currentColor" stroke="none"/></Svg>;
+const IRotateCcw = (p) => <Svg {...p}><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 8 8 8"/></Svg>;
+const IFlag = (p) => <Svg {...p}><path d="M4 3v18"/><path d="M4 4h12l-2 4 2 4H4"/></Svg>;
+
+/* ---------- Helpers ---------- */
+
+function hexToRgba(hex, alpha) {
+  let h = hex.replace('#', '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const n = parseInt(h, 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/* Contain / letterbox frame. Fits a page of (pageW x pageH) inside the stage
+   (stageW x stageH) with no extra margin and centres it:
+     scale   = min(stageW / pageW, stageH / pageH)
+     offsetX = (stageW - pageW * scale) / 2
+     offsetY = (stageH - pageH * scale) / 2 */
+function computePageFrame(pageW, pageH, stageW, stageH) {
+  const scale = Math.min(stageW / pageW, stageH / pageH);
+  return {
+    scale,
+    offsetX: (stageW - pageW * scale) / 2,
+    offsetY: (stageH - pageH * scale) / 2,
+  };
+}
+
+/* "Page space" = the page's own pixel grid (scale 1, no offset). PDF slides store
+   their vector JSON in page space so annotations stay glued to the page no matter
+   how the stage is resized. */
+const PAGE_SPACE = { scale: 1, offsetX: 0, offsetY: 0 };
+
+/* Re-map objects (live fabric objects OR plain toJSON objects) from one frame to
+   another. The mapping is a uniform similarity, so strokes, shapes and their
+   line widths all stay aligned with the page. */
+function reframeObjects(objs, from, to) {
+  if (!from || !to || !from.scale || !to.scale) return;
+  const k = to.scale / from.scale;
+  objs.forEach((o) => {
+    const vals = {
+      left: ((o.left || 0) - from.offsetX) * k + to.offsetX,
+      top: ((o.top || 0) - from.offsetY) * k + to.offsetY,
+      scaleX: (o.scaleX == null ? 1 : o.scaleX) * k,
+      scaleY: (o.scaleY == null ? 1 : o.scaleY) * k,
+    };
+    if (typeof o.setCoords === 'function') { o.set(vals); o.setCoords(); }
+    else Object.assign(o, vals);
+  });
+}
+
+/* Position the locked PDF page image inside the current frame. */
+function placeBgImage(img, page, frame) {
+  if (!img || !page || !frame) return;
+  img.set({
+    left: frame.offsetX, top: frame.offsetY,
+    scaleX: (page.w * frame.scale) / img.width,
+    scaleY: (page.h * frame.scale) / img.height,
+  });
+  img.setCoords();
+}
+
+/* Perceived-luminance test on a #rrggbb / #rgb colour. */
+function isLightColor(hex) {
+  let h = String(hex).replace('#', '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) return false;
+  const n = parseInt(h, 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 150;
+}
+
+/* Build a smooth SVG path string from raw points using quadratic midpoints. */
+function pointsToSmoothPath(points) {
+  if (points.length === 0) return '';
+  if (points.length === 1) {
+    const p = points[0];
+    return `M ${p.x} ${p.y} L ${p.x + 0.01} ${p.y + 0.01}`;
+  }
+  if (points.length === 2) {
+    return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+  }
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length - 1; i++) {
+    const mx = (points[i].x + points[i + 1].x) / 2;
+    const my = (points[i].y + points[i + 1].y) / 2;
+    d += ` Q ${points[i].x} ${points[i].y} ${mx} ${my}`;
+  }
+  const last = points[points.length - 1];
+  d += ` L ${last.x} ${last.y}`;
+  return d;
+}
+
+/* Build a variable-width filled polygon from points + per-point widths (calligraphy). */
+function buildVariableWidthPath(points, widths) {
+  if (points.length < 2) {
+    const p = points[0];
+    const r = (widths[0] || 2) / 2;
+    return `M ${p.x - r} ${p.y} a ${r} ${r} 0 1 0 ${r * 2} 0 a ${r} ${r} 0 1 0 ${-r * 2} 0 Z`;
+  }
+  const left = [], right = [];
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    const prev = points[Math.max(0, i - 1)];
+    const next = points[Math.min(points.length - 1, i + 1)];
+    let dx = next.x - prev.x, dy = next.y - prev.y;
+    const len = Math.hypot(dx, dy) || 1;
+    dx /= len; dy /= len;
+    const nx = -dy, ny = dx;
+    const w = (widths[i] || 2) / 2;
+    left.push({ x: p.x + nx * w, y: p.y + ny * w });
+    right.push({ x: p.x - nx * w, y: p.y - ny * w });
+  }
+  let d = `M ${left[0].x} ${left[0].y}`;
+  for (let i = 1; i < left.length; i++) {
+    const mx = (left[i - 1].x + left[i].x) / 2;
+    const my = (left[i - 1].y + left[i].y) / 2;
+    d += ` Q ${left[i - 1].x} ${left[i - 1].y} ${mx} ${my}`;
+  }
+  d += ` L ${left[left.length - 1].x} ${left[left.length - 1].y}`;
+  d += ` L ${right[right.length - 1].x} ${right[right.length - 1].y}`;
+  for (let i = right.length - 2; i >= 0; i--) {
+    const mx = (right[i + 1].x + right[i].x) / 2;
+    const my = (right[i + 1].y + right[i].y) / 2;
+    d += ` Q ${right[i + 1].x} ${right[i + 1].y} ${mx} ${my}`;
+  }
+  d += ' Z';
+  return d;
+}
+
+/* ---------- Phase 5: safe calculator expression evaluator (no eval) ---------- */
+
+function safeEvalExpr(expr) {
+  let i = 0;
+  const s = String(expr).replace(/\s+/g, '');
+
+  const peek = () => s[i];
+  const eat = (ch) => { if (s[i] !== ch) throw new Error('Malformed expression'); i++; };
+
+  function parseNumber() {
+    const start = i;
+    if (s[i] === '-') i++;
+    while (i < s.length && /[0-9.]/.test(s[i])) i++;
+    if (start === i) throw new Error('Expected number');
+    const n = parseFloat(s.slice(start, i));
+    if (Number.isNaN(n)) throw new Error('Invalid number');
+    return n;
+  }
+  function parseAtom() {
+    if (peek() === '(') { eat('('); const v = parseExpr(); eat(')'); return v; }
+    if (peek() === '-') { i++; return -parseAtom(); }
+    return parseNumber();
+  }
+  function parsePow() {
+    const left = parseAtom();
+    if (peek() === '^') { i++; return Math.pow(left, parsePow()); }
+    return left;
+  }
+  function parseTerm() {
+    let left = parsePow();
+    while (peek() === '*' || peek() === '/' || peek() === '%') {
+      const op = s[i]; i++;
+      const right = parsePow();
+      if (op === '*') left *= right;
+      else if (op === '/') { if (right === 0) throw new Error('Division by zero'); left /= right; }
+      else left %= right;
+    }
+    return left;
+  }
+  function parseExpr() {
+    let left = parseTerm();
+    while (peek() === '+' || peek() === '-') {
+      const op = s[i]; i++;
+      left = op === '+' ? left + parseTerm() : left - parseTerm();
+    }
+    return left;
+  }
+
+  if (s.length === 0) return 0;
+  const result = parseExpr();
+  if (i !== s.length) throw new Error('Unexpected trailing characters');
+  return result;
+}
+
+/* ---------- Phase 5: Web Audio bell chime (no external audio files) ---------- */
+
+let sharedAudioCtx = null;
+function getAudioCtx() {
+  if (!sharedAudioCtx) {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    sharedAudioCtx = new Ctx();
+  }
+  if (sharedAudioCtx.state === 'suspended') sharedAudioCtx.resume();
+  return sharedAudioCtx;
+}
+
+/* A soft two-tone bell: two partials with a fast attack and slow exponential decay. */
+function playChime() {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0, now);
+  master.connect(ctx.destination);
+
+  const partials = [
+    { freq: 880, gain: 0.22, decay: 1.4 },
+    { freq: 1320, gain: 0.12, decay: 1.0 },
+    { freq: 1760, gain: 0.06, decay: 0.7 },
+  ];
+  partials.forEach(({ freq, gain, decay }) => {
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, now);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(gain, now + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+    osc.connect(g);
+    g.connect(master);
+    osc.start(now);
+    osc.stop(now + decay + 0.05);
+  });
+  master.gain.setValueAtTime(1, now);
+}
+
+/* ---------- Multi-slide data model ---------- */
+
+const PDF_LETTERBOX_BG = '#090d16';
+const SLATE_BG = '#090d16';
+const WHITE_BG = '#ffffff';
+
+function makeSlide(bg, opts = {}) {
+  return {
+    id: uid(),
+    bg: bg || '#0d3824',
+    bgImage: opts.bgImage || null,   // dataURL, e.g. rasterized PDF page
+    bgImageW: opts.bgImageW || null, // natural px size of bgImage, for export sizing
+    bgImageH: opts.bgImageH || null,
+    json: null,       // fabric.toJSON() snapshot of this slide's objects (null = empty)
+    history: { stack: [], index: -1 }, // per-slide undo/redo
+    thumb: null,      // dataURL thumbnail for the sidebar
+  };
+}
+
+/* ---------- PDF.js loader/config (lazy — only touched when a PDF is actually opened) ---------- */
+
+let pdfjsReadyPromise = null;
+function ensurePdfJs() {
+  if (pdfjsReadyPromise) return pdfjsReadyPromise;
+  pdfjsReadyPromise = new Promise((resolve, reject) => {
+    const lib = window.pdfjsLib;
+    if (!lib) { reject(new Error('PDF.js failed to load.')); return; }
+    lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    resolve(lib);
+  });
+  return pdfjsReadyPromise;
+}
+
+/* Rasterize every page of a PDF File to dataURLs at a target CSS pixel width,
+   rendered at devicePixelRatio for crispness. Returns [{dataUrl, width, height}]. */
+async function rasterizePdfPages(file, onProgress) {
+  const lib = await ensurePdfJs();
+  const buf = await file.arrayBuffer();
+  const pdf = await lib.getDocument({ data: buf }).promise;
+  const pages = [];
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const baseViewport = page.getViewport({ scale: 1 });
+    // Target ~1400px wide canvas for a good quality/size tradeoff, scaled by DPR.
+    const targetCssWidth = 1400;
+    const scale = (targetCssWidth / baseViewport.width) * dpr;
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+    const ctx = canvas.getContext('2d');
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    pages.push({
+      dataUrl: canvas.toDataURL('image/jpeg', 0.9),
+      width: viewport.width / dpr,
+      height: viewport.height / dpr,
+    });
+    if (onProgress) onProgress(i, pdf.numPages);
+  }
+  return pages;
+}
+
+/* ---------- jsPDF export ---------- */
+
+/* Build a flattened raster of one slide (background + vector objects) as a dataURL,
+   by rendering into an offscreen Fabric StaticCanvas at the slide's native size. */
+async function rasterizeSlideForExport(slide, fallbackW, fallbackH) {
+  const w = slide.bgImageW || fallbackW;
+  const h = slide.bgImageH || fallbackH;
+  const off = document.createElement('canvas');
+  off.width = w; off.height = h;
+  const staticCanvas = new fabric.StaticCanvas(off, { width: w, height: h });
+  staticCanvas.backgroundColor = slide.bg;
+
+  // Load vector objects first (loadFromJSON replaces the canvas's object list
+  // and its own backgroundColor), then layer the background image behind
+  // everything, then reassert the slide's real bg color. Order matters here.
+  if (slide.json) {
+    await new Promise((resolve) => {
+      staticCanvas.loadFromJSON(slide.json, () => resolve());
+    });
+  }
+  staticCanvas.backgroundColor = slide.bg;
+
+  if (slide.bgImage) {
+    await new Promise((resolve) => {
+      fabric.Image.fromURL(slide.bgImage, (img) => {
+        img.set({ left: 0, top: 0, scaleX: w / img.width, scaleY: h / img.height, selectable: false, evented: false });
+        staticCanvas.add(img);
+        staticCanvas.sendToBack(img);
+        resolve();
+      });
+    });
+  }
+
+  staticCanvas.renderAll();
+  const dataUrl = off.toDataURL('image/jpeg', 0.92);
+  staticCanvas.dispose();
+  return { dataUrl, w, h };
+}
+
+async function exportSessionAsPdf(slides, title) {
+  const { jsPDF } = window.jspdf;
+  let doc = null;
+  for (let i = 0; i < slides.length; i++) {
+    const slide = slides[i];
+    const { dataUrl, w, h } = await rasterizeSlideForExport(slide, 1400, 900);
+    const orientation = w >= h ? 'landscape' : 'portrait';
+    if (!doc) {
+      doc = new jsPDF({ orientation, unit: 'pt', format: [w, h] });
+    } else {
+      doc.addPage([w, h], orientation);
+    }
+    doc.addImage(dataUrl, 'JPEG', 0, 0, w, h);
+  }
+  if (!doc) return;
+  doc.save(`${(title || 'NovaBoard').replace(/[^\w\-]+/g, '_')}.pdf`);
+}
+
+/* ---------- Shapes: catalog + geometry ---------- */
+
+const SHAPES_2D = [
+  { id: 'line', label: 'Line', icon: ILine },
+  { id: 'arrow2', label: 'Double arrow', icon: IArrowsH },
+  { id: 'rect', label: 'Rectangle', icon: IRect },
+  { id: 'rectRound', label: 'Rounded rect', icon: IRectRound },
+  { id: 'ellipse', label: 'Circle / ellipse', icon: ICircleShape },
+  { id: 'star', label: '5-point star', icon: IStar },
+];
+
+const SHAPES_3D = [
+  { id: 'cube', label: 'Cube', icon: ICube },
+  { id: 'cylinder', label: 'Cylinder', icon: ICylinder },
+  { id: 'sphere', label: 'Sphere', icon: ISphere },
+  { id: 'pyramid', label: 'Pyramid', icon: IPyramid },
+];
+
+const SHAPE_3D_IDS = new Set(SHAPES_3D.map(s => s.id));
+
+/* ----- Isometric-style vector projection for 3D wireframes ----- */
+// Simple rotation about Y (yaw) then X (tilt), then orthographic projection
+// to 2D with a fixed isometric-ish foreshortening. Returns {x,y} in local
+// unrotated-canvas units centered at origin.
+function project3D(x, y, z, yaw, tilt) {
+  const cy = Math.cos(yaw), sy = Math.sin(yaw);
+  const x1 = x * cy - z * sy;
+  const z1 = x * sy + z * cy;
+  const ct = Math.cos(tilt), st = Math.sin(tilt);
+  const y2 = y * ct - z1 * st;
+  const z2 = y * st + z1 * ct;
+  // orthographic; z2 folded in lightly for a touch of depth-scale (subtle)
+  const depthScale = 1 + z2 * 0.0006 * 0;
+  return { x: x1 * depthScale, y: y2 * depthScale };
+}
+
+function edgesToPathData(vertices, edges) {
+  return edges.map(([a, b]) => {
+    const p1 = vertices[a], p2 = vertices[b];
+    return `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`;
+  }).join(' ');
+}
+
+/* Build the raw (yaw, tilt) -> SVG path-data + bounds for each 3D primitive,
+   in a local coordinate space centered at (0,0). Size ~ +/-60 units. */
+function build3DGeometry(kind, yaw, tilt) {
+  const R = 55;
+  let vertices = [], edges = [], extraPaths = [];
+
+  if (kind === 'cube') {
+    const s = R * 0.8;
+    const pts = [];
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+      pts.push([sx * s, sy * s, sz * s]);
+    }
+    // order: 0:---,1:--+,2:-+-,3:-++,4:+--,5:+-+,6:++-,7:+++
+    vertices = pts.map(([x, y, z]) => project3D(x, y, z, yaw, tilt));
+    edges = [
+      [0,1],[1,3],[3,2],[2,0], // x=-1 face
+      [4,5],[5,7],[7,6],[6,4], // x=+1 face
+      [0,4],[1,5],[2,6],[3,7], // connectors
+    ];
+  } else if (kind === 'pyramid') {
+    const s = R * 0.9, h = R * 1.05;
+    const base = [[-s,h*0.4,-s],[s,h*0.4,-s],[s,h*0.4,s],[-s,h*0.4,s]];
+    const apex = [0, -h*0.6, 0];
+    const pts = [...base, apex];
+    vertices = pts.map(([x, y, z]) => project3D(x, y, z, yaw, tilt));
+    edges = [[0,1],[1,2],[2,3],[3,0],[0,4],[1,4],[2,4],[3,4]];
+  } else if (kind === 'cylinder') {
+    const rad = R * 0.62, h = R * 0.95, N = 20;
+    const top = [], bot = [];
+    for (let i = 0; i < N; i++) {
+      const a = (i / N) * Math.PI * 2;
+      top.push([Math.cos(a) * rad, -h, Math.sin(a) * rad]);
+      bot.push([Math.cos(a) * rad, h, Math.sin(a) * rad]);
+    }
+    const pts = [...top, ...bot];
+    vertices = pts.map(([x, y, z]) => project3D(x, y, z, yaw, tilt));
+    edges = [];
+    for (let i = 0; i < N; i++) edges.push([i, (i + 1) % N]);
+    for (let i = 0; i < N; i++) edges.push([N + i, N + ((i + 1) % N)]);
+    // a few verticals for depth cues
+    for (let i = 0; i < N; i += Math.floor(N / 4)) edges.push([i, N + i]);
+  } else if (kind === 'sphere') {
+    const rad = R * 0.85, LAT = 5, LON = 12, SEG = 24;
+    const rings = []; // latitude circles
+    for (let li = 1; li < LAT; li++) {
+      const phi = (li / LAT) * Math.PI - Math.PI / 2;
+      const ring = [];
+      for (let i = 0; i <= SEG; i++) {
+        const th = (i / SEG) * Math.PI * 2;
+        ring.push([
+          rad * Math.cos(phi) * Math.cos(th),
+          rad * Math.sin(phi),
+          rad * Math.cos(phi) * Math.sin(th),
+        ]);
+      }
+      rings.push(ring);
+    }
+    const merid = []; // longitude half-circles
+    for (let mi = 0; mi < LON; mi++) {
+      const th = (mi / LON) * Math.PI * 2;
+      const line = [];
+      for (let i = 0; i <= SEG; i++) {
+        const phi = (i / SEG) * Math.PI - Math.PI / 2;
+        line.push([
+          rad * Math.cos(phi) * Math.cos(th),
+          rad * Math.sin(phi),
+          rad * Math.cos(phi) * Math.sin(th),
+        ]);
+      }
+      merid.push(line);
+    }
+    const toPath = (loop) => {
+      const proj = loop.map(([x, y, z]) => project3D(x, y, z, yaw, tilt));
+      return 'M ' + proj.map(p => `${p.x} ${p.y}`).join(' L ');
+    };
+    extraPaths = [...rings.map(toPath), ...merid.slice(0, 6).map(toPath)];
+    vertices = []; edges = [];
+    // bounding vertices for sizing purposes
+    vertices = [
+      project3D(-rad,0,0,yaw,tilt), project3D(rad,0,0,yaw,tilt),
+      project3D(0,-rad,0,yaw,tilt), project3D(0,rad,0,yaw,tilt),
+      project3D(0,0,-rad,yaw,tilt), project3D(0,0,rad,yaw,tilt),
+    ];
+  }
+
+  const mainPath = edges.length ? edgesToPathData(vertices, edges) : '';
+  const fullPath = [mainPath, ...extraPaths].filter(Boolean).join(' ');
+
+  const allX = vertices.map(v => v.x), allY = vertices.map(v => v.y);
+  const minX = Math.min(...allX, -R * 0.3), maxX = Math.max(...allX, R * 0.3);
+  const minY = Math.min(...allY, -R * 0.3), maxY = Math.max(...allY, R * 0.3);
+
+  return { path: fullPath || 'M 0 0 L 0.01 0.01', bounds: { minX, minY, maxX, maxY } };
+}
+
+/* ---------- Toolbar ---------- */
+
+function ToolButton({ active, onClick, title, children, disabled }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      aria-pressed={!!active}
+      disabled={disabled}
+      className={`tool-btn focus-ring ${active ? 'active' : ''}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ShapeFlyout({ activeShape, onPick, onClose }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('mousedown', onDoc);
+    window.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDoc); window.removeEventListener('keydown', onKey); };
+  }, [onClose]);
+
+  const Group = ({ title, items }) => (
+    <div>
+      <div className="mono text-[10px] tracking-wider text-slate-500 mb-1.5 px-0.5">{title}</div>
+      <div className="grid grid-cols-3 gap-1.5">
+        {items.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => onPick(s.id)}
+            title={s.label}
+            className={`tool-btn focus-ring !w-full !h-11 flex-col gap-0.5 ${activeShape === s.id ? 'active' : ''}`}
+          >
+            <s.icon size={17} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 z-40">
+      <div ref={ref} className="glass-strong modal-in rounded-2xl p-3 w-64 shadow-2xl flex flex-col gap-3">
+        <Group title="2D PRIMITIVES" items={SHAPES_2D} />
+        <div className="h-px bg-slate-700/50" />
+        <Group title="3D WIREFRAME" items={SHAPES_3D} />
+      </div>
+    </div>
+  );
+}
+
+/* Contextual stroke popover: width slider + palette + native colour/hex picker.
+   Rendered directly above the tool that opened it; dismisses on outside click / Esc.
+   `anchorRef` is the tool's wrapper, so clicking the tool itself counts as "inside"
+   (the tool's own onClick toggles it). */
+function StylePopover({ anchorRef, label, color, setColor, width, setWidth, onClose }) {
+  const [hexDraft, setHexDraft] = useState(color);
+  useEffect(() => { setHexDraft(color); }, [color]);
+
+  useEffect(() => {
+    const onDown = (e) => { if (anchorRef.current && !anchorRef.current.contains(e.target)) onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('pointerdown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [anchorRef, onClose]);
+
+  const onHexInput = (v) => {
+    setHexDraft(v);
+    const t = v.trim().startsWith('#') ? v.trim() : '#' + v.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(t)) setColor(t.toLowerCase());
+  };
+
+  return (
+    <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 z-40">
+      <div className="glass-strong modal-in rounded-2xl p-3.5 w-60 shadow-2xl flex flex-col gap-3.5" role="dialog" aria-label={`${label} style`}>
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="mono text-[10px] tracking-wider text-slate-500">STROKE WIDTH</span>
+            <span className="mono text-xs text-slate-300 tabular-nums">{width}px</span>
+          </div>
+          <input
+            type="range" min="2" max="48" value={width}
+            onChange={(e) => setWidth(parseInt(e.target.value, 10))}
+            className="nb-slider w-full"
+            aria-label="Stroke width"
+          />
+        </div>
+        <div className="h-px bg-slate-700/50" />
+        <div>
+          <div className="mono text-[10px] tracking-wider text-slate-500 mb-2">COLOR</div>
+          <div className="grid grid-cols-8 gap-1.5 mb-3">
+            {PRESET_COLORS.map((c) => (
+              <button
+                key={c.hex}
+                onClick={() => setColor(c.hex)}
+                title={c.name}
+                aria-label={c.name}
+                className={`preset-swatch focus-ring ${color.toLowerCase() === c.hex ? 'active' : ''}`}
+                style={{ background: c.hex }}
+              />
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="color" value={color}
+              onChange={(e) => setColor(e.target.value)}
+              className="nb-swatch"
+              aria-label="Custom color"
+              title="Custom color"
+            />
+            <input
+              type="text" value={hexDraft} maxLength={7} spellCheck={false}
+              onChange={(e) => onHexInput(e.target.value)}
+              onBlur={() => setHexDraft(color)}
+              className="mono text-xs text-slate-200 bg-slate-900/60 border border-slate-700/60 rounded-lg px-2.5 h-[30px] flex-1 min-w-0 uppercase focus-ring"
+              aria-label="Hex colour"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DrawToolbar({
+  tool, setTool, pen, setPen, color, setColor, width, setWidth,
+  canUndo, canRedo, onUndo, onRedo, onClear, hasObjects,
+  activeShape, onPickShape,
+}) {
+  const isDrawTool = tool === 'draw';
+  const [shapeMenuOpen, setShapeMenuOpen] = useState(false);
+  // Which tool's stroke popover is open: a pen id, 'shape', or null.
+  const [styleFor, setStyleFor] = useState(null);
+  const closeStyle = useCallback(() => setStyleFor(null), []);
+  const anchorRefs = useRef({});
+  const anchorRef = (id) => (el) => { anchorRefs.current[id] = el; };
+  const refFor = (id) => ({ get current() { return anchorRefs.current[id] || null; } });
+
+  const ActiveShapeIcon = useMemo(() => {
+    const found = [...SHAPES_2D, ...SHAPES_3D].find(sh => sh.id === activeShape);
+    return found ? found.icon : IShapes;
+  }, [activeShape]);
+
+  const PENS = [
+    { id: 'ballpoint', title: 'Ballpoint (B)', icon: IPenBall },
+    { id: 'highlighter', title: 'Highlighter (H)', icon: IHighlighter },
+    { id: 'calligraphy', title: 'Calligraphy (C)', icon: ICalligraphy },
+    { id: 'neon', title: 'Neon glow (N)', icon: INeon },
+  ];
+
+  // Clicking an inactive pen just selects it; clicking the ACTIVE pen opens its style popover.
+  const onPenClick = (id) => {
+    setShapeMenuOpen(false);
+    if (isDrawTool && pen === id) { setStyleFor((v) => (v === id ? null : id)); return; }
+    setStyleFor(null);
+    setTool('draw'); setPen(id);
+  };
+  // Shape: inactive -> shape picker; active -> style popover.
+  const onShapeClick = () => {
+    if (tool === 'shape') { setShapeMenuOpen(false); setStyleFor((v) => (v === 'shape' ? null : 'shape')); return; }
+    setStyleFor(null);
+    setShapeMenuOpen((v) => !v);
+  };
+
+  const InkDot = () => (
+    <span
+      className="absolute bottom-1 right-1 w-2 h-2 rounded-full pointer-events-none"
+      style={{ background: color, boxShadow: '0 0 0 1.5px rgba(15,20,32,0.95)' }}
+    />
+  );
+
+  const popover = (id, label) => styleFor === id && (
+    <StylePopover
+      anchorRef={refFor(id)} label={label}
+      color={color} setColor={setColor} width={width} setWidth={setWidth}
+      onClose={closeStyle}
+    />
+  );
+
+  return (
+    <div className="glass-strong absolute left-1/2 -translate-x-1/2 bottom-20 z-30 rounded-2xl px-3 py-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 max-w-[calc(100%-2.5rem)] shadow-2xl">
+      {/* Mode tools */}
+      <div className="flex items-center gap-1">
+        <ToolButton active={tool === 'select'} onClick={() => { setStyleFor(null); setTool('select'); }} title="Select / Move (V)">
+          <ICursor size={17} />
+        </ToolButton>
+        <ToolButton active={tool === 'eraser'} onClick={() => { setStyleFor(null); setTool('eraser'); }} title="Stroke eraser (E)">
+          <IEraser size={17} />
+        </ToolButton>
+      </div>
+
+      <div className="w-px h-7 bg-slate-700/60" />
+
+      {/* Pens — click the active one for width + colour */}
+      <div className="flex items-center gap-1">
+        {PENS.map((pn) => {
+          const active = isDrawTool && pen === pn.id;
+          return (
+            <div key={pn.id} ref={anchorRef(pn.id)} className="relative">
+              <ToolButton active={active} onClick={() => onPenClick(pn.id)} title={active ? `${pn.title} — click for width & colour` : pn.title}>
+                <pn.icon size={17} />
+              </ToolButton>
+              {active && <InkDot />}
+              {popover(pn.id, pn.title.replace(/ \(.\)$/, ''))}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="w-px h-7 bg-slate-700/60" />
+
+      {/* Shapes */}
+      <div ref={anchorRef('shape')} className="relative">
+        <ToolButton active={tool === 'shape'} onClick={onShapeClick} title={tool === 'shape' ? 'Shapes (S) — click for width & colour' : 'Shapes (S)'}>
+          <ActiveShapeIcon size={17} />
+        </ToolButton>
+        {tool === 'shape' && <InkDot />}
+        {shapeMenuOpen && (
+          <ShapeFlyout
+            activeShape={activeShape}
+            onPick={(id) => { onPickShape(id); setShapeMenuOpen(false); }}
+            onClose={() => setShapeMenuOpen(false)}
+          />
+        )}
+        {popover('shape', 'Shape')}
+      </div>
+
+      <div className="w-px h-7 bg-slate-700/60" />
+
+      {/* History + clear */}
+      <div className="flex items-center gap-1">
+        <ToolButton onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl/Cmd+Z)"><IUndo size={17} /></ToolButton>
+        <ToolButton onClick={onRedo} disabled={!canRedo} title="Redo (Ctrl/Cmd+Y)"><IRedo size={17} /></ToolButton>
+        <ToolButton onClick={onClear} disabled={!hasObjects} title="Clear board"><IEraseAll size={17} /></ToolButton>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Canvas viewport (Fabric.js) ---------- */
+
+function RotateHandle({ x, y, yaw, tilt, onChange }) {
+  const toDeg = (r) => Math.round((r * 180) / Math.PI);
+  const toRad = (d) => (d * Math.PI) / 180;
+  return (
+    <div
+      className="glass-strong absolute z-20 rounded-xl px-3 py-2.5 flex items-center gap-3 shadow-xl"
+      style={{ left: x, top: y, transform: 'translate(-50%, 0)' }}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <IRotate size={14} className="text-cyan-300 flex-shrink-0" />
+      <div className="flex items-center gap-1.5">
+        <span className="mono text-[10px] text-slate-500">YAW</span>
+        <input
+          type="range" min="-180" max="180" value={toDeg(yaw)}
+          onChange={(e) => onChange(toRad(parseInt(e.target.value, 10)), tilt)}
+          className="nb-slider w-20"
+        />
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="mono text-[10px] text-slate-500">TILT</span>
+        <input
+          type="range" min="-90" max="90" value={toDeg(tilt)}
+          onChange={(e) => onChange(yaw, toRad(parseInt(e.target.value, 10)))}
+          className="nb-slider w-20"
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Phase 4: Thumbnail sidebar ---------- */
+
+function ThumbnailSidebar({ slides, activeIndex, onSelect, onReorder, collapsed, onToggle }) {
+  const [dragIdx, setDragIdx] = useState(null);
+
+  return (
+    <div
+      className={`thumb-strip glass border-r border-slate-700/40 flex flex-col flex-shrink-0 overflow-hidden ${collapsed ? 'w-0' : 'w-[168px]'}`}
+    >
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-700/40 flex-shrink-0">
+        <span className="mono text-[10px] tracking-wider text-slate-500">PAGES</span>
+        <span className="mono text-[10px] text-slate-600">{slides.length}</span>
+      </div>
+      <div className="flex-1 overflow-y-auto p-2.5 flex flex-col gap-2.5">
+        {slides.map((s, i) => (
+          <div
+            key={s.id}
+            draggable
+            onDragStart={() => setDragIdx(i)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={() => { if (dragIdx !== null && dragIdx !== i) onReorder(dragIdx, i); setDragIdx(null); }}
+            onDragEnd={() => setDragIdx(null)}
+            onClick={() => onSelect(i)}
+            className={`thumb-card rounded-lg overflow-hidden relative flex-shrink-0 ${i === activeIndex ? 'active' : ''}`}
+            style={{ aspectRatio: '4 / 3', background: s.bg }}
+            title={`Page ${i + 1}`}
+          >
+            {s.thumb ? (
+              <img src={s.thumb} alt={`Page ${i + 1}`} className="w-full h-full object-cover" draggable={false} />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <span className="mono text-[9px] text-white/30">EMPTY</span>
+              </div>
+            )}
+            <span className="absolute bottom-1 right-1.5 mono text-[9px] px-1 rounded bg-black/50 text-white/70">{i + 1}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SidebarToggle({ collapsed, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      title={collapsed ? 'Show pages' : 'Hide pages'}
+      className="absolute left-0 top-1/2 -translate-y-1/2 z-20 glass-strong rounded-r-lg py-3 px-1 text-slate-400 hover:text-cyan-300 transition-colors focus-ring"
+      style={{ borderLeft: 'none' }}
+    >
+      {collapsed ? <IChevronRight size={14} /> : <IChevronLeft size={14} />}
+    </button>
+  );
+}
+
+/* ---------- Phase 4: Bottom navigation dock ---------- */
+
+function DockSwapButton({ onClick, side }) {
+  // Sits on the dock's inner edge (toward the screen centre).
+  return (
+    <div className={`flex items-center gap-1 ${side === 'right' ? 'order-first flex-row-reverse' : 'order-last'}`}>
+      <div className="w-px h-5 bg-slate-700/60 mx-1" />
+      <button className="navdock-btn focus-ring" onClick={onClick} title="Swap dock positions" aria-label="Swap dock positions">
+        <span className="text-[15px] leading-none">{'\u21C4'}</span>
+      </button>
+    </div>
+  );
+}
+
+function NavDock({ index, total, onPrev, onNext, onAddPage, onDeletePage, onSwap, side = 'left' }) {
+  return (
+    <div className="glass-strong rounded-xl px-2 py-1.5 flex items-center gap-1 shadow-xl">
+      <button className="navdock-btn focus-ring" onClick={onPrev} disabled={index === 0} title="Previous page">
+        <IChevronLeft size={16} />
+      </button>
+      <span className="mono text-xs text-slate-300 px-2 tabular-nums select-none">
+        Page {index + 1} of {total}
+      </span>
+      <button className="navdock-btn focus-ring" onClick={onNext} disabled={index === total - 1} title="Next page">
+        <IChevronRight size={16} />
+      </button>
+      <div className="w-px h-5 bg-slate-700/60 mx-1" />
+      <button className="navdock-btn focus-ring" onClick={onAddPage} title="New blank page">
+        <IPlus size={16} />
+      </button>
+      <button className="navdock-btn focus-ring" onClick={onDeletePage} disabled={total <= 1} title="Delete this page">
+        <ITrash2 size={15} />
+      </button>
+      <DockSwapButton onClick={onSwap} side={side} />
+    </div>
+  );
+}
+
+/* ---------- Phase 5: floating widget window shell ---------- */
+
+function useDraggable(initialPos, boundsRef) {
+  const [pos, setPos] = useState(initialPos);
+  const posRef = useRef(initialPos);
+  const dragState = useRef(null);
+
+  const onPointerDown = useCallback((e) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    dragState.current = { startX: e.clientX, startY: e.clientY, origin: posRef.current };
+    e.preventDefault();
+    e.stopPropagation();
+    const onMove = (ev) => {
+      if (!dragState.current) return;
+      const dx = ev.clientX - dragState.current.startX;
+      const dy = ev.clientY - dragState.current.startY;
+      let next = { x: dragState.current.origin.x + dx, y: dragState.current.origin.y + dy };
+      // boundsRef points at the canvas-stage DOM element; read its live size
+      // via getBoundingClientRect() rather than assuming a {width,height} shape.
+      const boundsEl = boundsRef?.current;
+      if (boundsEl) {
+        const rect = boundsEl.getBoundingClientRect();
+        next.x = Math.max(4, Math.min(next.x, rect.width - 60));
+        next.y = Math.max(4, Math.min(next.y, rect.height - 44));
+      }
+      posRef.current = next;
+      setPos(next);
+    };
+    const onUp = () => {
+      dragState.current = null;
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }, [boundsRef]);
+
+  return [pos, onPointerDown];
+}
+
+function WidgetWindow({ title, icon: Icon, initialPos, boundsRef, minimized, onMinimize, onRestore, onClose, width = 260, children }) {
+  const [pos, onHeaderDown] = useDraggable(initialPos, boundsRef);
+
+  if (minimized) {
+    return (
+      <div
+        className="widget-pill absolute rounded-full px-3.5 py-2 flex items-center gap-2 shadow-xl z-30"
+        style={{ left: pos.x, top: pos.y }}
+        onPointerDown={onHeaderDown}
+      >
+        <Icon size={13} className="text-cyan-300 flex-shrink-0" />
+        <span className="text-xs text-slate-200 whitespace-nowrap">{title}</span>
+        <button
+          onClick={onRestore}
+          className="text-slate-500 hover:text-slate-200 transition-colors focus-ring rounded p-0.5 ml-1"
+          title="Restore"
+        >
+          <IMaximize size={11} />
+        </button>
+        <button
+          onClick={onClose}
+          className="text-slate-500 hover:text-red-400 transition-colors focus-ring rounded p-0.5"
+          title="Close"
+        >
+          <IX size={12} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="widget-window absolute rounded-xl overflow-hidden shadow-2xl z-30 flex flex-col"
+      style={{ left: pos.x, top: pos.y, width }}
+    >
+      <div
+        className="widget-header flex items-center gap-2 px-3 py-2 border-b border-zinc-700/50 flex-shrink-0"
+        onPointerDown={onHeaderDown}
+      >
+        <Icon size={13} className="text-cyan-300 flex-shrink-0" />
+        <span className="text-xs font-medium text-slate-200 flex-1 truncate">{title}</span>
+        <button
+          onClick={onMinimize}
+          className="text-slate-500 hover:text-slate-200 transition-colors focus-ring rounded p-1"
+          title="Minimize"
+        >
+          <IMinimize size={13} />
+        </button>
+        <button
+          onClick={onClose}
+          className="text-slate-500 hover:text-red-400 transition-colors focus-ring rounded p-1"
+          title="Close"
+        >
+          <IX size={13} />
+        </button>
+      </div>
+      <div className="p-3.5">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Phase 5: Widget 1 — Stopwatch & Timer ---------- */
+
+function formatStopwatch(ms) {
+  const totalCs = Math.floor(ms / 10); // centiseconds
+  const cs = totalCs % 100;
+  const totalSec = Math.floor(totalCs / 100);
+  const s = totalSec % 60;
+  const m = Math.floor(totalSec / 60);
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
+}
+function formatCountdown(ms) {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const s = total % 60;
+  const m = Math.floor(total / 60);
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function TimerWidget() {
+  const [mode, setMode] = useState('stopwatch'); // 'stopwatch' | 'countdown'
+
+  // Stopwatch state
+  const [swElapsed, setSwElapsed] = useState(0);
+  const [swRunning, setSwRunning] = useState(false);
+  const [laps, setLaps] = useState([]);
+  const swStartRef = useRef(0);
+  const swBaseRef = useRef(0);
+
+  // Countdown state
+  const [cdDurationMs, setCdDurationMs] = useState(5 * 60 * 1000);
+  const [cdRemaining, setCdRemaining] = useState(5 * 60 * 1000);
+  const [cdRunning, setCdRunning] = useState(false);
+  const [cdFinished, setCdFinished] = useState(false);
+  const [customInput, setCustomInput] = useState('');
+  const cdEndRef = useRef(0);
+
+  const rafRef = useRef(null);
+
+  useEffect(() => {
+    const tick = () => {
+      const now = performance.now();
+      if (swRunning) setSwElapsed(swBaseRef.current + (now - swStartRef.current));
+      if (cdRunning) {
+        const remaining = cdEndRef.current - now;
+        if (remaining <= 0) {
+          setCdRemaining(0);
+          setCdRunning(false);
+          setCdFinished(true);
+          playChime();
+        } else {
+          setCdRemaining(remaining);
+        }
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [swRunning, cdRunning]);
+
+  const startStopwatch = () => { swStartRef.current = performance.now(); setSwRunning(true); };
+  const pauseStopwatch = () => { swBaseRef.current = swElapsed; setSwRunning(false); };
+  const resetStopwatch = () => { setSwRunning(false); setSwElapsed(0); swBaseRef.current = 0; setLaps([]); };
+  const addLap = () => setLaps((prev) => [swElapsed, ...prev]);
+
+  const startCountdown = (ms) => {
+    const dur = ms !== undefined ? ms : cdRemaining > 0 ? cdRemaining : cdDurationMs;
+    cdEndRef.current = performance.now() + dur;
+    setCdRemaining(dur);
+    setCdRunning(true);
+    setCdFinished(false);
+  };
+  const pauseCountdown = () => setCdRunning(false);
+  const resetCountdown = () => { setCdRunning(false); setCdFinished(false); setCdRemaining(cdDurationMs); };
+  const addPreset = (minutes) => {
+    const addMs = minutes * 60 * 1000;
+    const base = cdRunning ? cdEndRef.current - performance.now() : cdRemaining;
+    const next = Math.max(0, base) + addMs;
+    setCdDurationMs(next);
+    setCdRemaining(next);
+    if (cdRunning) cdEndRef.current = performance.now() + next;
+    setCdFinished(false);
+  };
+  const applyCustom = () => {
+    const m = parseFloat(customInput);
+    if (!Number.isFinite(m) || m <= 0) return;
+    const ms = m * 60 * 1000;
+    setCdDurationMs(ms);
+    setCdRemaining(ms);
+    setCdFinished(false);
+    setCustomInput('');
+  };
+
+  const progress = cdDurationMs > 0 ? Math.max(0, Math.min(1, cdRemaining / cdDurationMs)) : 0;
+  const R = 42, CIRC = 2 * Math.PI * R;
+
+  return (
+    <div className="w-56">
+      <div className="flex rounded-lg bg-slate-950/50 p-0.5 mb-3">
+        {['stopwatch', 'countdown'].map((m) => (
+          <button
+            key={m}
+            onClick={() => setMode(m)}
+            className={`flex-1 text-[11px] py-1.5 rounded-md transition-colors ${mode === m ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-500 hover:text-slate-300'}`}
+          >
+            {m === 'stopwatch' ? 'Stopwatch' : 'Timer'}
+          </button>
+        ))}
+      </div>
+
+      {mode === 'stopwatch' ? (
+        <div>
+          <div className="mono text-3xl text-center text-slate-100 tabular-nums py-3">{formatStopwatch(swElapsed)}</div>
+          <div className="flex gap-2 mb-2">
+            {!swRunning ? (
+              <button onClick={startStopwatch} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-500/20 text-emerald-300 text-xs hover:bg-emerald-500/30 transition-colors focus-ring">
+                <IPlay size={12} /> Start
+              </button>
+            ) : (
+              <button onClick={pauseStopwatch} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-amber-500/20 text-amber-300 text-xs hover:bg-amber-500/30 transition-colors focus-ring">
+                <IPause size={12} /> Pause
+              </button>
+            )}
+            <button onClick={addLap} disabled={!swRunning} className="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-300 text-xs hover:bg-slate-700/60 disabled:opacity-30 transition-colors focus-ring">
+              <IFlag size={12} />
+            </button>
+            <button onClick={resetStopwatch} className="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-300 text-xs hover:bg-slate-700/60 transition-colors focus-ring">
+              <IRotateCcw size={12} />
+            </button>
+          </div>
+          {laps.length > 0 && (
+            <div className="max-h-24 overflow-y-auto mono text-[11px] text-slate-400 space-y-0.5 border-t border-slate-800 pt-1.5">
+              {laps.map((l, i) => (
+                <div key={i} className="flex justify-between px-1">
+                  <span className="text-slate-600">#{laps.length - i}</span>
+                  <span>{formatStopwatch(l)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div>
+          <div className="relative flex items-center justify-center py-2">
+            <svg width="100" height="100" viewBox="0 0 100 100" className="-rotate-90">
+              <circle cx="50" cy="50" r={R} fill="none" stroke="rgba(148,163,184,0.15)" strokeWidth="6" />
+              <circle
+                cx="50" cy="50" r={R} fill="none"
+                stroke={cdFinished ? '#f43f5e' : '#38bdf8'}
+                strokeWidth="6" strokeLinecap="round"
+                strokeDasharray={CIRC}
+                strokeDashoffset={CIRC * (1 - progress)}
+                style={{ transition: 'stroke-dashoffset 0.2s linear' }}
+              />
+            </svg>
+            <span className={`absolute mono text-lg tabular-nums ${cdFinished ? 'text-rose-400' : 'text-slate-100'}`}>
+              {formatCountdown(cdRemaining)}
+            </span>
+          </div>
+          <div className="flex gap-1.5 mb-2">
+            {[1, 5, 15].map((m) => (
+              <button key={m} onClick={() => addPreset(m)} className="flex-1 py-1.5 rounded-lg bg-slate-800/60 text-slate-300 text-[11px] hover:bg-slate-700/60 transition-colors focus-ring">
+                +{m}m
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1.5 mb-2">
+            <input
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value.replace(/[^0-9.]/g, ''))}
+              onKeyDown={(e) => e.key === 'Enter' && applyCustom()}
+              placeholder="Custom minutes"
+              className="flex-1 min-w-0 bg-slate-950/60 border border-slate-700/60 rounded-lg px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-cyan-500/50"
+            />
+            <button onClick={applyCustom} className="px-2.5 py-1.5 rounded-lg bg-slate-800/60 text-slate-300 text-xs hover:bg-slate-700/60 transition-colors focus-ring">Set</button>
+          </div>
+          <div className="flex gap-2">
+            {!cdRunning ? (
+              <button onClick={() => startCountdown()} disabled={cdRemaining <= 0} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-500/20 text-emerald-300 text-xs hover:bg-emerald-500/30 disabled:opacity-30 transition-colors focus-ring">
+                <IPlay size={12} /> Start
+              </button>
+            ) : (
+              <button onClick={pauseCountdown} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-amber-500/20 text-amber-300 text-xs hover:bg-amber-500/30 transition-colors focus-ring">
+                <IPause size={12} /> Pause
+              </button>
+            )}
+            <button onClick={resetCountdown} className="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-300 text-xs hover:bg-slate-700/60 transition-colors focus-ring">
+              <IRotateCcw size={12} />
+            </button>
+          </div>
+          {cdFinished && <div className="text-center text-rose-400 text-xs mt-2 animate-pulse">Time's up!</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Phase 5: Widget 2 — Scientific Calculator ---------- */
+
+function CalculatorWidget() {
+  const [expr, setExpr] = useState('');
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(false);
+
+  const lastCharIsOp = () => /[+\-*/%^]$/.test(expr);
+  const lastCharIsOpenParen = () => /\($/.test(expr);
+
+  const append = (token) => {
+    setError(false);
+    setExpr((prev) => {
+      if (/[+\-*/%^]/.test(token) && lastCharIsOp()) return prev.slice(0, -1) + token;
+      return prev + token;
+    });
+  };
+
+  const applyFn = (fn) => {
+    setError(false);
+    try {
+      const base = expr.length ? safeEvalExpr(expr) : 0;
+      let val;
+      switch (fn) {
+        case 'sin': val = Math.sin(base * Math.PI / 180); break;
+        case 'cos': val = Math.cos(base * Math.PI / 180); break;
+        case 'tan': val = Math.tan(base * Math.PI / 180); break;
+        case 'sqrt': if (base < 0) throw new Error('neg sqrt'); val = Math.sqrt(base); break;
+        case 'sq': val = base * base; break;
+        case 'ln': if (base <= 0) throw new Error('bad ln'); val = Math.log(base); break;
+        case 'log': if (base <= 0) throw new Error('bad log'); val = Math.log10(base); break;
+        default: return;
+      }
+      val = Math.round(val * 1e10) / 1e10;
+      setExpr(String(val));
+      setResult(null);
+    } catch (e) {
+      setError(true);
+    }
+  };
+
+  const backspace = () => setExpr((prev) => prev.slice(0, -1));
+  const clearAll = () => { setExpr(''); setResult(null); setError(false); };
+  const evaluate = () => {
+    try {
+      if (!expr.length) return;
+      const val = safeEvalExpr(expr);
+      const rounded = Math.round(val * 1e10) / 1e10;
+      setResult(rounded);
+      setError(false);
+    } catch (e) {
+      setError(true);
+      setResult(null);
+    }
+  };
+
+  const onKeyDown = (e) => {
+    if (/[0-9.+\-*/%^()]/.test(e.key)) { append(e.key); e.preventDefault(); }
+    else if (e.key === 'Enter' || e.key === '=') { evaluate(); e.preventDefault(); }
+    else if (e.key === 'Backspace') { backspace(); e.preventDefault(); }
+    else if (e.key === 'Escape') { clearAll(); e.preventDefault(); }
+  };
+
+  const Key = ({ label, onClick, className = '', span = 1 }) => (
+    <button
+      onClick={onClick}
+      className={`calc-key py-2.5 focus-ring ${className}`}
+      style={{ gridColumn: span > 1 ? `span ${span}` : undefined }}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="w-64" tabIndex={0} onKeyDown={onKeyDown}>
+      <div className="bg-slate-950/60 rounded-lg px-3 py-3 mb-3 text-right border border-slate-800/60">
+        <div className="mono text-xs text-slate-500 h-4 truncate">{expr || '0'}</div>
+        <div className={`mono text-2xl truncate ${error ? 'text-rose-400' : 'text-slate-100'}`}>
+          {error ? 'Error' : result !== null ? result : '\u00A0'}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-1.5 mb-1.5">
+        <Key label="sin" className="fn" onClick={() => applyFn('sin')} />
+        <Key label="cos" className="fn" onClick={() => applyFn('cos')} />
+        <Key label="tan" className="fn" onClick={() => applyFn('tan')} />
+        <Key label="AC" className="op" onClick={clearAll} />
+
+        <Key label="ln" className="fn" onClick={() => applyFn('ln')} />
+        <Key label="log" className="fn" onClick={() => applyFn('log')} />
+        <Key label="√" className="fn" onClick={() => applyFn('sqrt')} />
+        <Key label="⌫" className="op" onClick={backspace} />
+
+        <Key label="x²" className="fn" onClick={() => applyFn('sq')} />
+        <Key label="(" onClick={() => append('(')} />
+        <Key label=")" onClick={() => append(')')} />
+        <Key label="÷" className="op" onClick={() => append('/')} />
+
+        <Key label="7" onClick={() => append('7')} />
+        <Key label="8" onClick={() => append('8')} />
+        <Key label="9" onClick={() => append('9')} />
+        <Key label="×" className="op" onClick={() => append('*')} />
+
+        <Key label="4" onClick={() => append('4')} />
+        <Key label="5" onClick={() => append('5')} />
+        <Key label="6" onClick={() => append('6')} />
+        <Key label="−" className="op" onClick={() => append('-')} />
+
+        <Key label="1" onClick={() => append('1')} />
+        <Key label="2" onClick={() => append('2')} />
+        <Key label="3" onClick={() => append('3')} />
+        <Key label="+" className="op" onClick={() => append('+')} />
+
+        <Key label="π" className="fn" onClick={() => append(String(Math.PI))} />
+        <Key label="0" onClick={() => append('0')} />
+        <Key label="." onClick={() => append('.')} />
+        <Key label="=" className="accent" onClick={evaluate} />
+      </div>
+      <div className="grid grid-cols-2 gap-1.5">
+        <Key label="%" className="fn" onClick={() => append('%')} />
+        <Key label="±" className="fn" onClick={() => setExpr((p) => (p.startsWith('-') ? p.slice(1) : '-' + p))} />
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Phase 5: Widget 3 — Laser Pointer trail overlay ---------- */
+
+function LaserPointerOverlay({ containerRef, color = '#38bdf8' }) {
+  const canvasRef = useRef(null);
+  const pointsRef = useRef([]); // {x, y, t}
+  const rafRef = useRef(null);
+  const activeRef = useRef(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+
+    const resize = () => {
+      canvas.width = container.clientWidth * dpr;
+      canvas.height = container.clientHeight * dpr;
+      canvas.style.width = container.clientWidth + 'px';
+      canvas.style.height = container.clientHeight + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(container);
+
+    const LIFETIME = 800;
+    const draw = () => {
+      const now = performance.now();
+      pointsRef.current = pointsRef.current.filter((p) => now - p.t < LIFETIME);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const pts = pointsRef.current;
+      for (let i = 1; i < pts.length; i++) {
+        const p0 = pts[i - 1], p1 = pts[i];
+        const age = now - p1.t;
+        const alpha = Math.max(0, 1 - age / LIFETIME);
+        if (alpha <= 0) continue;
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p1.x, p1.y);
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = alpha * 0.8;
+        ctx.lineWidth = 3 + alpha * 4;
+        ctx.lineCap = 'round';
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 12 * alpha;
+        ctx.stroke();
+      }
+      // head dot
+      if (pts.length) {
+        const head = pts[pts.length - 1];
+        const age = now - head.t;
+        const alpha = Math.max(0, 1 - age / LIFETIME);
+        ctx.beginPath();
+        ctx.arc(head.x, head.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.globalAlpha = Math.min(1, alpha + 0.3);
+        ctx.shadowBlur = 16;
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      rafRef.current = requestAnimationFrame(draw);
+    };
+    rafRef.current = requestAnimationFrame(draw);
+
+    const rect = () => container.getBoundingClientRect();
+    const addPoint = (clientX, clientY) => {
+      const r = rect();
+      pointsRef.current.push({ x: clientX - r.left, y: clientY - r.top, t: performance.now() });
+      if (pointsRef.current.length > 200) pointsRef.current.shift();
+    };
+    // Listens on its own canvas (it sits above Fabric's canvas while active),
+    // so drawing a laser trail never reaches Fabric and can't create objects
+    // or touch the undo/redo stack.
+    const onDown = (e) => { activeRef.current = true; addPoint(e.clientX, e.clientY); };
+    const onMove = (e) => { if (activeRef.current) addPoint(e.clientX, e.clientY); };
+    const onUp = () => { activeRef.current = false; };
+
+    canvas.addEventListener('pointerdown', onDown);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      ro.disconnect();
+      canvas.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, [containerRef, color]);
+
+  return <canvas ref={canvasRef} className="laser-trail-canvas" />;
+}
+
+/* ---------- Phase 5: Widget dock ---------- */
+
+function WidgetDock({ open, onToggle, active, onLaunch, dropUp, dropSide }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) onToggle(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open, onToggle]);
+
+  const items = [
+    { id: 'timer', label: 'Timer / Stopwatch', icon: ITimerIcon },
+    { id: 'calculator', label: 'Calculator', icon: ICalcIcon },
+    { id: 'laser', label: 'Laser Pointer', icon: ILaserIcon },
+  ];
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => onToggle((v) => !v)}
+        title="Tools / Widgets"
+        className={`flex items-center gap-1.5 text-xs mono px-2.5 py-1.5 rounded-md border transition-colors focus-ring ${
+          open ? 'text-cyan-300 border-cyan-500/40 bg-cyan-500/10' : 'text-slate-400 border-slate-700/60 hover:border-cyan-500/40 hover:text-cyan-300'
+        }`}
+      >
+        <IWidgets size={13} /> Tools
+      </button>
+      {open && (
+        <div
+          ref={ref}
+          className={`glass-strong modal-in absolute rounded-xl p-1.5 w-56 shadow-2xl z-40 ${
+            dropUp ? 'bottom-full mb-2' : 'top-full mt-2'
+          } ${dropSide === 'right' ? 'right-0' : 'left-0'}`}
+        >
+          {items.map((it) => (
+            <button
+              key={it.id}
+              onClick={() => onLaunch(it.id)}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-slate-200 hover:bg-slate-800/60 transition-colors focus-ring"
+            >
+              <it.icon size={15} className={active[it.id] ? 'text-cyan-300' : 'text-slate-500'} />
+              {it.label}
+              {active[it.id] && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Bottom action dock: Import / Export / Tools, swappable to the opposite corner ---------- */
+
+function ActionDock({ onImportPdf, importing, onExportPdf, exporting, widgetDockOpen, setWidgetDockOpen, activeWidgets, onLaunchWidget, onSwap, side }) {
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const pdfInputRef = useRef(null);
+
+  return (
+    <div className="glass-strong rounded-xl px-2 py-1.5 flex items-center gap-1.5 shadow-xl">
+      <button
+        onClick={() => pdfInputRef.current?.click()}
+        disabled={importing}
+        title="Import PDF"
+        className="flex items-center gap-1.5 text-xs mono text-slate-400 hover:text-cyan-300 transition-colors focus-ring rounded-md px-2.5 py-1.5 border border-slate-700/60 hover:border-cyan-500/40 disabled:opacity-50"
+      >
+        {importing ? <ILoader size={13} /> : <IUpload size={13} />}
+        {importing ? 'Importing…' : 'Import PDF'}
+      </button>
+      <input ref={pdfInputRef} type="file" accept="application/pdf" className="hidden"
+        onChange={(e) => { onImportPdf(e.target.files?.[0]); e.target.value = ''; }} />
+
+      <div className="relative">
+        <button
+          onClick={() => setExportMenuOpen((v) => !v)}
+          title="Export"
+          className="flex items-center gap-1.5 text-xs mono text-slate-400 hover:text-cyan-300 transition-colors focus-ring rounded-md px-2.5 py-1.5 border border-slate-700/60 hover:border-cyan-500/40"
+        >
+          <IDownload size={13} /> Export <IChevronDown size={11} />
+        </button>
+        {exportMenuOpen && (
+          <div className={`absolute bottom-full mb-2 ${side === 'right' ? 'right-0' : 'left-0'}`}>
+            <ExportMenu exporting={exporting} onExportPdf={() => { onExportPdf(); setExportMenuOpen(false); }} onClose={() => setExportMenuOpen(false)} />
+          </div>
+        )}
+      </div>
+
+      <WidgetDock open={widgetDockOpen} onToggle={setWidgetDockOpen} active={activeWidgets} onLaunch={onLaunchWidget} dropUp dropSide={side} />
+      <DockSwapButton onClick={onSwap} side={side} />
+    </div>
+  );
+}
+
+function PersistentClock() {
+  return (
+    <div className="fixed top-3 right-3 z-40 pointer-events-none">
+      <LiveClock />
+    </div>
+  );
+}
+
+function TopBarCollapseTab({ hidden, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      title={hidden ? 'Show top bar' : 'Hide top bar (presentation mode)'}
+      className="glass-strong absolute left-1/2 -translate-x-1/2 top-0 z-40 rounded-b-lg px-3 py-1 text-slate-400 hover:text-cyan-300 transition-colors focus-ring border-t-0"
+    >
+      {hidden ? <IChevronDownSmall size={13} /> : <IChevronUpSmall size={13} />}
+    </button>
+  );
+}
+
+const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, ref) {
+  const wrapRef = useRef(null);
+  const canvasElRef = useRef(null);
+  const fabricRef = useRef(null);
+  const bgImageObjRef = useRef(null); // the fabric.Image used as a locked PDF-page background, if any
+  const pageRef = useRef(null);       // {w,h} of the PDF page in page-space px, or null on blank slides
+  const frameRef = useRef({ ...PAGE_SPACE }); // current page->stage frame {scale, offsetX, offsetY}
+  const loadTokenRef = useRef(0);     // guards against out-of-order async slide loads
+
+  const [tool, setTool] = useState('draw');
+  const [pen, setPen] = useState('ballpoint');
+  const [color, setColor] = useState('#ffffff');
+  const [width, setWidth] = useState(6);
+  const [activeShape, setActiveShape] = useState('rect');
+
+  const [historyState, setHistoryState] = useState({ canUndo: false, canRedo: false });
+  const [hasObjects, setHasObjects] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [rotateHandle, setRotateHandle] = useState(null); // {x,y,yaw,tilt} screen-space, for selected 3D object
+
+  /* Mutable refs so Fabric event handlers (bound once) always read fresh values */
+  const toolRef = useRef(tool);
+  const penRef = useRef(pen);
+  const colorRef = useRef(color);
+  const widthRef = useRef(width);
+  const activeShapeRef = useRef(activeShape);
+  useEffect(() => { toolRef.current = tool; }, [tool]);
+  useEffect(() => { penRef.current = pen; }, [pen]);
+  useEffect(() => { colorRef.current = color; }, [color]);
+  useEffect(() => { widthRef.current = width; }, [width]);
+  useEffect(() => { activeShapeRef.current = activeShape; }, [activeShape]);
+
+  const pickShape = useCallback((id) => {
+    setActiveShape(id);
+    setTool('shape');
+  }, []);
+
+  /* History: JSON snapshots of canvas objects */
+  const historyRef = useRef({ stack: [], index: -1, locked: false });
+
+  const syncHistoryUI = useCallback(() => {
+    const h = historyRef.current;
+    setHistoryState({ canUndo: h.index > 0, canRedo: h.index < h.stack.length - 1 });
+    const c = fabricRef.current;
+    setHasObjects(!!c && c.getObjects().length > 0);
+  }, []);
+
+  const pushHistory = useCallback(() => {
+    const c = fabricRef.current;
+    const h = historyRef.current;
+    if (!c || h.locked) return;
+    // Snapshots exclude the locked page image (tracked separately) and record the
+    // frame they were taken in, so undo/redo stays aligned after a resize.
+    const j = c.toJSON(['nbKind', 'nb3D', 'nbYaw', 'nbTilt']);
+    j.objects = (j.objects || []).filter((o) => o.nbKind !== 'bgImage');
+    j.nbFrame = pageRef.current ? { ...frameRef.current } : null;
+    const snap = JSON.stringify(j);
+    h.stack = h.stack.slice(0, h.index + 1);
+    h.stack.push(snap);
+    if (h.stack.length > 100) h.stack.shift();
+    h.index = h.stack.length - 1;
+    syncHistoryUI();
+  }, [syncHistoryUI]);
+
+  const historyDebounceRef = useRef(null);
+  const pushHistoryDebounced = useCallback(() => {
+    if (historyDebounceRef.current) clearTimeout(historyDebounceRef.current);
+    historyDebounceRef.current = setTimeout(() => pushHistory(), 400);
+  }, [pushHistory]);
+
+  const restoreHistory = useCallback((idx) => {
+    const c = fabricRef.current;
+    const h = historyRef.current;
+    if (!c || idx < 0 || idx >= h.stack.length) return;
+    h.locked = true;
+    const snap = JSON.parse(h.stack[idx]);
+    const bgImg = bgImageObjRef.current;
+    c.loadFromJSON(snap, () => {
+      if (bgImg) { c.add(bgImg); c.sendToBack(bgImg); }
+      if (pageRef.current && snap.nbFrame) {
+        reframeObjects(c.getObjects().filter((o) => o.nbKind !== 'bgImage'), snap.nbFrame, frameRef.current);
+      }
+      c.renderAll();
+      h.index = idx;
+      h.locked = false;
+      syncHistoryUI();
+    });
+  }, [syncHistoryUI]);
+
+  const undo = useCallback(() => {
+    const h = historyRef.current;
+    if (h.index > 0) restoreHistory(h.index - 1);
+  }, [restoreHistory]);
+
+  const redo = useCallback(() => {
+    const h = historyRef.current;
+    if (h.index < h.stack.length - 1) restoreHistory(h.index + 1);
+  }, [restoreHistory]);
+
+  /* ---- Init Fabric ---- */
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    const el = canvasElRef.current;
+    if (!wrap || !el || !window.fabric) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    fabric.Object.prototype.transparentCorners = false;
+    fabric.Object.prototype.cornerColor = '#38bdf8';
+    fabric.Object.prototype.cornerStrokeColor = '#0f1420';
+    fabric.Object.prototype.borderColor = '#38bdf8';
+    fabric.Object.prototype.cornerStyle = 'circle';
+    fabric.Object.prototype.cornerSize = 10;
+    fabric.Object.prototype.borderScaleFactor = 1.5;
+    fabric.Object.prototype.padding = 4;
+
+    const canvas = new fabric.Canvas(el, {
+      width: wrap.clientWidth,
+      height: wrap.clientHeight,
+      backgroundColor: initialBg || '#0d3824',
+      selection: false,
+      preserveObjectStacking: true,
+      enableRetinaScaling: true,
+      stopContextMenu: true,
+      fireRightClick: false,
+      perPixelTargetFind: true,
+      targetFindTolerance: 8,
+    });
+    fabricRef.current = canvas;
+    // Fabric applies retina scaling using window.devicePixelRatio when enabled.
+    void dpr;
+
+    historyRef.current = { stack: [], index: -1, locked: false };
+    pushHistory(); // initial empty state
+
+    /* ---- Custom drawing state ---- */
+    let drawing = false;
+    let pts = [];
+    let widths = [];
+    let lastT = 0;
+    let lastPt = null;
+    let smoothedW = widthRef.current;
+    let livePath = null;
+    let glowRaf = null;
+
+    const stopGlowPulse = () => { if (glowRaf) { cancelAnimationFrame(glowRaf); glowRaf = null; } };
+
+    /* ---- Shape drag-to-size state ---- */
+    let shapeStart = null;
+    let liveShape = null;
+
+    const commonShapeProps = () => ({
+      fill: 'transparent',
+      stroke: colorRef.current,
+      strokeWidth: widthRef.current,
+      strokeUniform: true,
+      selectable: false,
+      evented: false,
+      objectCaching: false,
+    });
+
+    const makeArrowHeadPath = (fromX, fromY, toX, toY, size) => {
+      const ang = Math.atan2(toY - fromY, toX - fromX);
+      const a1 = ang + Math.PI * 0.82, a2 = ang - Math.PI * 0.82;
+      return `M ${toX + Math.cos(a1) * size} ${toY + Math.sin(a1) * size} L ${toX} ${toY} L ${toX + Math.cos(a2) * size} ${toY + Math.sin(a2) * size}`;
+    };
+
+    const buildStarPoints = (cx, cy, outerR, innerR) => {
+      const pts = [];
+      for (let i = 0; i < 10; i++) {
+        const r = i % 2 === 0 ? outerR : innerR;
+        const ang = -Math.PI / 2 + (i * Math.PI) / 5;
+        pts.push({ x: cx + r * Math.cos(ang), y: cy + r * Math.sin(ang) });
+      }
+      return pts;
+    };
+
+    /* Create (or update, if `existing` passed) a shape object spanning the drag rect. */
+    const makeShapeFromDrag = (kind, x0, y0, x1, y1) => {
+      const left = Math.min(x0, x1), top = Math.min(y0, y1);
+      const w = Math.max(1, Math.abs(x1 - x0)), h = Math.max(1, Math.abs(y1 - y0));
+      const cx = left + w / 2, cy = top + h / 2;
+
+      if (kind === 'line') {
+        return new fabric.Line([x0, y0, x1, y1], { ...commonShapeProps(), nbKind: 'line' });
+      }
+      if (kind === 'arrow2') {
+        const size = Math.max(10, widthRef.current * 2.2);
+        const d = `M ${x0} ${y0} L ${x1} ${y1} ${makeArrowHeadPath(x0, y0, x1, y1, size).slice(1)} `
+          + `M ${x1} ${y1} L ${x0} ${y0} ${makeArrowHeadPath(x1, y1, x0, y0, size).slice(1)}`;
+        return new fabric.Path(d, { ...commonShapeProps(), fill: null, strokeLineJoin: 'round', strokeLineCap: 'round', nbKind: 'arrow2' });
+      }
+      if (kind === 'rect') {
+        return new fabric.Rect({ ...commonShapeProps(), left, top, width: w, height: h, nbKind: 'rect' });
+      }
+      if (kind === 'rectRound') {
+        return new fabric.Rect({ ...commonShapeProps(), left, top, width: w, height: h, rx: 12, ry: 12, nbKind: 'rectRound' });
+      }
+      if (kind === 'ellipse') {
+        return new fabric.Ellipse({ ...commonShapeProps(), left, top, rx: w / 2, ry: h / 2, nbKind: 'ellipse' });
+      }
+      if (kind === 'star') {
+        const outerR = Math.max(w, h) / 2;
+        const pts = buildStarPoints(0, 0, outerR, outerR * 0.42);
+        const d = 'M ' + pts.map(p => `${p.x} ${p.y}`).join(' L ') + ' Z';
+        return new fabric.Path(d, {
+          ...commonShapeProps(), nbKind: 'star',
+          left: cx, top: cy, originX: 'center', originY: 'center',
+        });
+      }
+      if (SHAPE_3D_IDS.has(kind)) {
+        const yaw = Math.PI / 6, tilt = Math.PI / 7.5;
+        const geo = build3DGeometry(kind, yaw, tilt);
+        const bw = geo.bounds.maxX - geo.bounds.minX, bh = geo.bounds.maxY - geo.bounds.minY;
+        const scale = Math.max(0.2, Math.min(w / bw, h / bh)) || 1;
+        const path = new fabric.Path(geo.path, {
+          fill: (kind === 'sphere') ? 'transparent' : 'transparent',
+          stroke: colorRef.current,
+          strokeWidth: Math.max(1, widthRef.current * 0.6),
+          strokeUniform: true,
+          objectCaching: false,
+          strokeLineJoin: 'round',
+          strokeLineCap: 'round',
+        });
+        path.set({
+          left: cx, top: cy, originX: 'center', originY: 'center',
+          scaleX: scale, scaleY: scale,
+          nbKind: kind, nb3D: true, nbYaw: yaw, nbTilt: tilt,
+          selectable: false, evented: false,
+        });
+        return path;
+      }
+      return null;
+    };
+
+    /* Recompute a 3D wireframe's path in place for a new yaw/tilt (used by rotation slider). */
+    const rebuild3DPath = (obj, yaw, tilt) => {
+      const geo = build3DGeometry(obj.nbKind, yaw, tilt);
+      const center = obj.getCenterPoint();
+      const prevScaleX = obj.scaleX, prevScaleY = obj.scaleY, prevAngle = obj.angle;
+      obj._setPath(fabric.util.parsePath(geo.path), {});
+      obj.set({
+        left: center.x, top: center.y, originX: 'center', originY: 'center',
+        scaleX: prevScaleX, scaleY: prevScaleY, angle: prevAngle,
+        nbYaw: yaw, nbTilt: tilt,
+      });
+      obj.setCoords();
+    };
+    rebuild3DPathRef.current = rebuild3DPath;
+
+    const makeLivePath = () => {
+      const p = penRef.current;
+      const col = colorRef.current;
+      const w = widthRef.current;
+      const d = pointsToSmoothPath(pts);
+      const common = {
+        fill: null, objectCaching: false, selectable: false, evented: false,
+        strokeLineCap: 'round', strokeLineJoin: 'round',
+      };
+      if (p === 'ballpoint') {
+        return new fabric.Path(d, { ...common, stroke: col, strokeWidth: w, nbKind: 'ballpoint' });
+      }
+      if (p === 'highlighter') {
+        // 'multiply' can only darken, so it makes light highlighter colours
+        // vanish on dark boards. Use it on light boards (true marker feel,
+        // ink shows through) and plain alpha blending on dark boards.
+        const light = isLightColor(fabricRef.current?.backgroundColor || '#000');
+        return new fabric.Path(d, {
+          ...common,
+          stroke: hexToRgba(col, 0.35),
+          strokeWidth: Math.max(w, 10) * 1.6,
+          strokeLineCap: 'butt',
+          strokeLineJoin: 'bevel',
+          globalCompositeOperation: light ? 'multiply' : 'source-over',
+          nbKind: 'highlighter',
+        });
+      }
+      if (p === 'neon') {
+        return new fabric.Path(d, {
+          ...common,
+          stroke: col,
+          strokeWidth: w,
+          shadow: new fabric.Shadow({ color: col, blur: 14, offsetX: 0, offsetY: 0 }),
+          nbKind: 'neon',
+        });
+      }
+      // calligraphy — filled variable-width outline
+      const vd = buildVariableWidthPath(pts, widths);
+      return new fabric.Path(vd, {
+        ...common,
+        fill: col, stroke: col, strokeWidth: 0.5,
+        nbKind: 'calligraphy',
+      });
+    };
+
+    const redrawLive = () => {
+      if (livePath) canvas.remove(livePath);
+      livePath = makeLivePath();
+      canvas.add(livePath);
+      canvas.requestRenderAll();
+    };
+
+    const startNeonPulse = (pathObj) => {
+      // brief pulsing glow after stroke finishes: animate shadow blur 14 -> 26 -> 14 once
+      if (!pathObj || !pathObj.shadow) return;
+      const t0 = performance.now();
+      const dur = 650;
+      const tick = (t) => {
+        const k = Math.min(1, (t - t0) / dur);
+        const blur = 14 + Math.sin(k * Math.PI) * 14;
+        pathObj.shadow.blur = blur;
+        canvas.requestRenderAll();
+        if (k < 1) glowRaf = requestAnimationFrame(tick);
+        else { pathObj.shadow.blur = 14; canvas.requestRenderAll(); glowRaf = null; }
+      };
+      glowRaf = requestAnimationFrame(tick);
+    };
+
+    const eraseAt = (pointer) => {
+      const objs = canvas.getObjects();
+      let hit = null;
+      for (let i = objs.length - 1; i >= 0; i--) {
+        const o = objs[i];
+        if (!o.visible || o === livePath) continue;
+        // The locked PDF/background image is never erasable, regardless of
+        // hit-testing below — scrubbing the eraser over a PDF page must
+        // never remove the page itself.
+        if (o.nbKind === 'bgImage' || o === bgImageObjRef.current) continue;
+        // Cheap bounding-box reject first, then a pixel-accurate check so
+        // erasing only triggers when the pointer is actually on the stroke.
+        if (!o.containsPoint(pointer)) continue;
+        if (canvas.isTargetTransparent(o, pointer.x, pointer.y)) continue;
+        hit = o;
+        break;
+      }
+      if (hit) {
+        canvas.remove(hit);
+        canvas.requestRenderAll();
+        return true;
+      }
+      return false;
+    };
+
+    let erasedDuringGesture = false;
+    let erasing = false;
+
+    canvas.on('mouse:down', (opt) => {
+      const e = opt.e;
+      if (e.button !== undefined && e.button !== 0) return;
+      const t = toolRef.current;
+      const pointer = canvas.getPointer(e);
+
+      if (t === 'draw') {
+        drawing = true;
+        pts = [{ x: pointer.x, y: pointer.y }];
+        widths = [widthRef.current];
+        lastT = performance.now();
+        lastPt = pointer;
+        smoothedW = widthRef.current;
+        redrawLive();
+      } else if (t === 'eraser') {
+        erasing = true;
+        erasedDuringGesture = false;
+        if (eraseAt(pointer)) erasedDuringGesture = true;
+      } else if (t === 'shape') {
+        shapeStart = { x: pointer.x, y: pointer.y };
+        liveShape = makeShapeFromDrag(activeShapeRef.current, pointer.x, pointer.y, pointer.x + 0.01, pointer.y + 0.01);
+        if (liveShape) canvas.add(liveShape);
+        canvas.requestRenderAll();
+      }
+    });
+
+    canvas.on('mouse:move', (opt) => {
+      const t = toolRef.current;
+      const pointer = canvas.getPointer(opt.e);
+
+      if (t === 'shape' && shapeStart) {
+        if (liveShape) canvas.remove(liveShape);
+        liveShape = makeShapeFromDrag(activeShapeRef.current, shapeStart.x, shapeStart.y, pointer.x, pointer.y);
+        if (liveShape) canvas.add(liveShape);
+        canvas.requestRenderAll();
+        return;
+      }
+
+      if (t === 'draw' && drawing) {
+        const last = pts[pts.length - 1];
+        const dist = Math.hypot(pointer.x - last.x, pointer.y - last.y);
+        if (dist < 1.5) return;
+
+        const now = performance.now();
+        const dt = Math.max(1, now - lastT);
+        const speed = dist / dt; // px per ms
+        lastT = now;
+        lastPt = pointer;
+
+        let w = widthRef.current;
+        if (penRef.current === 'calligraphy') {
+          // fast => thin, slow => thick. Map speed 0..3 px/ms to 1.35x..0.25x of base width.
+          const k = Math.min(1, speed / 3);
+          const target = widthRef.current * (1.35 - 1.1 * k);
+          smoothedW = smoothedW * 0.7 + target * 0.3;
+          w = Math.max(1.5, smoothedW);
+        }
+        pts.push({ x: pointer.x, y: pointer.y });
+        widths.push(w);
+        redrawLive();
+      } else if (t === 'eraser' && erasing) {
+        if (eraseAt(pointer)) erasedDuringGesture = true;
+      }
+    });
+
+    const finishGesture = () => {
+      if (shapeStart) {
+        const wasShape = liveShape;
+        shapeStart = null;
+        liveShape = null;
+        if (wasShape) {
+          const tooSmall = (wasShape.width || 0) * (wasShape.scaleX || 1) < 4
+            && (wasShape.height || 0) * (wasShape.scaleY || 1) < 4
+            && !wasShape.nb3D;
+          if (tooSmall) {
+            canvas.remove(wasShape);
+          } else {
+            wasShape.set({ selectable: true, evented: true, objectCaching: true });
+            wasShape.setCoords();
+            pushHistory();
+            // A freshly-drawn shape should be immediately draggable without
+            // an extra click to switch tools — canvas.skipTargetFind (only
+            // cleared in Select mode) would otherwise block hit-testing on
+            // it even though the object itself is already selectable.
+            canvas.skipTargetFind = false;
+            canvas.selection = true;
+            canvas.setActiveObject(wasShape);
+            setTool('select');
+          }
+          canvas.requestRenderAll();
+        }
+        return;
+      }
+      if (drawing) {
+        drawing = false;
+        if (livePath) {
+          // freeze finished stroke: make it selectable for the Select tool
+          livePath.set({ selectable: true, evented: true, objectCaching: true });
+          livePath.setCoords();
+          const finished = livePath;
+          livePath = null;
+          pts = []; widths = [];
+          canvas.requestRenderAll();
+          if (finished.nbKind === 'neon') startNeonPulse(finished);
+          pushHistory();
+        }
+      }
+      if (erasing) {
+        erasing = false;
+        if (erasedDuringGesture) pushHistory();
+        erasedDuringGesture = false;
+      }
+    };
+
+    canvas.on('mouse:up', finishGesture);
+
+    /* Selection/transform modifications -> history */
+    canvas.on('object:modified', () => { pushHistory(); });
+
+    /* ---- Resize handling (keep sharp on DPR + container changes) ---- */
+    const ro = new ResizeObserver(() => {
+      const w = wrapRef.current;
+      if (!w) return;
+      const W = w.clientWidth, H = w.clientHeight;
+      if (W <= 0 || H <= 0) return;
+      canvas.setDimensions({ width: W, height: H });
+      // PDF slide: recompute the contain/letterbox frame for the new stage size,
+      // re-place the page, and carry every annotation across with it.
+      const page = pageRef.current;
+      if (page) {
+        const next = computePageFrame(page.w, page.h, W, H);
+        canvas.discardActiveObject();
+        reframeObjects(canvas.getObjects().filter((o) => o.nbKind !== 'bgImage'), frameRef.current, next);
+        frameRef.current = next;
+        placeBgImage(bgImageObjRef.current, page, next);
+      }
+      canvas.requestRenderAll();
+    });
+    ro.observe(wrap);
+
+    return () => {
+      stopGlowPulse();
+      ro.disconnect();
+      canvas.dispose();
+      fabricRef.current = null;
+    };
+    // Mount-only: one Fabric canvas lives for the whole CanvasScreen session;
+    // switching slides swaps its contents via the imperative handle instead
+    // of tearing down and recreating the canvas (cheaper, no flash).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* ---- React to tool mode changes ---- */
+  useEffect(() => {
+    const c = fabricRef.current;
+    if (!c) return;
+    const isSelect = tool === 'select';
+    c.selection = isSelect;
+    c.skipTargetFind = !isSelect;
+    c.forEachObject((o) => {
+      if (o.nbKind === 'bgImage') return; // locked background never becomes selectable
+      o.selectable = isSelect;
+      o.evented = isSelect;
+    });
+    if (!isSelect) { c.discardActiveObject(); }
+    c.defaultCursor = (tool === 'draw' || tool === 'shape') ? 'crosshair' : tool === 'eraser' ? 'cell' : 'default';
+    c.hoverCursor = isSelect ? 'move' : c.defaultCursor;
+    c.requestRenderAll();
+  }, [tool]);
+
+  /* ---- Rotation handle for the selected 3D wireframe object ---- */
+  const updateRotateHandle = useCallback(() => {
+    const c = fabricRef.current;
+    if (!c) { setRotateHandle(null); return; }
+    const active = c.getActiveObject();
+    if (!active || !active.nb3D || c.getActiveObjects().length !== 1) { setRotateHandle(null); return; }
+    const br = active.getBoundingRect(true, true);
+    setRotateHandle({
+      objId: active,
+      x: br.left + br.width / 2,
+      y: br.top + br.height + 22,
+      yaw: active.nbYaw, tilt: active.nbTilt,
+    });
+  }, []);
+
+  useEffect(() => {
+    const c = fabricRef.current;
+    if (!c) return;
+    const handler = () => updateRotateHandle();
+    c.on('selection:created', handler);
+    c.on('selection:updated', handler);
+    c.on('selection:cleared', handler);
+    c.on('object:moving', handler);
+    c.on('object:scaling', handler);
+    c.on('object:rotating', handler);
+    c.on('after:render', handler);
+    return () => {
+      c.off('selection:created', handler);
+      c.off('selection:updated', handler);
+      c.off('selection:cleared', handler);
+      c.off('object:moving', handler);
+      c.off('object:scaling', handler);
+      c.off('object:rotating', handler);
+      c.off('after:render', handler);
+    };
+  }, [updateRotateHandle]);
+
+  const rebuild3DPathRef = useRef(null);
+
+  const setObjectYawTilt = useCallback((obj, yaw, tilt) => {
+    const c = fabricRef.current;
+    if (!c || !rebuild3DPathRef.current) return;
+    rebuild3DPathRef.current(obj, yaw, tilt);
+    c.requestRenderAll();
+    pushHistoryDebounced();
+    updateRotateHandle();
+  }, [updateRotateHandle]);
+
+  /* Newly finished strokes/objects should respect current mode; also re-apply after history restore */
+  useEffect(() => {
+    const c = fabricRef.current;
+    if (!c) return;
+    const apply = () => {
+      const isSelect = toolRef.current === 'select';
+      c.forEachObject((o) => { if (o.nbKind === 'bgImage') return; o.selectable = isSelect; o.evented = isSelect; });
+    };
+    c.on('after:render', apply);
+    return () => c.off('after:render', apply);
+  }, []);
+
+  /* ---- Keyboard shortcuts ---- */
+  useEffect(() => {
+    const onKey = (e) => {
+      const tag = (e.target && e.target.tagName) || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
+      if (mod && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) { e.preventDefault(); redo(); return; }
+      if (mod) return;
+      const k = e.key.toLowerCase();
+      if (k === 'v') setTool('select');
+      else if (k === 'e') setTool('eraser');
+      else if (k === 'b') { setTool('draw'); setPen('ballpoint'); }
+      else if (k === 'h') { setTool('draw'); setPen('highlighter'); }
+      else if (k === 'c') { setTool('draw'); setPen('calligraphy'); }
+      else if (k === 'n') { setTool('draw'); setPen('neon'); }
+      else if (k === 'delete' || k === 'backspace') {
+        const c = fabricRef.current;
+        if (!c) return;
+        const active = c.getActiveObjects();
+        if (active.length) {
+          e.preventDefault();
+          active.forEach((o) => c.remove(o));
+          c.discardActiveObject();
+          c.requestRenderAll();
+          pushHistory();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [undo, redo, pushHistory]);
+
+  /* ---- Clear board (with confirm; undo also restores it) ---- */
+  const doClear = useCallback(() => {
+    const c = fabricRef.current;
+    if (!c) return;
+    c.discardActiveObject();
+    c.getObjects().slice().forEach((o) => c.remove(o));
+    c.requestRenderAll();
+    pushHistory();
+    setConfirmClear(false);
+  }, [pushHistory]);
+
+  const [bgColor, setBgColorState] = useState(initialBg || '#0d3824');
+
+  /* ---- Imperative API used by CanvasScreen to drive multi-slide switching ---- */
+  useImperativeHandle(ref, () => ({
+    /* Serialize the current canvas (objects + bg color + bg image ref) into a slide-shaped patch. */
+    saveIntoSlide(slide) {
+      const c = fabricRef.current;
+      if (!c) return slide;
+      const bgImg = bgImageObjRef.current;
+      // Temporarily pull the locked background image out so it never ends up
+      // in the per-slide vector JSON (it's tracked separately as slide.bgImage).
+      if (bgImg) c.remove(bgImg);
+      const hasObjects = c.getObjects().length > 0;
+      const json = hasObjects ? c.toJSON(['nbKind', 'nb3D', 'nbYaw', 'nbTilt']) : null;
+      // PDF slides persist vectors in page space (frame-independent).
+      if (json && pageRef.current) reframeObjects(json.objects || [], frameRef.current, PAGE_SPACE);
+      if (bgImg) { c.add(bgImg); c.sendToBack(bgImg); }
+      return { ...slide, bg: bgColor, json, history: historyRef.current };
+    },
+    /* Load a slide's saved state into the live canvas (used on slide switch). */
+    loadSlide(slide) {
+      const c = fabricRef.current;
+      if (!c) return;
+      const token = ++loadTokenRef.current;
+      historyRef.current.locked = true;
+      c.discardActiveObject();
+      c.getObjects().slice().forEach((o) => c.remove(o));
+      bgImageObjRef.current = null;
+      pageRef.current = null;
+      frameRef.current = { ...PAGE_SPACE };
+      c.backgroundColor = slide.bg;
+      setBgColorState(slide.bg);
+
+      // Keep default ink visible: swap white<->near-black when moving between
+      // dark and light blank pages (custom colours are never touched).
+      if (!slide.bgImage) {
+        const light = isLightColor(slide.bg);
+        const cur = String(colorRef.current).toLowerCase();
+        if (light && cur === '#ffffff') setColor('#0a0a0a');
+        else if (!light && cur === '#0a0a0a') setColor('#ffffff');
+      }
+
+      const finishLoad = () => {
+        historyRef.current = slide.history && slide.history.stack
+          ? { stack: slide.history.stack, index: slide.history.index, locked: false }
+          : { stack: [], index: -1, locked: false };
+        if (historyRef.current.stack.length === 0) {
+          historyRef.current.locked = false;
+          pushHistory();
+        }
+        historyRef.current.locked = false;
+        syncHistoryUI();
+        c.requestRenderAll();
+      };
+
+      const addVectors = (img) => {
+        fabric.util.enlivenObjects(slide.json.objects || [], (objs) => {
+          if (token !== loadTokenRef.current) return;
+          // Saved in page space -> project into the current stage frame.
+          if (img) reframeObjects(objs, PAGE_SPACE, frameRef.current);
+          objs.forEach((o) => c.add(o));
+          const isSelect = toolRef.current === 'select';
+          c.forEachObject((o) => { if (o !== img) { o.selectable = isSelect; o.evented = isSelect; } });
+          finishLoad();
+        });
+      };
+
+      if (slide.bgImage) {
+        fabric.Image.fromURL(slide.bgImage, (img) => {
+          if (token !== loadTokenRef.current) return;
+          // Contain / letterbox: the page keeps its true aspect ratio, centred
+          // in the stage, with the slide background showing in the bars.
+          const page = { w: slide.bgImageW || img.width, h: slide.bgImageH || img.height };
+          pageRef.current = page;
+          frameRef.current = computePageFrame(page.w, page.h, c.getWidth(), c.getHeight());
+          img.set({ selectable: false, evented: false, nbKind: 'bgImage' });
+          placeBgImage(img, page, frameRef.current);
+          c.add(img);
+          c.sendToBack(img);
+          bgImageObjRef.current = img;
+          if (slide.json) addVectors(img);
+          else finishLoad();
+        });
+      } else if (slide.json) {
+        addVectors(null);
+      } else {
+        finishLoad();
+      }
+    },
+    setBackgroundColor(hex) {
+      const c = fabricRef.current;
+      if (!c) return;
+      c.backgroundColor = hex;
+      c.requestRenderAll();
+      setBgColorState(hex);
+      pushHistory();
+    },
+    getThumbnail() {
+      const c = fabricRef.current;
+      if (!c) return null;
+      return c.toDataURL({ format: 'jpeg', quality: 0.55, multiplier: 0.22 });
+    },
+    getBackgroundColor() { return bgColor; },
+  }), [bgColor, pushHistory, syncHistoryUI]);
+
+  return (
+    <div
+      className="canvas-stage flex-1 min-h-0 relative overflow-hidden"
+      style={{ background: bgColor }}
+    >
+      {/* Sizing box is absolutely positioned so the canvas can never
+          influence its parent's height (prevents a resize feedback loop). */}
+      <div ref={wrapRef} className="absolute inset-0">
+        <canvas ref={canvasElRef} />
+      </div>
+      {!hasObjects && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="text-center px-6">
+            <div className="mono text-[11px] tracking-[0.25em] text-white/30 mb-2">CANVAS READY</div>
+            <div className="text-white/40 text-sm">Pick a pen below and start drawing.</div>
+          </div>
+        </div>
+      )}
+      <DrawToolbar
+        tool={tool} setTool={setTool}
+        pen={pen} setPen={setPen}
+        color={color} setColor={setColor}
+        width={width} setWidth={setWidth}
+        canUndo={historyState.canUndo} canRedo={historyState.canRedo}
+        onUndo={undo} onRedo={redo}
+        onClear={() => setConfirmClear(true)}
+        hasObjects={hasObjects}
+        activeShape={activeShape} onPickShape={pickShape}
+      />
+      {rotateHandle && (
+        <RotateHandle
+          x={rotateHandle.x} y={rotateHandle.y}
+          yaw={rotateHandle.yaw} tilt={rotateHandle.tilt}
+          onChange={(yaw, tilt) => setObjectYawTilt(rotateHandle.objId, yaw, tilt)}
+        />
+      )}
+      {confirmClear && (
+        <ConfirmDialog
+          title="Clear the whole board?"
+          body="Every stroke on this page will be removed. You can still bring it back with Undo (Ctrl/Cmd+Z)."
+          confirmLabel="Clear board"
+          danger
+          onConfirm={doClear}
+          onCancel={() => setConfirmClear(false)}
+        />
+      )}
+    </div>
+  );
+});
+
+function CanvasScreen({ session, onBackHome, onNewBoard }) {
+  const viewportRef = useRef(null);
+  const [slides, setSlides] = useState(() => [makeSlide(session?.bg || '#0d3824')]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [importError, setImportError] = useState(null);
+  const [confirmDeletePage, setConfirmDeletePage] = useState(false);
+  const [newPageOpen, setNewPageOpen] = useState(false);
+
+  const [widgetDockOpen, setWidgetDockOpen] = useState(false);
+  const [widgets, setWidgets] = useState({}); // { timer: {minimized}, calculator: {minimized}, laser: {} }
+  const canvasStageRef = useRef(null);
+
+  const [topBarHidden, setTopBarHidden] = useState(false);
+  const [dockSide, setDockSide] = useState('default'); // 'default' | 'swapped'
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      rootRef.current?.requestFullscreen?.().catch(() => {});
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }, []);
+
+  const launchWidget = useCallback((id) => {
+    setWidgets((prev) => {
+      if (prev[id]) {
+        // toggling an already-open widget from the dock closes it again
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      }
+      return { ...prev, [id]: { minimized: false } };
+    });
+    setWidgetDockOpen(false);
+  }, []);
+  const closeWidget = useCallback((id) => {
+    setWidgets((prev) => { const next = { ...prev }; delete next[id]; return next; });
+  }, []);
+  const toggleMinimize = useCallback((id, val) => {
+    setWidgets((prev) => ({ ...prev, [id]: { ...prev[id], minimized: val } }));
+  }, []);
+  const activeWidgetFlags = { timer: !!widgets.timer, calculator: !!widgets.calculator, laser: !!widgets.laser };
+
+  const slidesRef = useRef(slides);
+  const activeIndexRef = useRef(activeIndex);
+  useEffect(() => { slidesRef.current = slides; }, [slides]);
+  useEffect(() => { activeIndexRef.current = activeIndex; }, [activeIndex]);
+
+  /* If the home screen already picked up a PDF, rasterize it into slides
+     as soon as the canvas mounts (the file itself is handed via session.pdfFile). */
+  const initialPdfHandled = useRef(false);
+  useEffect(() => {
+    if (initialPdfHandled.current) return;
+    initialPdfHandled.current = true;
+    if (session?.pdfFile) {
+      importPdfFile(session.pdfFile);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* Snapshot the live canvas into slidesRef[activeIndex] (thumbnail + json + history). */
+  const captureActiveSlide = useCallback(() => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    const i = activeIndexRef.current;
+    setSlides((prev) => {
+      const next = prev.slice();
+      const saved = vp.saveIntoSlide(next[i]);
+      saved.thumb = vp.getThumbnail();
+      next[i] = saved;
+      slidesRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const goToSlide = useCallback((targetIndex) => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    const i = activeIndexRef.current;
+    if (targetIndex === i) return;
+    setSlides((prev) => {
+      const next = prev.slice();
+      const saved = vp.saveIntoSlide(next[i]);
+      saved.thumb = vp.getThumbnail();
+      next[i] = saved;
+      slidesRef.current = next;
+      const clamped = Math.max(0, Math.min(targetIndex, next.length - 1));
+      activeIndexRef.current = clamped;
+      setActiveIndex(clamped);
+      // Defer load until after this render commits the new slides array.
+      setTimeout(() => vp.loadSlide(next[clamped]), 0);
+      return next;
+    });
+  }, []);
+
+  const handleAddPage = useCallback((bg) => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    captureActiveSlide();
+    setSlides((prev) => {
+      const fresh = makeSlide(bg);
+      const insertAt = activeIndexRef.current + 1;
+      const next = [...prev.slice(0, insertAt), fresh, ...prev.slice(insertAt)];
+      slidesRef.current = next;
+      activeIndexRef.current = insertAt;
+      setActiveIndex(insertAt);
+      setTimeout(() => vp.loadSlide(fresh), 0);
+      return next;
+    });
+  }, [captureActiveSlide]);
+
+  const doDeletePage = useCallback(() => {
+    const vp = viewportRef.current;
+    setConfirmDeletePage(false);
+    setSlides((prev) => {
+      if (prev.length <= 1) return prev;
+      const i = activeIndexRef.current;
+      const next = prev.slice(0, i).concat(prev.slice(i + 1));
+      const newIndex = Math.min(i, next.length - 1);
+      slidesRef.current = next;
+      activeIndexRef.current = newIndex;
+      setActiveIndex(newIndex);
+      if (vp) setTimeout(() => vp.loadSlide(next[newIndex]), 0);
+      return next;
+    });
+  }, []);
+
+  const handleReorder = useCallback((fromIdx, toIdx) => {
+    setSlides((prev) => {
+      const next = prev.slice();
+      const [moved] = next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, moved);
+      slidesRef.current = next;
+      // Keep pointing at the same slide object even though its index moved.
+      const activeSlideId = prev[activeIndexRef.current]?.id;
+      const newActive = next.findIndex((s) => s.id === activeSlideId);
+      if (newActive !== -1) { activeIndexRef.current = newActive; setActiveIndex(newActive); }
+      return next;
+    });
+  }, []);
+
+  /* ---- PDF import: rasterize every page into its own slide ---- */
+  const importPdfFile = useCallback(async (file) => {
+    if (!file) return;
+    setImportError(null);
+    setImporting(true);
+    try {
+      const pages = await rasterizePdfPages(file);
+      if (pages.length === 0) throw new Error('This PDF has no pages to import.');
+      // Use the already-rasterized page image as an instant thumbnail too, so
+      // the sidebar shows real content immediately instead of "EMPTY" until
+      // the slide is visited once.
+      const newSlides = pages.map((p) => {
+        const slide = makeSlide(PDF_LETTERBOX_BG, { bgImage: p.dataUrl, bgImageW: p.width, bgImageH: p.height });
+        slide.thumb = p.dataUrl;
+        return slide;
+      });
+      setSlides(newSlides);
+      slidesRef.current = newSlides;
+      activeIndexRef.current = 0;
+      setActiveIndex(0);
+      setTimeout(() => viewportRef.current?.loadSlide(newSlides[0]), 0);
+    } catch (err) {
+      console.error(err);
+      setImportError(err.message || 'Could not read that PDF.');
+    } finally {
+      setImporting(false);
+    }
+  }, []);
+
+  /* ---- PDF export: flatten every slide (bg + vectors) into a downloadable multi-page PDF ---- */
+  const handleExportPdf = useCallback(async () => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    setExporting(true);
+    try {
+      captureActiveSlide();
+      // captureActiveSlide's setSlides is async; grab a synchronously-correct
+      // copy by re-saving directly into a local array for export.
+      const i = activeIndexRef.current;
+      const current = slidesRef.current.slice();
+      const saved = vp.saveIntoSlide(current[i]);
+      current[i] = saved;
+      await exportSessionAsPdf(current, session?.title || 'NovaBoard');
+    } catch (err) {
+      console.error(err);
+      setImportError('Export failed: ' + (err.message || 'unknown error'));
+    } finally {
+      setExporting(false);
+    }
+  }, [captureActiveSlide, session?.title]);
+
+  const activeSlide = slides[activeIndex];
+
+  const navSide = dockSide === 'swapped' ? 'right' : 'left';
+  const actionSide = dockSide === 'swapped' ? 'left' : 'right';
+
+  /* Smooth dock swap (FLIP): record where each dock is, flip the side, then
+     animate each from its old x-position to its new one. */
+  const navWrapRef = useRef(null);
+  const actWrapRef = useRef(null);
+  const swapFromRef = useRef(null);
+  const swapDocks = useCallback(() => {
+    if (!navWrapRef.current || !actWrapRef.current) return;
+    swapFromRef.current = {
+      nav: navWrapRef.current.getBoundingClientRect().left,
+      act: actWrapRef.current.getBoundingClientRect().left,
+    };
+    setWidgetDockOpen(false);
+    setDockSide((v) => (v === 'swapped' ? 'default' : 'swapped'));
+  }, []);
+  useLayoutEffect(() => {
+    const from = swapFromRef.current;
+    if (!from) return;
+    swapFromRef.current = null;
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    [[navWrapRef.current, from.nav], [actWrapRef.current, from.act]].forEach(([el, x0]) => {
+      if (!el || reduce) return;
+      const dx = x0 - el.getBoundingClientRect().left;
+      if (!dx) return;
+      el.style.transition = 'none';
+      el.style.transform = `translateX(${dx}px)`;
+      void el.offsetWidth; // commit the starting position before animating
+      el.style.transition = 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1)';
+      el.style.transform = 'translateX(0)';
+      setTimeout(() => { el.style.transition = ''; el.style.transform = ''; }, 460);
+    });
+  }, [dockSide]);
+
+  return (
+    <div ref={rootRef} className="track-in h-full flex flex-col relative">
+      {!topBarHidden && (
+        <CanvasTopBar
+          session={{ ...session, bg: activeSlide?.bg }}
+          onBackHome={onBackHome}
+          onNewBoard={onNewBoard}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+        />
+      )}
+      <TopBarCollapseTab hidden={topBarHidden} onToggle={() => setTopBarHidden((v) => !v)} />
+      {topBarHidden && <PersistentClock />}
+
+      <div className="flex-1 min-h-0 flex relative">
+        <ThumbnailSidebar
+          slides={slides}
+          activeIndex={activeIndex}
+          onSelect={goToSlide}
+          onReorder={handleReorder}
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed((v) => !v)}
+        />
+        <SidebarToggle collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} />
+        <div ref={canvasStageRef} className="flex-1 min-w-0 relative flex flex-col overflow-hidden">
+          <div ref={navWrapRef} className={`absolute bottom-4 z-30 ${navSide === 'right' ? 'right-4' : 'left-4'}`}>
+            <NavDock
+              index={activeIndex}
+              total={slides.length}
+              onPrev={() => goToSlide(activeIndex - 1)}
+              onNext={() => goToSlide(activeIndex + 1)}
+              onAddPage={() => setNewPageOpen(true)}
+              onDeletePage={() => setConfirmDeletePage(true)}
+              onSwap={swapDocks}
+              side={navSide}
+            />
+          </div>
+          <div ref={actWrapRef} className={`absolute bottom-4 z-30 ${actionSide === 'right' ? 'right-4' : 'left-4'}`}>
+            <ActionDock
+              onImportPdf={importPdfFile}
+              importing={importing}
+              onExportPdf={handleExportPdf}
+              exporting={exporting}
+              widgetDockOpen={widgetDockOpen}
+              setWidgetDockOpen={setWidgetDockOpen}
+              activeWidgets={activeWidgetFlags}
+              onLaunchWidget={launchWidget}
+              onSwap={swapDocks}
+              side={actionSide}
+            />
+          </div>
+          <CanvasViewport ref={viewportRef} initialBg={activeSlide?.bg} />
+
+          {widgets.laser && (
+            <LaserPointerOverlay containerRef={canvasStageRef} color="#38bdf8" />
+          )}
+
+          {widgets.timer && (
+            <WidgetWindow
+              title="Timer / Stopwatch" icon={ITimerIcon}
+              initialPos={{ x: 24, y: 70 }} boundsRef={canvasStageRef}
+              minimized={widgets.timer.minimized}
+              onMinimize={() => toggleMinimize('timer', true)}
+              onRestore={() => toggleMinimize('timer', false)}
+              onClose={() => closeWidget('timer')}
+            >
+              <TimerWidget />
+            </WidgetWindow>
+          )}
+
+          {widgets.calculator && (
+            <WidgetWindow
+              title="Scientific Calculator" icon={ICalcIcon}
+              initialPos={{ x: 24, y: 340 }} boundsRef={canvasStageRef}
+              minimized={widgets.calculator.minimized}
+              onMinimize={() => toggleMinimize('calculator', true)}
+              onRestore={() => toggleMinimize('calculator', false)}
+              onClose={() => closeWidget('calculator')}
+            >
+              <CalculatorWidget />
+            </WidgetWindow>
+          )}
+        </div>
+      </div>
+
+      {newPageOpen && (
+        <NewPageModal
+          onCancel={() => setNewPageOpen(false)}
+          onPick={(bg) => { setNewPageOpen(false); handleAddPage(bg); }}
+        />
+      )}
+      {confirmDeletePage && (
+        <ConfirmDialog
+          title="Delete this page?"
+          body={`Page ${activeIndex + 1} and everything drawn on it will be removed. This can't be undone.`}
+          confirmLabel="Delete page"
+          danger
+          onConfirm={doDeletePage}
+          onCancel={() => setConfirmDeletePage(false)}
+        />
+      )}
+      {importError && (
+        <ConfirmDialog
+          title="Import problem"
+          body={importError}
+          confirmLabel="OK"
+          onConfirm={() => setImportError(null)}
+          onCancel={() => setImportError(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ============================== APP ROOT ============================== */
+
+const VIEWS = { SPLASH: 'VIEW_SPLASH', HOME: 'VIEW_HOME', CANVAS: 'VIEW_CANVAS' };
+
+function App() {
+  const [view, setView] = useState(VIEWS.SPLASH);
+  const [activeSession, setActiveSession] = useState(null);
+  const [sessions, setSessions] = useState(() => loadSessions());
+
+  const enterCanvas = useCallback((session) => {
+    setActiveSession(session);
+    setView(VIEWS.CANVAS);
+  }, []);
+
+  const goHome = useCallback(() => {
+    setActiveSession(null);
+    setView(VIEWS.HOME);
+  }, []);
+
+  return (
+    <div className="h-full w-full relative">
+      {view === VIEWS.SPLASH && (
+        <SplashScreen onDone={() => setView(VIEWS.HOME)} />
+      )}
+      {view === VIEWS.HOME && (
+        <HomeScreen onEnterCanvas={enterCanvas} sessions={sessions} setSessions={setSessions} />
+      )}
+      {view === VIEWS.CANVAS && (
+        <CanvasScreen session={activeSession} onBackHome={goHome} onNewBoard={goHome} />
+      )}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
