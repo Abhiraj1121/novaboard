@@ -1,6 +1,6 @@
 # NovaBoard OS
 
-An interactive whiteboard and presentation workspace that runs in your browser from a single HTML file. No build step, no backend, no account.
+An interactive smartboard-style whiteboard and presentation workspace that runs in your browser from a single HTML file. No build step, no backend, no account.
 
 **Live demo:** https://abhiraj1121.github.io/novaboard/
 
@@ -8,31 +8,31 @@ An interactive whiteboard and presentation workspace that runs in your browser f
 
 ---
 
+## What's new in 2.0
+
+- **Auto-save with crash recovery:** boards are saved continuously in your browser (IndexedDB) and restored if the page closes unexpectedly
+- **`.novaboard` files:** save a whole workspace to a file and open it again later
+- **Copy and paste:** copy selected objects and paste them on any page (Ctrl/Cmd + C / V)
+- **Image upload and sticky notes**
+- **PDF import progress overlay** and clearer save-status and error messages
+- Boot sound and polish throughout
+
 ## Features
 
 - **Drawing tools:** ball pen, highlighter, calligraphy pen and neon pen, plus eraser, undo / redo and erase-all
 - **Colors and widths:** preset swatches, custom color picker and a width slider
-- **Shapes:** 2D (line, arrow, rectangle, rounded rectangle, ellipse, star) and 3D (cube, cylinder, sphere, pyramid) with a rotate handle
+- **Shapes:** 2D (line, arrow, rectangle, rounded rectangle, ellipse, star) and 3D (cube, cylinder, sphere, pyramid)
 - **Multi-page boards:** add, delete and drag-to-reorder pages from the thumbnail sidebar, each with its own background
 - **PDF import and export:** open a PDF as slides, annotate it, and export the whole board back to PDF
 - **Floating widgets:** timer / stopwatch, scientific calculator and laser pointer
 - **Workspace comfort:** collapsible top bar, persistent clock, fullscreen mode and swappable left / right docks
-- **Recent sessions:** boards are listed on the home screen and stored locally in your browser
+- **Recent sessions** listed on the home screen
 
 ## Quick start
 
-### Option 1: Open the file
+**Open it:** download `index.html` and double-click it in a modern browser (Chrome, Edge, Firefox or Safari). The web version loads its libraries from public CDNs, so it needs an internet connection. For a fully offline experience, use the [desktop app](README-DESKTOP.md).
 
-1. Download `novaboard.html`.
-2. Double-click it to open in a modern browser (Chrome, Edge, Firefox or Safari).
-
-The web version loads its libraries from public CDNs, so it needs an internet connection the first time. For a fully offline experience, use the [desktop app](README-DESKTOP.md).
-
-### Option 2: Host it
-
-Upload `novaboard.html` (renamed to `index.html`) to any static host, such as GitHub Pages, Netlify or Cloudflare Pages.
-
-**GitHub Pages:** go to *Settings → Pages*, choose your branch and the root folder, and save.
+**Host it:** upload `index.html` to any static host (GitHub Pages, Netlify, Cloudflare Pages). On GitHub Pages: *Settings → Pages*, pick your branch and the root folder, then save.
 
 ## Tech stack
 
@@ -47,11 +47,11 @@ Upload `novaboard.html` (renamed to `index.html`) to any static host, such as Gi
 
 ## Your data
 
-Everything stays on your device. Session info is saved in your browser's `localStorage` under the key `novaboard.sessions.v1`. Nothing is uploaded anywhere. Clearing your browser data removes your saved sessions, so export important boards to PDF.
+Everything stays on your device. Boards are auto-saved in your browser's IndexedDB, and the recent-sessions list uses `localStorage`. Nothing is uploaded anywhere. Clearing your browser data removes saved boards, so use **Save** to keep a `.novaboard` file or export to PDF for anything important.
 
 ## Browser support
 
-Current versions of Chrome, Edge, Firefox and Safari. A mouse, touch screen or pen tablet all work for drawing.
+Current versions of Chrome, Edge, Firefox and Safari. Mouse, touch screen and pen tablet all work for drawing.
 
 ## Contributing
 

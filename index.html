@@ -117,8 +117,62 @@
     outline-offset: 2px;
   }
 
+  /* ---- Classic boot (BIOS POST -> logo + block loader) ---- */
+  .post-bg { background: #000; overflow: hidden; }
+  .post-text { font-family: 'JetBrains Mono', ui-monospace, 'Courier New', monospace; color: #d1d5db; text-shadow: 0 0 6px rgba(209,213,219,0.35); }
+  .crt-lines {
+    position: absolute; inset: 0; pointer-events: none; z-index: 5;
+    background:
+      repeating-linear-gradient(to bottom, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 3px),
+      radial-gradient(120% 120% at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%);
+  }
+  @keyframes crt-on { 0% { opacity: 0; transform: scaleY(0.004) scaleX(0.6); filter: brightness(3); } 55% { opacity: 1; transform: scaleY(0.02) scaleX(1); filter: brightness(2); } 100% { opacity: 1; transform: scaleY(1) scaleX(1); filter: brightness(1); } }
+  .crt-on { animation: crt-on 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  @keyframes post-flick { 0% { opacity: 0; } 20% { opacity: 1; } 35% { opacity: 0.55; } 55% { opacity: 1; } 70% { opacity: 0.85; } 100% { opacity: 1; } }
+  .post-flick { animation: post-flick 0.3s linear both; }
+  @keyframes post-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+  .post-cursor { display: inline-block; width: 0.6em; height: 1.05em; margin-left: 2px; vertical-align: text-bottom; background: #d1d5db; animation: post-blink 1s steps(1) infinite; }
+  .boot-blocks { display: flex; gap: 3px; padding: 4px; border: 1px solid rgba(148,163,184,0.55); border-radius: 3px; }
+  .boot-blocks i { display: block; width: 100%; height: 14px; background: rgba(148,163,184,0.12); }
+  .boot-blocks i.on { background: linear-gradient(#67e8f9, #0ea5e9); box-shadow: 0 0 8px rgba(56,189,248,0.7); }
+
+  /* ---- Import overlay, save HUD, toast ---- */
+  .nb-ov {
+    background: radial-gradient(60% 60% at 50% 50%, rgba(56,189,248,0.10), rgba(4,6,11,0.72));
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    animation: nb-ov-in 0.3s ease both;
+  }
+  .nb-ov.out { animation: nb-ov-out 0.5s ease forwards; pointer-events: none; }
+  @keyframes nb-ov-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes nb-ov-out { from { opacity: 1; } to { opacity: 0; } }
+  .nb-ov-card.out { animation: nb-card-out 0.5s cubic-bezier(0.4, 0, 1, 1) forwards; }
+  @keyframes nb-card-out { to { opacity: 0; transform: translateY(-8px) scale(0.97); } }
+  .nb-prog { height: 6px; border-radius: 6px; background: rgba(148,163,184,0.16); overflow: hidden; position: relative; }
+  .nb-prog > i {
+    display: block; height: 100%; border-radius: 6px; position: relative; overflow: hidden;
+    background: linear-gradient(90deg, #22d3ee, #818cf8); box-shadow: 0 0 16px rgba(56,189,248,0.85);
+    transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .nb-prog > i::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+    transform: translateX(-100%); animation: nb-shimmer 1.2s linear infinite;
+  }
+  .nb-prog.indet > i { width: 35% !important; animation: nb-indet 1.1s ease-in-out infinite; }
+  @keyframes nb-shimmer { to { transform: translateX(100%); } }
+  @keyframes nb-indet { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+  @keyframes save-pulse {
+    0%, 100% { opacity: 0.55; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6); }
+    50% { opacity: 1; box-shadow: 0 0 0 5px rgba(52, 211, 153, 0); }
+  }
+  .save-pulse { animation: save-pulse 0.8s ease-in-out infinite; }
+  @keyframes nb-toast-in { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  .nb-toast { animation: nb-toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
   @media (prefers-reduced-motion: reduce) {
-    .spin-a, .spin-b, .core-dot, .breathe-dot { animation: none !important; }
+    .spin-a, .spin-b, .core-dot, .breathe-dot,
+    .post-cursor, .crt-on, .post-flick, .save-pulse,
+    .nb-prog > i::after, .nb-prog.indet > i { animation: none !important; }
   }
 
   /* ---- Phase 2: drawing engine ---- */
@@ -126,7 +180,7 @@
   .canvas-stage .canvas-container { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; }
   .canvas-stage canvas { touch-action: none; }
   .tool-btn {
-    width: 38px; height: 38px; border-radius: 10px;
+    width: 32px; height: 32px; border-radius: 9px;
     display: flex; align-items: center; justify-content: center;
     color: #94a3b8; border: 1px solid transparent;
     transition: all 0.15s ease;
@@ -193,6 +247,10 @@
   .thumb-card.active {
     border-color: #38bdf8;
     box-shadow: 0 0 0 1px rgba(56,189,248,0.3), 0 0 16px rgba(56,189,248,0.35);
+  }
+  .thumb-card.selected {
+    border-color: #818cf8;
+    box-shadow: 0 0 0 1px rgba(129,140,248,0.35), 0 0 14px rgba(129,140,248,0.35);
   }
   .navdock-btn {
     display: flex; align-items: center; justify-content: center;
@@ -315,6 +373,397 @@ function saveSessions(sessions) {
   }
 }
 
+/* ============================== STORAGE: IndexedDB auto-save, .novaboard files, boot audio ============================== */
+
+const NB_VERSION = '2.0';
+const NB_MAX_BOARDS = 40;          // recent boards kept on this device; older ones are removed
+const NB_FLAG_KEY = 'novaboard.session.v1';
+
+/* Tiny synchronous flag in localStorage: "was the last page session closed cleanly?"
+   (localStorage is only used for this flag and the recents list, never for drawings.) */
+function nbReadSessionFlag() {
+  try { const r = window.localStorage.getItem(NB_FLAG_KEY); return r ? JSON.parse(r) : null; } catch (e) { return null; }
+}
+function nbWriteSessionFlag(v) {
+  try { window.localStorage.setItem(NB_FLAG_KEY, JSON.stringify({ ...v, t: Date.now() })); } catch (e) { /* ignore */ }
+}
+/* Evaluated once at load: describes the PREVIOUS page session. */
+const NB_BOOT_SESSION = nbReadSessionFlag();
+
+function nbSlimSession(sess) {
+  const { thumb, pdfFile, ...rest } = sess; // never put big data or live File objects in localStorage
+  return rest;
+}
+
+const NB_DB_NAME = 'novaboard-os';
+const NB_DB_VERSION = 1;
+let nbDbPromise = null;
+
+function nbOpenDb() {
+  if (nbDbPromise) return nbDbPromise;
+  nbDbPromise = new Promise((resolve, reject) => {
+    if (!window.indexedDB) { reject(new Error('IndexedDB is not available in this browser.')); return; }
+    let req;
+    try { req = window.indexedDB.open(NB_DB_NAME, NB_DB_VERSION); } catch (e) { reject(e); return; }
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains('boards')) db.createObjectStore('boards', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('slides')) db.createObjectStore('slides', { keyPath: 'key' });
+      if (!db.objectStoreNames.contains('assets')) db.createObjectStore('assets', { keyPath: 'key' });
+    };
+    req.onsuccess = () => {
+      const db = req.result;
+      db.onversionchange = () => { db.close(); nbDbPromise = null; };
+      db.onclose = () => { nbDbPromise = null; };
+      resolve(db);
+    };
+    req.onerror = () => reject(req.error || new Error('Could not open the local database.'));
+    req.onblocked = () => reject(new Error('The local database is blocked by another NovaBoard tab.'));
+  });
+  nbDbPromise.catch(() => { nbDbPromise = null; }); // allow a retry after a failure
+  return nbDbPromise;
+}
+
+async function nbTx(storeNames, mode, work) {
+  const db = await nbOpenDb();
+  return new Promise((resolve, reject) => {
+    let result;
+    let tx;
+    try { tx = db.transaction(storeNames, mode); } catch (e) { nbDbPromise = null; reject(e); return; }
+    tx.oncomplete = () => resolve(result);
+    tx.onerror = () => reject(tx.error || new Error('Database error'));
+    tx.onabort = () => reject(tx.error || new Error('Database transaction aborted'));
+    try { result = work(tx); } catch (e) { try { tx.abort(); } catch (_) { /* already finished */ } reject(e); }
+  });
+}
+
+const nbSlideKey = (boardId, slideId) => boardId + '|' + slideId;
+const nbBoardRange = (boardId) => IDBKeyRange.bound(boardId + '|', boardId + '|\uffff');
+
+/* Layout: 'boards' = one small record per board (title, page order, thumbnail);
+           'slides' = one record per page (vector JSON + thumbnail);
+           'assets' = the big PDF page images, written ONCE per page. */
+const NBStore = {
+  /* One atomic transaction: write changed pages, upsert the board record, prune deleted pages. */
+  async saveBoard({ meta, slideRecords, assetRecords, keepSlideKeys, keepAssetKeys }) {
+    await nbTx(['boards', 'slides', 'assets'], 'readwrite', (tx) => {
+      const bs = tx.objectStore('boards');
+      const ss = tx.objectStore('slides');
+      const as = tx.objectStore('assets');
+      slideRecords.forEach((r) => ss.put(r));
+      assetRecords.forEach((r) => as.put(r));
+      bs.put(meta);
+      const range = nbBoardRange(meta.id);
+      const prune = (store, keep) => {
+        const kr = store.getAllKeys(range);
+        kr.onsuccess = () => { (kr.result || []).forEach((k) => { if (!keep.has(k)) store.delete(k); }); };
+      };
+      prune(ss, keepSlideKeys);
+      prune(as, keepAssetKeys);
+    });
+  },
+  async loadBoard(boardId) {
+    let meta = null; let slideRows = []; let assetRows = [];
+    await nbTx(['boards', 'slides', 'assets'], 'readonly', (tx) => {
+      const range = nbBoardRange(boardId);
+      const r1 = tx.objectStore('boards').get(boardId);
+      const r2 = tx.objectStore('slides').getAll(range);
+      const r3 = tx.objectStore('assets').getAll(range);
+      r1.onsuccess = () => { meta = r1.result || null; };
+      r2.onsuccess = () => { slideRows = r2.result || []; };
+      r3.onsuccess = () => { assetRows = r3.result || []; };
+    });
+    if (!meta) return null;
+    const byId = new Map(slideRows.map((r) => [r.id, r]));
+    const assets = new Map(assetRows.map((r) => [r.key, r.dataUrl]));
+    const slides = [];
+    (meta.slideIds || []).forEach((id) => {
+      const r = byId.get(id);
+      if (!r) return; // a missing page is skipped instead of failing the whole board
+      slides.push({
+        id: r.id, bg: r.bg,
+        bgImage: r.hasBgImage ? (assets.get(r.key) || null) : null,
+        bgImageW: r.bgImageW || null, bgImageH: r.bgImageH || null,
+        json: r.json || null, thumb: r.thumb || null,
+        history: { stack: [], index: -1 },
+      });
+    });
+    return { meta, slides };
+  },
+  async listBoards() {
+    let rows = [];
+    await nbTx(['boards'], 'readonly', (tx) => {
+      const r = tx.objectStore('boards').getAll();
+      r.onsuccess = () => { rows = r.result || []; };
+    });
+    return rows.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  },
+  async deleteBoard(boardId) {
+    await nbTx(['boards', 'slides', 'assets'], 'readwrite', (tx) => {
+      const range = nbBoardRange(boardId);
+      tx.objectStore('boards').delete(boardId);
+      tx.objectStore('slides').delete(range);
+      tx.objectStore('assets').delete(range);
+    });
+  },
+};
+
+/* Keep the recents list at NB_MAX_BOARDS, deleting the stored data of boards that fall off the end. */
+function nbCapSessions(list) {
+  list.slice(NB_MAX_BOARDS).forEach((sess) => { NBStore.deleteBoard(sess.id).catch(() => {}); });
+  return list.slice(0, NB_MAX_BOARDS);
+}
+
+/* Build one save batch. `shouldWrite(slide)` picks the pages that changed; the big PDF page
+   image of a page is only included if `assetKnown(key)` says it was never stored. */
+function nbMakeBatch(board, slides, activeIndex, shouldWrite, assetKnown) {
+  const slideRecords = []; const assetRecords = [];
+  const keepSlideKeys = new Set(); const keepAssetKeys = new Set();
+  slides.forEach((sl) => {
+    const key = nbSlideKey(board.id, sl.id);
+    keepSlideKeys.add(key);
+    if (sl.bgImage) keepAssetKeys.add(key);
+    if (shouldWrite(sl)) {
+      slideRecords.push({
+        key, boardId: board.id, id: sl.id, bg: sl.bg,
+        bgImageW: sl.bgImageW || null, bgImageH: sl.bgImageH || null,
+        hasBgImage: !!sl.bgImage, json: sl.json || null, thumb: sl.thumb || null,
+      });
+      if (sl.bgImage && !assetKnown(key)) assetRecords.push({ key, boardId: board.id, dataUrl: sl.bgImage });
+    }
+  });
+  const meta = {
+    id: board.id, title: board.title, bg: board.bg, source: board.source || 'blank',
+    pageCount: slides.length, activeIndex, slideIds: slides.map((sl) => sl.id),
+    thumb: (slides[0] && slides[0].thumb) || null, updatedAt: Date.now(), v: 1,
+  };
+  return { meta, slideRecords, assetRecords, keepSlideKeys, keepAssetKeys };
+}
+
+function nbDescribeError(err) {
+  const name = err && err.name; const msg = (err && err.message) || '';
+  if (name === 'QuotaExceededError' || /quota/i.test(msg)) return 'Device storage is full. Free some space or save a .novaboard file.';
+  return msg || 'Unknown storage error';
+}
+
+function nbFmtBytes(n) {
+  if (n >= 1073741824) return (n / 1073741824).toFixed(1) + ' GB';
+  return Math.max(1, Math.round(n / 1048576)) + ' MB';
+}
+
+async function nbProbeStorage() {
+  try { await nbOpenDb(); } catch (e) { return { ok: false, text: 'IndexedDB unavailable' }; }
+  let extra = '';
+  try {
+    if (navigator.storage && navigator.storage.estimate) {
+      const est = await navigator.storage.estimate();
+      if (est && est.quota) extra = ' · ' + nbFmtBytes(Math.max(0, est.quota - (est.usage || 0))) + ' free';
+    }
+  } catch (e) { /* optional */ }
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* optional */ }
+  return { ok: true, text: 'IndexedDB' + extra };
+}
+
+/* ---------- .novaboard files: gzip-compressed JSON (plain JSON is also accepted on open) ---------- */
+
+function nbSafeFileName(title) {
+  const t = String(title || 'NovaBoard').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  return t || 'NovaBoard';
+}
+
+async function nbBuildBoardBlob(board, slides, activeIndex) {
+  const payload = {
+    format: 'novaboard', version: 1, generator: 'NovaBoard OS ' + NB_VERSION,
+    savedAt: new Date().toISOString(),
+    title: board.title, bg: board.bg, source: board.source || 'blank', activeIndex,
+    slides: slides.map((sl) => ({
+      id: sl.id, bg: sl.bg, bgImage: sl.bgImage || null,
+      bgImageW: sl.bgImageW || null, bgImageH: sl.bgImageH || null,
+      json: sl.json || null, thumb: sl.thumb || null,
+    })),
+  };
+  const text = JSON.stringify(payload);
+  if (typeof CompressionStream !== 'undefined') {
+    try {
+      const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'));
+      return await new Response(stream).blob();
+    } catch (e) { /* fall back to plain JSON below */ }
+  }
+  return new Blob([text], { type: 'application/octet-stream' });
+}
+
+async function nbReadBoardText(file) {
+  const buf = new Uint8Array(await file.arrayBuffer());
+  if (buf.length > 2 && buf[0] === 0x1f && buf[1] === 0x8b) {
+    if (typeof DecompressionStream === 'undefined') {
+      throw new Error('This browser cannot open compressed .novaboard files. Please use a current Chrome, Edge, Firefox or Safari.');
+    }
+    const stream = new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'));
+    return await new Response(stream).text();
+  }
+  return new TextDecoder().decode(buf);
+}
+
+/* Validate + sanitise an opened file. Page ids are regenerated so an opened file can never collide with stored boards. */
+async function nbParseBoardFile(file) {
+  if (!file) throw new Error('No file was selected.');
+  if (file.size > 400 * 1024 * 1024) throw new Error('That file is too large to open (over 400 MB).');
+  let text;
+  try { text = await nbReadBoardText(file); }
+  catch (e) { throw new Error((e && e.message) || 'Could not read that file.'); }
+  let data;
+  try { data = JSON.parse(text); } catch (e) { throw new Error('This does not look like a valid .novaboard file.'); }
+  if (!data || data.format !== 'novaboard' || !Array.isArray(data.slides) || data.slides.length === 0) {
+    throw new Error('This file is not a NovaBoard workspace, or it has no pages.');
+  }
+  if (typeof data.version === 'number' && data.version > 1) {
+    throw new Error('This file was saved by a newer version of NovaBoard OS. Please update and try again.');
+  }
+  const okColor = (c) => typeof c === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(c);
+  const okImg = (v) => (typeof v === 'string' && /^data:image\//.test(v) ? v : null);
+  const num = (v) => (typeof v === 'number' && isFinite(v) && v > 0 ? v : null);
+  const slides = data.slides.slice(0, 500).map((raw) => {
+    const sl = raw && typeof raw === 'object' ? raw : {};
+    const json = sl.json && typeof sl.json === 'object' && Array.isArray(sl.json.objects) && sl.json.objects.length ? sl.json : null;
+    return {
+      id: uid(), bg: okColor(sl.bg) ? sl.bg : BLACK_BG,
+      bgImage: okImg(sl.bgImage), bgImageW: num(sl.bgImageW), bgImageH: num(sl.bgImageH),
+      json, thumb: okImg(sl.thumb), history: { stack: [], index: -1 },
+    };
+  });
+  const ai = typeof data.activeIndex === 'number' ? Math.floor(data.activeIndex) : 0;
+  return {
+    title: String(data.title || 'Untitled Board').slice(0, 120),
+    bg: okColor(data.bg) ? data.bg : slides[0].bg,
+    source: 'file',
+    activeIndex: Math.max(0, Math.min(ai, slides.length - 1)),
+    slides,
+  };
+}
+
+/* "Save as": native picker where available (chosen BEFORE the heavy work so the click's permission
+   is still valid), otherwise a normal download. makeBlob is awaited after the user picks a spot. */
+async function nbSaveFile(makeBlob, filename) {
+  // Desktop app: native save dialog + atomic write in the main process.
+  if (window.novaDesktop && window.novaDesktop.pickSavePath) {
+    const picked = await window.novaDesktop.pickSavePath(filename);
+    if (!picked) return 'cancelled';
+    const blob = await makeBlob();
+    await window.novaDesktop.writeSaveFile(picked.token, await blob.arrayBuffer());
+    return 'picker';
+  }
+  let pickerPromise = null;
+  if (window.showSaveFilePicker) {
+    try {
+      pickerPromise = window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{ description: 'NovaBoard workspace', accept: { 'application/octet-stream': ['.novaboard'] } }],
+      });
+      pickerPromise.catch(() => {});
+    } catch (e) { pickerPromise = null; }
+  }
+  if (pickerPromise) {
+    let handle = null;
+    try { handle = await pickerPromise; }
+    catch (e) { if (e && e.name === 'AbortError') return 'cancelled'; handle = null; }
+    if (handle) {
+      const blob = await makeBlob();
+      const w = await handle.createWritable();
+      await w.write(blob);
+      await w.close();
+      return 'picker';
+    }
+  }
+  const blob = await makeBlob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  return 'download';
+}
+
+/* ---------- Boot telemetry + chime ---------- */
+
+function nbBootTelemetry(storage) {
+  const nav = window.navigator;
+  const dpr = window.devicePixelRatio || 1;
+  const cores = nav.hardwareConcurrency ? `${nav.hardwareConcurrency} cores` : 'n/a';
+  const mem = nav.deviceMemory ? ` · ${nav.deviceMemory} GB` : '';
+  return [
+    { label: 'KERNEL', value: `novaboard-os ${NB_VERSION}`, ok: true },
+    { label: 'DISPLAY', value: `${window.innerWidth}×${window.innerHeight} @${Math.round(dpr * 100) / 100}x`, ok: true },
+    { label: 'COMPUTE', value: cores + mem, ok: true },
+    { label: 'CANVAS ENGINE', value: window.fabric ? `fabric ${window.fabric.version}` : 'not loaded', ok: !!window.fabric },
+    { label: 'DOC ENGINE', value: (window.pdfjsLib ? 'pdf.js' : 'pdf.js missing') + ' · ' + (window.jspdf ? 'jsPDF' : 'jsPDF missing'), ok: !!(window.pdfjsLib && window.jspdf) },
+    { label: 'LOCAL STORAGE', value: storage.text, ok: storage.ok },
+    { label: 'AUTO-SAVE', value: storage.ok ? 'armed · crash-safe' : 'unavailable', ok: storage.ok },
+    { label: 'NETWORK', value: nav.onLine === false ? 'offline · fully local' : 'online', ok: true },
+    { label: 'RECOVERY', value: (NB_BOOT_SESSION && NB_BOOT_SESSION.clean === false) ? 'previous session restored' : 'clean boot', ok: true },
+  ];
+}
+
+/* Classic single "POST OK" beep: a short, quiet square-wave tone like an old PC speaker. */
+function nbPlayPostBeep(ctx) {
+  const t0 = ctx.currentTime + 0.02;
+  const osc = ctx.createOscillator();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(1000, t0);
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass'; lp.frequency.value = 3200;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(0.07, t0 + 0.006);
+  g.gain.setValueAtTime(0.07, t0 + 0.16);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+  osc.connect(lp); lp.connect(g); g.connect(ctx.destination);
+  osc.start(t0); osc.stop(t0 + 0.22);
+}
+
+/* Classic startup chime: an original warm rising major chord (C-E-G-C-E) over a soft bass,
+   ringing out for about two seconds. Peak level is deliberately low. */
+function nbPlayStartupChime(ctx) {
+  const t0 = ctx.currentTime + 0.03;
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0.0001, t0);
+  master.gain.exponentialRampToValueAtTime(0.22, t0 + 0.05);
+  master.gain.setValueAtTime(0.22, t0 + 0.9);
+  master.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.8);
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass'; lp.frequency.value = 4200; lp.Q.value = 0.5;
+  master.connect(lp); lp.connect(ctx.destination);
+  // gentle echo for a bit of space
+  const delay = ctx.createDelay(0.5); delay.delayTime.value = 0.18;
+  const fb = ctx.createGain(); fb.gain.value = 0.25;
+  const wet = ctx.createGain(); wet.gain.value = 0.3;
+  lp.connect(delay); delay.connect(fb); fb.connect(delay); delay.connect(wet); wet.connect(ctx.destination);
+
+  // soft bass under the chord (C3)
+  const bass = ctx.createOscillator(); bass.type = 'sine'; bass.frequency.value = 130.81;
+  const bg = ctx.createGain();
+  bg.gain.setValueAtTime(0.0001, t0);
+  bg.gain.exponentialRampToValueAtTime(0.7, t0 + 0.08);
+  bg.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.4);
+  bass.connect(bg); bg.connect(master); bass.start(t0); bass.stop(t0 + 2.5);
+
+  [261.63, 329.63, 392.0, 523.25, 659.25].forEach((f, i) => {
+    const st = t0 + i * 0.11;
+    const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = f;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, st);
+    g.gain.exponentialRampToValueAtTime(0.55, st + 0.025);
+    g.gain.exponentialRampToValueAtTime(0.0001, st + 2.0);
+    o.connect(g); g.connect(master); o.start(st); o.stop(st + 2.1);
+    const o2 = ctx.createOscillator(); o2.type = 'sine'; o2.frequency.value = f * 2;
+    const g2 = ctx.createGain();
+    g2.gain.setValueAtTime(0.0001, st);
+    g2.gain.exponentialRampToValueAtTime(0.14, st + 0.02);
+    g2.gain.exponentialRampToValueAtTime(0.0001, st + 1.1);
+    o2.connect(g2); g2.connect(master); o2.start(st); o2.stop(st + 1.2);
+  });
+  setTimeout(() => { try { master.disconnect(); lp.disconnect(); delay.disconnect(); wet.disconnect(); } catch (e) { /* closed */ } }, 4200);
+}
+
 /* ============================== ICONS ============================== */
 /* Inline SVG icon set (Lucide-style, hand-drawn to match) — self-contained,
    no external icon package dependency needed for this artifact runtime. */
@@ -345,37 +794,160 @@ const IDot = (p) => <Svg {...p}><circle cx="12" cy="12" r="3" fill="currentColor
 /* ============================== SPLASH ============================== */
 
 function SplashScreen({ onDone }) {
+  const [t, setT] = useState(0);            // milliseconds into the sequence
   const [exiting, setExiting] = useState(false);
+  const [audioLocked, setAudioLocked] = useState(false);
+  const [storage, setStorage] = useState({ ok: true, text: 'probing…' });
+  const doneRef = useRef(onDone);
+  doneRef.current = onDone;                 // latest callback without restarting the sequence on re-render
+  const finishedRef = useRef(false);
+  const audioRef = useRef({ ctx: null, beepDone: false, chimeDone: false, pendingChime: false });
+  const reduced = useMemo(() => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches), []);
+
+  // Timeline (ms): POST text -> beep -> logo screen + chime -> fade out.
+  const K = useMemo(() => {
+    const k = reduced ? 0.45 : 1;
+    return { postEnd: 2050 * k, logo: 2400 * k, end: 5000 * k, k };
+  }, [reduced]);
+
+  const finish = useCallback(() => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    setExiting(true);
+    setTimeout(() => { if (doneRef.current) doneRef.current(); }, 450);
+  }, []);
+
+  /* Browsers only allow sound after a user gesture, so the first tap / key press re-tries it. */
+  useEffect(() => {
+    const a = audioRef.current;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) { a.ctx = new AudioCtx(); if (a.ctx.state !== 'running') a.ctx.resume().catch(() => {}); }
+    } catch (e) { /* sound is optional */ }
+    const unlock = () => {
+      const c = a.ctx;
+      if (!c) return;
+      c.resume().then(() => {
+        if (c.state === 'running' && a.pendingChime && !finishedRef.current) {
+          a.pendingChime = false; setAudioLocked(false); nbPlayStartupChime(c);
+        }
+      }).catch(() => {});
+    };
+    const onKey = (e) => { unlock(); if (e.key === 'Escape' || e.key === 'Enter') finish(); };
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', onKey);
+      const c = a.ctx;
+      if (c) setTimeout(() => { try { c.close(); } catch (e) { /* ignore */ } }, 5000); // let the chime ring out
+    };
+  }, [finish]);
 
   useEffect(() => {
-    const exitTimer = setTimeout(() => setExiting(true), 1450);
-    const doneTimer = setTimeout(() => onDone(), 1800);
-    return () => { clearTimeout(exitTimer); clearTimeout(doneTimer); };
-  }, [onDone]);
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = (now) => {
+      if (finishedRef.current) return;
+      const el = now - t0;
+      setT(el);
+      const a = audioRef.current;
+      const running = !!(a.ctx && a.ctx.state === 'running');
+      if (!a.beepDone && el >= K.postEnd) { a.beepDone = true; if (running) nbPlayPostBeep(a.ctx); }
+      if (!a.chimeDone && el >= K.logo) {
+        a.chimeDone = true;
+        if (running) nbPlayStartupChime(a.ctx);
+        else { a.pendingChime = true; setAudioLocked(true); }
+      }
+      if (el >= K.end) { finish(); return; }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [K, finish]);
+
+  useEffect(() => {
+    let alive = true;
+    nbProbeStorage().then((r) => { if (alive) setStorage(r); });
+    return () => { alive = false; };
+  }, []);
+
+  const lines = useMemo(() => nbBootTelemetry(storage), [storage]);
+  const clamp01 = (v) => Math.max(0, Math.min(1, v));
+  const inPost = t < K.logo;
+  const memFrac = clamp01((t - 450 * K.k) / (800 * K.k));
+  const memKB = Math.round(16384 * memFrac);
+  const memDone = memFrac >= 1;
+  const rowAt = (i) => (950 + i * 120) * K.k;       // when telemetry row i appears
+  const totalBlocks = 24;
+  const loadFrac = clamp01((t - K.logo) / (K.end - K.logo - 250 * K.k));
+  const litBlocks = Math.round(loadFrac * totalBlocks);
 
   return (
-    <div className={`splash-bg fixed inset-0 flex items-center justify-center ${exiting ? 'splash-exit' : ''}`}>
-      <div className="relative" style={{ width: 260, height: 260 }}>
-        <div className="orbit-ring spin-a" style={{ width: 220, height: 220 }} />
-        <div className="orbit-ring r2 spin-b" style={{ width: 160, height: 160 }} />
-        <div className="orbit-ring" style={{ width: 100, height: 100, borderColor: 'rgba(56,189,248,0.15)' }} />
-        <div
-          className="core-dot absolute rounded-full"
-          style={{
-            top: '50%', left: '50%', width: 14, height: 14,
-            background: 'radial-gradient(circle, #7dd3fc 0%, #38bdf8 60%, transparent 100%)',
-          }}
-        />
+    <div
+      className={`post-bg post-text fixed inset-0 ${exiting ? 'splash-exit' : ''}`}
+      role="status" aria-live="polite" aria-label="NovaBoard OS is starting"
+    >
+      <div className="crt-on absolute inset-0">
+        {inPost ? (
+          <div key="post" className="absolute inset-0 p-5 sm:p-8 text-[12px] sm:text-[13px] leading-[1.55] overflow-hidden">
+            <div className="text-white font-semibold">NovaBoard BIOS v{NB_VERSION}</div>
+            <div className="text-slate-500">Copyright (C) NovaBoard Systems. All rights reserved.</div>
+            <div className="h-3" />
+            {t > 250 * K.k && (
+              <div>CPU : {navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency}-core processor` : 'generic processor'}</div>
+            )}
+            {t > 450 * K.k && (
+              <div>
+                Memory Test : <span className="tabular-nums">{String(memKB).padStart(5, ' ')}K</span>
+                {memDone && <span className="text-emerald-400"> OK</span>}
+              </div>
+            )}
+            <div className="h-3" />
+            <div className="max-w-xl">
+              {lines.map((l, i) => (t >= rowAt(i) ? (
+                <div key={l.label} className="flex gap-2">
+                  <span className="w-32 sm:w-36 text-slate-400 flex-shrink-0">{l.label}</span>
+                  <span className="flex-1 truncate">{l.value}</span>
+                  <span className={l.ok ? 'text-emerald-400' : 'text-amber-400'}>{l.ok ? '[ OK ]' : '[WARN]'}</span>
+                </div>
+              ) : null))}
+            </div>
+            {t >= K.postEnd - 120 * K.k && <div className="mt-3 text-white">All systems nominal. Starting NovaBoard OS…</div>}
+            <div className="mt-1"><span className="post-cursor" /></div>
+          </div>
+        ) : (
+          <div key="logo" className="post-flick absolute inset-0 flex flex-col items-center justify-center px-4">
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
+              style={{ border: '2px solid #38bdf8', boxShadow: '0 0 28px rgba(56,189,248,0.45), inset 0 0 18px rgba(56,189,248,0.18)' }}
+            >
+              <span className="text-3xl font-bold text-cyan-300" style={{ textShadow: '0 0 14px rgba(56,189,248,0.9)' }}>N</span>
+            </div>
+            <div className="text-3xl sm:text-4xl font-semibold text-white tracking-[0.28em] pl-[0.28em]">NOVABOARD</div>
+            <div className="text-[11px] text-slate-500 tracking-[0.5em] mt-2 pl-[0.5em]">OPERATING SYSTEM {NB_VERSION}</div>
+            <div className="mt-8 w-[min(86vw,360px)]">
+              <div className="boot-blocks" aria-hidden="true">
+                {Array.from({ length: totalBlocks }, (_, i) => <i key={i} className={i < litBlocks ? 'on' : ''} />)}
+              </div>
+              <div className="text-[11px] text-slate-500 mt-2.5 text-center tracking-wider">
+                {loadFrac >= 1 ? 'Ready' : 'Starting NovaBoard OS…'}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-      <div className="absolute bottom-[30%] left-1/2 -translate-x-1/2 text-center fade-up" style={{ animationDelay: '0.35s', opacity: 0 }}>
-        <div className="text-2xl tracking-[0.2em] font-semibold" style={{
-          backgroundImage: 'linear-gradient(90deg, #e5e9f0, #a5b4fc)',
-          WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent'
-        }}>
-          NOVABOARD OS
-        </div>
-        <div className="mono text-[11px] text-slate-500 mt-2 tracking-wider">initializing canvas kernel…</div>
-      </div>
+
+      <div className="crt-lines" />
+      <button
+        onClick={finish}
+        className="absolute bottom-4 right-5 z-10 text-[11px] text-slate-500 hover:text-cyan-300 tracking-widest transition-colors focus-ring rounded px-2 py-1"
+      >
+        SKIP ›
+      </button>
+      {audioLocked && (
+        <div className="absolute bottom-4 left-5 z-10 text-[10px] text-slate-600 tracking-widest">TAP ANYWHERE FOR STARTUP SOUND</div>
+      )}
     </div>
   );
 }
@@ -523,12 +1095,12 @@ function ActionCard({ icon: IconCmp, title, desc, onClick, accent = 'cyan' }) {
   );
 }
 
-function RecentSessions({ sessions, onOpen, onClear }) {
+function RecentSessions({ sessions, onOpen, onClear, onDelete }) {
   if (sessions.length === 0) {
     return (
       <div className="glass rounded-2xl p-6 border-slate-700/50 border-dashed flex flex-col items-center justify-center text-center gap-2 min-h-[148px]">
         <ILayers size={20} className="text-slate-600" />
-        <div className="text-sm text-slate-500">No sessions yet — boards you create will show up here.</div>
+        <div className="text-sm text-slate-500">No sessions yet — boards you create are saved here automatically.</div>
       </div>
     );
   }
@@ -539,28 +1111,45 @@ function RecentSessions({ sessions, onOpen, onClear }) {
         <button onClick={onClear} className="text-xs text-slate-600 hover:text-slate-400 transition-colors focus-ring rounded px-1">clear</button>
       </div>
       <div className="max-h-64 overflow-y-auto divide-y divide-slate-800/70">
-        {sessions.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => onOpen(s)}
-            className="w-full flex items-center gap-3 px-5 py-3 hover:bg-slate-800/40 transition-colors text-left focus-ring"
-          >
-            <span className="w-8 h-8 rounded-lg border border-slate-700 flex-shrink-0" style={{ background: s.bg }} />
-            <span className="flex-1 min-w-0">
-              <span className="block text-sm text-slate-200 truncate">{s.title}</span>
-              <span className="block text-xs text-slate-500 mono">{timeAgo(s.updatedAt)} · {s.pageCount || 1} page{(s.pageCount || 1) > 1 ? 's' : ''}</span>
-            </span>
-            <IChevronRight size={15} className="text-slate-600 flex-shrink-0" />
-          </button>
+        {sessions.map((sess) => (
+          <div key={sess.id} className="flex items-center hover:bg-slate-800/40 transition-colors">
+            <button
+              onClick={() => onOpen(sess)}
+              className="flex-1 min-w-0 flex items-center gap-3 pl-5 pr-2 py-3 text-left focus-ring"
+            >
+              {sess.thumb ? (
+                <img src={sess.thumb} alt="" className="w-8 h-8 rounded-lg border border-slate-700 flex-shrink-0 object-cover" />
+              ) : (
+                <span className="w-8 h-8 rounded-lg border border-slate-700 flex-shrink-0" style={{ background: sess.bg }} />
+              )}
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm text-slate-200 truncate">{sess.title}</span>
+                <span className="block text-xs text-slate-500 mono">{timeAgo(sess.updatedAt)} · {sess.pageCount || 1} page{(sess.pageCount || 1) > 1 ? 's' : ''}</span>
+              </span>
+              <IChevronRight size={15} className="text-slate-600 flex-shrink-0" />
+            </button>
+            <button
+              onClick={() => onDelete(sess)}
+              title="Delete this board from this device"
+              aria-label={`Delete ${sess.title}`}
+              className="mr-3 p-2 rounded-lg text-slate-600 hover:text-red-300 hover:bg-red-500/10 transition-colors focus-ring"
+            >
+              <ITrash2 size={14} />
+            </button>
+          </div>
         ))}
       </div>
     </div>
   );
 }
 
-function HomeScreen({ onEnterCanvas, sessions, setSessions }) {
+function HomeScreen({ onEnterCanvas, sessions, setSessions, onOpenFile, recovery, onDismissRecovery }) {
   const [modal, setModal] = useState(null); // null | 'new' | 'upload'
+  const [confirm, setConfirm] = useState(null); // {type:'delete', session} | {type:'clear'}
+  const [fileError, setFileError] = useState(null);
+  const [openingFile, setOpeningFile] = useState(false);
   const fileInputRef = useRef(null);
+  const boardInputRef = useRef(null);
 
   const createSession = useCallback((meta) => {
     const session = {
@@ -572,13 +1161,12 @@ function HomeScreen({ onEnterCanvas, sessions, setSessions }) {
       source: meta.source || 'blank',
     };
     setSessions(prev => {
-      const next = [session, ...prev].slice(0, 12);
-      saveSessions(next);
+      const next = nbCapSessions([session, ...prev]);
+      saveSessions(next.map(nbSlimSession));
       return next;
     });
-    // pdfFile (a live File object) can't be persisted to localStorage, so it's
-    // attached only to the in-memory session handed to onEnterCanvas, never
-    // to the copy saved into Recent Sessions.
+    // pdfFile (a live File object) can't be persisted, so it's attached only to the
+    // in-memory session handed to onEnterCanvas, never to the saved recents entry.
     onEnterCanvas(meta.pdfFile ? { ...session, pdfFile: meta.pdfFile } : session);
   }, [onEnterCanvas, setSessions]);
 
@@ -592,12 +1180,87 @@ function HomeScreen({ onEnterCanvas, sessions, setSessions }) {
     });
   }, [createSession]);
 
+  const handleBoardFilePicked = useCallback(async (file) => {
+    if (!file) return;
+    setOpeningFile(true);
+    try {
+      await onOpenFile(file);   // navigates to the canvas on success
+    } catch (err) {
+      setFileError((err && err.message) || 'Could not open that file.');
+      setOpeningFile(false);
+    }
+  }, [onOpenFile]);
+
+  /* Boards stored in IndexedDB are the source of truth for titles, page counts and thumbnails. */
+  useEffect(() => {
+    let alive = true;
+    NBStore.listBoards().then((metas) => {
+      if (!alive || metas.length === 0) return;
+      setSessions((prev) => {
+        const byId = new Map(prev.map((x) => [x.id, x]));
+        metas.forEach((m) => {
+          const base = byId.get(m.id) || {};
+          byId.set(m.id, { ...base, id: m.id, title: m.title, bg: m.bg, source: m.source, pageCount: m.pageCount, updatedAt: m.updatedAt, thumb: m.thumb || null });
+        });
+        const merged = Array.from(byId.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+        const next = nbCapSessions(merged);
+        saveSessions(next.map(nbSlimSession));
+        return next;
+      });
+    }).catch(() => { /* storage unavailable: the localStorage list is still shown */ });
+    return () => { alive = false; };
+  }, [setSessions]);
+
+  const runConfirm = () => {
+    const c = confirm;
+    setConfirm(null);
+    if (!c) return;
+    if (c.type === 'clear') {
+      sessions.forEach((x) => { NBStore.deleteBoard(x.id).catch(() => {}); });
+      setSessions([]);
+      saveSessions([]);
+    } else {
+      NBStore.deleteBoard(c.session.id).catch(() => {});
+      setSessions((prev) => {
+        const next = prev.filter((x) => x.id !== c.session.id);
+        saveSessions(next.map(nbSlimSession));
+        return next;
+      });
+    }
+  };
+
+  const recoverySession = recovery ? sessions.find((x) => x.id === recovery.id) : null;
+
   return (
     <div className="track-in relative h-full overflow-y-auto">
       <div className="max-w-5xl mx-auto px-6 sm:px-10 pt-16 pb-20">
         <HeroGreeting />
 
-        <div className="grid sm:grid-cols-3 gap-4 mt-10">
+        {recoverySession && (
+          <div
+            className="mt-8 glass rounded-2xl border border-emerald-500/30 p-4 flex items-center gap-3"
+            role="status"
+            style={{ boxShadow: '0 0 0 1px rgba(52,211,153,0.10), 0 10px 40px -12px rgba(52,211,153,0.25)' }}
+          >
+            <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+              <span className="breathe-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm text-slate-100 font-medium">Your last board was recovered</div>
+              <div className="text-xs text-slate-400 truncate">“{recoverySession.title}” was auto-saved {timeAgo(recoverySession.updatedAt)} — pick up right where you left off.</div>
+            </div>
+            <button
+              onClick={() => onEnterCanvas(recoverySession)}
+              className="px-3.5 py-2 text-sm rounded-lg font-medium bg-gradient-to-r from-cyan-500 to-indigo-500 text-slate-950 hover:brightness-110 transition-all focus-ring"
+            >
+              Resume
+            </button>
+            <button onClick={onDismissRecovery} aria-label="Dismiss" title="Dismiss" className="navdock-btn focus-ring"><IX size={14} /></button>
+          </div>
+        )}
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
           <ActionCard
             icon={IPlus}
             title="New blank board"
@@ -612,18 +1275,23 @@ function HomeScreen({ onEnterCanvas, sessions, setSessions }) {
             onClick={() => fileInputRef.current?.click()}
             accent="indigo"
           />
-          <div className="sm:row-span-1">
-            <ActionCard
-              icon={IClock}
-              title="Recent sessions"
-              desc="Jump back into a board you were working on."
-              onClick={() => {
-                const list = document.getElementById('recent-sessions-anchor');
-                list?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }}
-              accent="cyan"
-            />
-          </div>
+          <ActionCard
+            icon={IFolderOpen}
+            title={openingFile ? 'Opening…' : 'Open .novaboard file'}
+            desc="Load a workspace you saved from NovaBoard."
+            onClick={() => { if (!openingFile) boardInputRef.current?.click(); }}
+            accent="cyan"
+          />
+          <ActionCard
+            icon={IClock}
+            title="Recent sessions"
+            desc="Boards are auto-saved — jump back into any of them."
+            onClick={() => {
+              const list = document.getElementById('recent-sessions-anchor');
+              list?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+            accent="indigo"
+          />
         </div>
 
         <input
@@ -631,14 +1299,22 @@ function HomeScreen({ onEnterCanvas, sessions, setSessions }) {
           type="file"
           accept="application/pdf"
           className="hidden"
-          onChange={(e) => handleFilePicked(e.target.files?.[0])}
+          onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; handleFilePicked(f); }}
+        />
+        <input
+          ref={boardInputRef}
+          type="file"
+          accept=".novaboard,.json,application/json"
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; handleBoardFilePicked(f); }}
         />
 
         <div id="recent-sessions-anchor" className="mt-10">
           <RecentSessions
             sessions={sessions}
-            onOpen={(s) => onEnterCanvas(s)}
-            onClear={() => { setSessions([]); saveSessions([]); }}
+            onOpen={(x) => onEnterCanvas(x)}
+            onClear={() => setConfirm({ type: 'clear' })}
+            onDelete={(x) => setConfirm({ type: 'delete', session: x })}
           />
         </div>
       </div>
@@ -647,6 +1323,27 @@ function HomeScreen({ onEnterCanvas, sessions, setSessions }) {
         <NewBoardModal
           onClose={() => setModal(null)}
           onCreate={(meta) => { setModal(null); createSession(meta); }}
+        />
+      )}
+      {confirm && (
+        <ConfirmDialog
+          title={confirm.type === 'clear' ? 'Delete all recent boards?' : 'Delete this board?'}
+          body={confirm.type === 'clear'
+            ? 'Every board saved on this device will be permanently removed. Files you saved as .novaboard are not affected.'
+            : `“${confirm.session.title}” will be permanently removed from this device. A .novaboard file you saved is not affected.`}
+          confirmLabel="Delete"
+          danger
+          onConfirm={runConfirm}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+      {fileError && (
+        <ConfirmDialog
+          title="Couldn't open that file"
+          body={fileError}
+          confirmLabel="OK"
+          onConfirm={() => setFileError(null)}
+          onCancel={() => setFileError(null)}
         />
       )}
     </div>
@@ -705,7 +1402,7 @@ function NewPageModal({ onPick, onCancel }) {
   }, [onCancel]);
 
   const options = [
-    { id: 'slate', label: 'Dark Slate', hex: SLATE_BG, ring: 'rgba(56,189,248,0.45)' },
+    { id: 'black', label: 'Pure Black', hex: BLACK_BG, ring: 'rgba(148,163,184,0.45)' },
     { id: 'white', label: 'Pure White', hex: WHITE_BG, ring: 'rgba(148,163,184,0.6)' },
   ];
 
@@ -772,21 +1469,101 @@ function ExportMenu({ onExportPdf, exporting, onClose }) {
   );
 }
 
-function CanvasTopBar({ session, onBackHome, onNewBoard, isFullscreen, onToggleFullscreen }) {
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null); // 'home' | 'new'
+/* Live auto-save indicator for the top bar. */
+function SaveStatus({ state }) {
+  const now = useClock();
+  const status = state.status;
+  const secs = Math.max(0, Math.round((now.getTime() - (state.at || now.getTime())) / 1000));
+  const ago = secs < 5 ? 'just now' : secs < 60 ? `${secs}s ago` : `${Math.floor(secs / 60)}m ago`;
+  let dot = 'bg-emerald-400';
+  let pulse = 'breathe-dot';
+  let label = 'Saved';
+  let tone = 'text-slate-200';
+  let title = 'All changes are saved on this device.';
+  if (status === 'saving') { pulse = 'save-pulse'; label = 'Saving…'; title = 'Saving your board to this device…'; }
+  else if (status === 'error') { dot = 'bg-red-400'; pulse = ''; label = 'Not saved'; tone = 'text-red-300'; title = state.message || 'Auto-save failed. Use Save to keep a copy as a .novaboard file.'; }
+  else if (status === 'off') { dot = 'bg-amber-400'; pulse = ''; label = 'Unsaved'; tone = 'text-amber-300'; title = state.message || 'Auto-save is unavailable in this browser. Use Save to keep a copy.'; }
+  return (
+    <div
+      className="flex items-center gap-2 glass rounded-lg px-3 py-1.5 border-slate-700/50"
+      role="status" aria-live="polite" title={title}
+    >
+      <span className="relative flex h-2 w-2">
+        <span className={`absolute inline-flex h-full w-full rounded-full ${dot} ${pulse}`} />
+        <span className={`relative inline-flex rounded-full h-2 w-2 ${dot}`} />
+      </span>
+      <span className={`mono text-xs ${tone}`}>{label}</span>
+      {status === 'saved' && <span className="mono text-[10px] text-slate-500 hidden lg:inline">{ago}</span>}
+    </div>
+  );
+}
 
-  const requestConfirm = (action) => { setConfirmAction(action); setConfirmOpen(true); };
-  const handleConfirmed = () => {
-    setConfirmOpen(false);
-    if (confirmAction === 'home') onBackHome();
-    if (confirmAction === 'new') onNewBoard();
-  };
+function Toast({ notice }) {
+  if (!notice) return null;
+  return (
+    <div
+      className="nb-toast fixed top-16 left-1/2 z-[70] glass-strong rounded-xl px-4 py-2.5 flex items-center gap-2.5 shadow-2xl"
+      role="status" aria-live="polite"
+      style={{ transform: 'translate(-50%, 0)' }}
+    >
+      <ICheck size={15} className="text-emerald-300" />
+      <span className="text-sm text-slate-200">{notice.text}</span>
+    </div>
+  );
+}
 
+/* Glassmorphic PDF import progress: glowing bar + percentage, fades out once pages are on the board. */
+function PdfImportOverlay({ state }) {
+  if (!state) return null;
+  const { phase, done, total, name } = state;
+  const known = total > 0;
+  const pct = phase === 'done' || phase === 'out' ? 100 : known ? Math.min(99, Math.round((done / total) * 100)) : 0;
+  const out = phase === 'out';
+  const finished = phase === 'done' || phase === 'out';
+  return (
+    <div
+      className={`nb-ov fixed inset-0 z-[65] flex items-center justify-center p-4 ${out ? 'out' : ''}`}
+      role="status" aria-live="polite" aria-label="Importing PDF"
+    >
+      <div
+        className={`nb-ov-card glass-strong modal-in relative w-full max-w-sm rounded-2xl p-6 ${out ? 'out' : ''}`}
+        style={{ boxShadow: '0 0 0 1px rgba(56,189,248,0.18), 0 20px 60px -10px rgba(56,189,248,0.25)' }}
+      >
+        <div className="flex items-center gap-3 mb-5">
+          <span className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-300 flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 0 20px rgba(56,189,248,0.25)' }}>
+            {finished ? <ICheck size={19} /> : <IFileText size={19} />}
+          </span>
+          <div className="min-w-0">
+            <div className="text-sm font-medium text-slate-100">{finished ? 'Document ready' : 'Importing PDF'}</div>
+            <div className="text-xs text-slate-500 truncate">{name}</div>
+          </div>
+        </div>
+        <div className="flex items-end justify-between mb-2.5">
+          <span
+            className="mono text-4xl font-semibold tabular-nums text-slate-100"
+            style={{ textShadow: '0 0 24px rgba(56,189,248,0.55)' }}
+          >
+            {known || finished ? pct : '··'}<span className="text-lg text-cyan-300/80">{known || finished ? '%' : ''}</span>
+          </span>
+          <span className="mono text-[11px] text-slate-500 pb-1.5">
+            {finished ? `${total} page${total === 1 ? '' : 's'}` : known ? `page ${Math.min(done + 1, total)} / ${total}` : 'reading…'}
+          </span>
+        </div>
+        <div className={`nb-prog ${known || finished ? '' : 'indet'}`}><i style={{ width: `${pct}%` }} /></div>
+        <div className="mono text-[11px] text-slate-500 mt-3">
+          {finished ? 'Pages are on your board.' : known ? 'Rendering pages in high quality…' : 'Opening document…'}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CanvasTopBar({ session, onBackHome, onNewBoard, isFullscreen, onToggleFullscreen, saveState, onSaveFile, onOpenFile }) {
   return (
     <div className="glass border-b border-slate-700/40 rounded-none flex items-center gap-3 px-4 py-2.5 flex-shrink-0 relative z-30">
       <button
-        onClick={() => requestConfirm('home')}
+        onClick={onBackHome}
+        title="Back to the dashboard (your board is saved automatically)"
         className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors focus-ring rounded-md px-2 py-1"
       >
         <IArrowLeft size={15} /> Home
@@ -800,7 +1577,7 @@ function CanvasTopBar({ session, onBackHome, onNewBoard, isFullscreen, onToggleF
       </div>
 
       <button
-        onClick={() => requestConfirm('new')}
+        onClick={onNewBoard}
         className="flex items-center gap-1.5 text-xs mono text-slate-500 hover:text-cyan-300 transition-colors focus-ring rounded-md px-2 py-1 ml-1"
       >
         <IPlus size={13} /> New board
@@ -808,30 +1585,32 @@ function CanvasTopBar({ session, onBackHome, onNewBoard, isFullscreen, onToggleF
 
       <div className="flex-1" />
 
+      <SaveStatus state={saveState} />
+
+      <button
+        onClick={onOpenFile}
+        title="Open a .novaboard file"
+        className="flex items-center gap-1.5 text-xs mono text-slate-400 hover:text-cyan-300 transition-colors focus-ring rounded-md px-2.5 py-1.5 border border-slate-700/60 hover:border-cyan-500/40"
+      >
+        <IFolderOpen size={13} /> <span className="hidden md:inline">Open</span>
+      </button>
+      <button
+        onClick={onSaveFile}
+        title="Save this workspace as a .novaboard file"
+        className="flex items-center gap-1.5 text-xs mono text-slate-400 hover:text-cyan-300 transition-colors focus-ring rounded-md px-2.5 py-1.5 border border-slate-700/60 hover:border-cyan-500/40"
+      >
+        <ISave size={13} /> <span className="hidden md:inline">Save</span>
+      </button>
+
       <button
         onClick={onToggleFullscreen}
         title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-        className="flex items-center gap-1.5 text-xs mono text-slate-400 hover:text-cyan-300 transition-colors focus-ring rounded-md px-2.5 py-1.5 border border-slate-700/60 hover:border-cyan-500/40 mr-2"
+        className="flex items-center gap-1.5 text-xs mono text-slate-400 hover:text-cyan-300 transition-colors focus-ring rounded-md px-2.5 py-1.5 border border-slate-700/60 hover:border-cyan-500/40"
       >
-        <IMaximize size={13} /> {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+        <IMaximize size={13} /> <span className="hidden md:inline">{isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}</span>
       </button>
 
       <LiveClock />
-
-      {confirmOpen && (
-        <ConfirmDialog
-          title={confirmAction === 'home' ? 'Leave this board?' : 'Start a new board?'}
-          body={
-            confirmAction === 'home'
-              ? 'Your drawing on this board is not saved yet (board persistence arrives in a later phase). Leaving now will discard it.'
-              : 'This will take you back to the dashboard to configure a new board.'
-          }
-          confirmLabel={confirmAction === 'home' ? 'Leave board' : 'Continue'}
-          danger={confirmAction === 'home'}
-          onConfirm={handleConfirmed}
-          onCancel={() => setConfirmOpen(false)}
-        />
-      )}
     </div>
   );
 }
@@ -895,6 +1674,13 @@ const IPlay = (p) => <Svg {...p}><polygon points="6 3 20 12 6 21 6 3" fill="curr
 const IPause = (p) => <Svg {...p}><rect x="6" y="4" width="4" height="16" fill="currentColor" stroke="none"/><rect x="14" y="4" width="4" height="16" fill="currentColor" stroke="none"/></Svg>;
 const IRotateCcw = (p) => <Svg {...p}><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 8 8 8"/></Svg>;
 const IFlag = (p) => <Svg {...p}><path d="M4 3v18"/><path d="M4 4h12l-2 4 2 4H4"/></Svg>;
+const IGrip = (p) => <Svg {...p}><circle cx="9" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="18" r="1.2" fill="currentColor" stroke="none"/></Svg>;
+const ICopy = (p) => <Svg {...p}><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></Svg>;
+const IPaste = (p) => <Svg {...p}><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></Svg>;
+const IImageIcon = (p) => <Svg {...p}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></Svg>;
+const IFolderOpen = (p) => <Svg {...p}><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></Svg>;
+const ISave = (p) => <Svg {...p}><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></Svg>;
+const IStickyIcon = (p) => <Svg {...p}><path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3z"/><path d="M15 3v6h6"/></Svg>;
 
 /* ---------- Helpers ---------- */
 
@@ -1122,8 +1908,16 @@ function playChime() {
 /* ---------- Multi-slide data model ---------- */
 
 const PDF_LETTERBOX_BG = '#090d16';
-const SLATE_BG = '#090d16';
+const BLACK_BG = '#000000';
 const WHITE_BG = '#ffffff';
+
+/* Custom props that must survive every fabric toJSON()/clone() round-trip. */
+const NB_PROPS = ['nbKind', 'nb3D', 'nbYaw', 'nbTilt'];
+/* Object clipboard lives at module level so it survives slide switches. */
+const NB_CLIPBOARD = { obj: null };
+const STICKY_COLORS = ['#fde047', '#f9a8d4', '#86efac', '#93c5fd', '#fdba74'];
+const TEXT_FONT = "'Space Grotesk', ui-sans-serif, system-ui, sans-serif";
+const textSizeFor = (w) => Math.max(16, Math.round(w * 5));
 
 function makeSlide(bg, opts = {}) {
   return {
@@ -1146,7 +1940,7 @@ function ensurePdfJs() {
   pdfjsReadyPromise = new Promise((resolve, reject) => {
     const lib = window.pdfjsLib;
     if (!lib) { reject(new Error('PDF.js failed to load.')); return; }
-    lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    lib.GlobalWorkerOptions.workerSrc = window.NB_PDF_WORKER || 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     resolve(lib);
   });
   return pdfjsReadyPromise;
@@ -1157,7 +1951,8 @@ function ensurePdfJs() {
 async function rasterizePdfPages(file, onProgress) {
   const lib = await ensurePdfJs();
   const buf = await file.arrayBuffer();
-  const pdf = await lib.getDocument({ data: buf }).promise;
+  const pdf = await lib.getDocument({ data: buf, ...(window.NB_PDF_OPTS || {}) }).promise;
+  if (onProgress) onProgress(0, pdf.numPages);
   const pages = [];
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -1394,8 +2189,27 @@ function ToolButton({ active, onClick, title, children, disabled }) {
   );
 }
 
-function ShapeFlyout({ activeShape, onPick, onClose }) {
+/* Nudge an absolutely-positioned popover sideways so it never clips outside the canvas stage. */
+function useKeepInView(ref) {
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const stage = el.closest('.canvas-stage');
+    if (!stage) return;
+    el.style.marginLeft = '0px';
+    const sr = stage.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    let shift = 0;
+    if (r.left < sr.left + 6) shift = sr.left + 6 - r.left;
+    else if (r.right > sr.right - 6) shift = sr.right - 6 - r.right;
+    if (shift) el.style.marginLeft = `${Math.round(shift)}px`;
+  }, []);
+}
+
+function ShapeFlyout({ activeShape, onPick, onClose, down = false }) {
   const ref = useRef(null);
+  const wrapRef = useRef(null);
+  useKeepInView(wrapRef);
   useEffect(() => {
     const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -1423,7 +2237,7 @@ function ShapeFlyout({ activeShape, onPick, onClose }) {
   );
 
   return (
-    <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 z-40">
+    <div ref={wrapRef} className={`absolute ${down ? 'top-full mt-3' : 'bottom-full mb-3'} left-1/2 -translate-x-1/2 z-40`}>
       <div ref={ref} className="glass-strong modal-in rounded-2xl p-3 w-64 shadow-2xl flex flex-col gap-3">
         <Group title="2D PRIMITIVES" items={SHAPES_2D} />
         <div className="h-px bg-slate-700/50" />
@@ -1437,8 +2251,10 @@ function ShapeFlyout({ activeShape, onPick, onClose }) {
    Rendered directly above the tool that opened it; dismisses on outside click / Esc.
    `anchorRef` is the tool's wrapper, so clicking the tool itself counts as "inside"
    (the tool's own onClick toggles it). */
-function StylePopover({ anchorRef, label, color, setColor, width, setWidth, onClose }) {
+function StylePopover({ anchorRef, label, color, setColor, width, setWidth, onClose, down = false, widthLabel = 'STROKE WIDTH', widthFormat = null }) {
   const [hexDraft, setHexDraft] = useState(color);
+  const popWrapRef = useRef(null);
+  useKeepInView(popWrapRef);
   useEffect(() => { setHexDraft(color); }, [color]);
 
   useEffect(() => {
@@ -1459,12 +2275,12 @@ function StylePopover({ anchorRef, label, color, setColor, width, setWidth, onCl
   };
 
   return (
-    <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 z-40">
+    <div ref={popWrapRef} className={`absolute ${down ? 'top-full mt-3' : 'bottom-full mb-3'} left-1/2 -translate-x-1/2 z-40`}>
       <div className="glass-strong modal-in rounded-2xl p-3.5 w-60 shadow-2xl flex flex-col gap-3.5" role="dialog" aria-label={`${label} style`}>
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="mono text-[10px] tracking-wider text-slate-500">STROKE WIDTH</span>
-            <span className="mono text-xs text-slate-300 tabular-nums">{width}px</span>
+            <span className="mono text-[10px] tracking-wider text-slate-500">{widthLabel}</span>
+            <span className="mono text-xs text-slate-300 tabular-nums">{widthFormat ? widthFormat(width) : `${width}px`}</span>
           </div>
           <input
             type="range" min="2" max="48" value={width}
@@ -1514,15 +2330,23 @@ function DrawToolbar({
   tool, setTool, pen, setPen, color, setColor, width, setWidth,
   canUndo, canRedo, onUndo, onRedo, onClear, hasObjects,
   activeShape, onPickShape,
+  onCopy, onPaste, canCopy, canPaste,
 }) {
   const isDrawTool = tool === 'draw';
   const [shapeMenuOpen, setShapeMenuOpen] = useState(false);
-  // Which tool's stroke popover is open: a pen id, 'shape', or null.
+  // Which tool's stroke popover is open: a pen id, 'shape', 'text', or null.
   const [styleFor, setStyleFor] = useState(null);
+  // null = docked bottom-centre; otherwise {left, top} in px inside the canvas stage.
+  const [pos, setPos] = useState(null);
+  const [collapsed, setCollapsed] = useState(false);
+  const barRef = useRef(null);
   const closeStyle = useCallback(() => setStyleFor(null), []);
   const anchorRefs = useRef({});
   const anchorRef = (id) => (el) => { anchorRefs.current[id] = el; };
   const refFor = (id) => ({ get current() { return anchorRefs.current[id] || null; } });
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
+  // Popovers open upward by default; flip them downward when the bar was dragged near the top.
+  const popDown = !!pos && pos.top < 340;
 
   const ActiveShapeIcon = useMemo(() => {
     const found = [...SHAPES_2D, ...SHAPES_3D].find(sh => sh.id === activeShape);
@@ -1535,6 +2359,58 @@ function DrawToolbar({
     { id: 'calligraphy', title: 'Calligraphy (C)', icon: ICalligraphy },
     { id: 'neon', title: 'Neon glow (N)', icon: INeon },
   ];
+
+  /* ---- Drag the whole bar by its grip (mouse + touch). Double-click the grip to re-dock. ---- */
+  const onGripDown = (e) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    const el = barRef.current;
+    const parent = el && el.offsetParent;
+    if (!el || !parent) return;
+    e.preventDefault();
+    setStyleFor(null);
+    setShapeMenuOpen(false);
+    const pr = parent.getBoundingClientRect();
+    const er = el.getBoundingClientRect();
+    const start = {
+      px: e.clientX, py: e.clientY,
+      left: er.left - pr.left, top: er.top - pr.top,
+      w: er.width, h: er.height, pw: pr.width, ph: pr.height,
+    };
+    const move = (ev) => {
+      setPos({
+        left: clamp(start.left + ev.clientX - start.px, 0, Math.max(0, start.pw - start.w)),
+        top: clamp(start.top + ev.clientY - start.py, 0, Math.max(0, start.ph - start.h)),
+      });
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  };
+
+  /* Keep a dragged bar inside the stage when the stage (or the bar) changes size. */
+  useEffect(() => {
+    const el = barRef.current;
+    const parent = el && el.offsetParent;
+    if (!el || !parent || !window.ResizeObserver) return;
+    const ro = new ResizeObserver(() => {
+      setPos((p) => {
+        if (!p) return p;
+        const pr = parent.getBoundingClientRect();
+        const er = el.getBoundingClientRect();
+        const left = clamp(p.left, 0, Math.max(0, pr.width - er.width));
+        const top = clamp(p.top, 0, Math.max(0, pr.height - er.height));
+        return (left === p.left && top === p.top) ? p : { left, top };
+      });
+    });
+    ro.observe(parent);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Clicking an inactive pen just selects it; clicking the ACTIVE pen opens its style popover.
   const onPenClick = (id) => {
@@ -1549,78 +2425,137 @@ function DrawToolbar({
     setStyleFor(null);
     setShapeMenuOpen((v) => !v);
   };
+  // Text: inactive -> arm the text tool; active -> size + colour popover.
+  const onTextClick = () => {
+    setShapeMenuOpen(false);
+    if (tool === 'text') { setStyleFor((v) => (v === 'text' ? null : 'text')); return; }
+    setStyleFor(null);
+    setTool('text');
+  };
 
   const InkDot = () => (
     <span
-      className="absolute bottom-1 right-1 w-2 h-2 rounded-full pointer-events-none"
+      className="absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full pointer-events-none"
       style={{ background: color, boxShadow: '0 0 0 1.5px rgba(15,20,32,0.95)' }}
     />
   );
 
-  const popover = (id, label) => styleFor === id && (
+  const popover = (id, label, extra) => styleFor === id && (
     <StylePopover
       anchorRef={refFor(id)} label={label}
       color={color} setColor={setColor} width={width} setWidth={setWidth}
-      onClose={closeStyle}
+      onClose={closeStyle} down={popDown}
+      {...(extra || {})}
     />
   );
 
+  const Divider = () => <div className="w-px h-5 bg-slate-700/60" />;
+
+  const grip = (
+    <div
+      onPointerDown={onGripDown}
+      onDoubleClick={() => setPos(null)}
+      title="Drag to move the toolbar · double-click to dock it at the bottom"
+      aria-label="Move toolbar"
+      className="flex items-center justify-center w-5 h-8 rounded-md text-slate-500 hover:text-slate-300 cursor-grab active:cursor-grabbing select-none"
+      style={{ touchAction: 'none' }}
+    >
+      <IGrip size={14} />
+    </div>
+  );
+
   return (
-    <div className="glass-strong absolute left-1/2 -translate-x-1/2 bottom-20 z-30 rounded-2xl px-3 py-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 max-w-[calc(100%-2.5rem)] shadow-2xl">
-      {/* Mode tools */}
-      <div className="flex items-center gap-1">
-        <ToolButton active={tool === 'select'} onClick={() => { setStyleFor(null); setTool('select'); }} title="Select / Move (V)">
-          <ICursor size={17} />
-        </ToolButton>
-        <ToolButton active={tool === 'eraser'} onClick={() => { setStyleFor(null); setTool('eraser'); }} title="Stroke eraser (E)">
-          <IEraser size={17} />
-        </ToolButton>
-      </div>
+    <div
+      ref={barRef}
+      className={`glass-strong absolute z-30 rounded-xl px-1.5 py-1 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 shadow-2xl ${pos ? '' : 'left-1/2 -translate-x-1/2 bottom-[72px]'}`}
+      style={{ width: 'max-content', maxWidth: 'calc(100% - 12px)', ...(pos ? { left: pos.left, top: pos.top } : null) }}
+    >
+      {grip}
 
-      <div className="w-px h-7 bg-slate-700/60" />
+      {collapsed ? (
+        <ToolButton onClick={() => setCollapsed(false)} title="Expand toolbar"><IChevronUpSmall size={15} /></ToolButton>
+      ) : (
+        <>
+          {/* Mode tools */}
+          <div className="flex items-center gap-0.5">
+            <ToolButton active={tool === 'select'} onClick={() => { setStyleFor(null); setTool('select'); }} title="Select / Move (V)">
+              <ICursor size={16} />
+            </ToolButton>
+            <ToolButton active={tool === 'eraser'} onClick={() => { setStyleFor(null); setTool('eraser'); }} title="Stroke eraser (E)">
+              <IEraser size={16} />
+            </ToolButton>
+          </div>
 
-      {/* Pens — click the active one for width + colour */}
-      <div className="flex items-center gap-1">
-        {PENS.map((pn) => {
-          const active = isDrawTool && pen === pn.id;
-          return (
-            <div key={pn.id} ref={anchorRef(pn.id)} className="relative">
-              <ToolButton active={active} onClick={() => onPenClick(pn.id)} title={active ? `${pn.title} — click for width & colour` : pn.title}>
-                <pn.icon size={17} />
+          <Divider />
+
+          {/* Pens — click the active one for width + colour */}
+          <div className="flex items-center gap-0.5">
+            {PENS.map((pn) => {
+              const active = isDrawTool && pen === pn.id;
+              return (
+                <div key={pn.id} ref={anchorRef(pn.id)} className="relative">
+                  <ToolButton active={active} onClick={() => onPenClick(pn.id)} title={active ? `${pn.title} — click for width & colour` : pn.title}>
+                    <pn.icon size={16} />
+                  </ToolButton>
+                  {active && <InkDot />}
+                  {popover(pn.id, pn.title.replace(/ \(.\)$/, ''))}
+                </div>
+              );
+            })}
+          </div>
+
+          <Divider />
+
+          {/* Shapes + Text */}
+          <div className="flex items-center gap-0.5">
+            <div ref={anchorRef('shape')} className="relative">
+              <ToolButton active={tool === 'shape'} onClick={onShapeClick} title={tool === 'shape' ? 'Shapes (S) — click for width & colour' : 'Shapes (S)'}>
+                <ActiveShapeIcon size={16} />
               </ToolButton>
-              {active && <InkDot />}
-              {popover(pn.id, pn.title.replace(/ \(.\)$/, ''))}
+              {tool === 'shape' && <InkDot />}
+              {shapeMenuOpen && (
+                <ShapeFlyout
+                  activeShape={activeShape} down={popDown}
+                  onPick={(id) => { onPickShape(id); setShapeMenuOpen(false); }}
+                  onClose={() => setShapeMenuOpen(false)}
+                />
+              )}
+              {popover('shape', 'Shape')}
             </div>
-          );
-        })}
-      </div>
 
-      <div className="w-px h-7 bg-slate-700/60" />
+            <div ref={anchorRef('text')} className="relative">
+              <ToolButton active={tool === 'text'} onClick={onTextClick} title={tool === 'text' ? 'Text (T) — click for size & colour' : 'Text (T) — click the board to type'}>
+                <span className="font-bold text-[15px] leading-none" style={{ fontFamily: TEXT_FONT }}>T</span>
+              </ToolButton>
+              {tool === 'text' && <InkDot />}
+              {popover('text', 'Text', { widthLabel: 'TEXT SIZE', widthFormat: (w) => `${textSizeFor(w)}px` })}
+            </div>
+          </div>
 
-      {/* Shapes */}
-      <div ref={anchorRef('shape')} className="relative">
-        <ToolButton active={tool === 'shape'} onClick={onShapeClick} title={tool === 'shape' ? 'Shapes (S) — click for width & colour' : 'Shapes (S)'}>
-          <ActiveShapeIcon size={17} />
-        </ToolButton>
-        {tool === 'shape' && <InkDot />}
-        {shapeMenuOpen && (
-          <ShapeFlyout
-            activeShape={activeShape}
-            onPick={(id) => { onPickShape(id); setShapeMenuOpen(false); }}
-            onClose={() => setShapeMenuOpen(false)}
-          />
-        )}
-        {popover('shape', 'Shape')}
-      </div>
+          <Divider />
 
-      <div className="w-px h-7 bg-slate-700/60" />
+          {/* History */}
+          <div className="flex items-center gap-0.5">
+            <ToolButton onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl/Cmd+Z)"><IUndo size={16} /></ToolButton>
+            <ToolButton onClick={onRedo} disabled={!canRedo} title="Redo (Ctrl/Cmd+Y)"><IRedo size={16} /></ToolButton>
+          </div>
 
-      {/* History + clear */}
-      <div className="flex items-center gap-1">
-        <ToolButton onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl/Cmd+Z)"><IUndo size={17} /></ToolButton>
-        <ToolButton onClick={onRedo} disabled={!canRedo} title="Redo (Ctrl/Cmd+Y)"><IRedo size={17} /></ToolButton>
-        <ToolButton onClick={onClear} disabled={!hasObjects} title="Clear board"><IEraseAll size={17} /></ToolButton>
-      </div>
+          <Divider />
+
+          {/* Copy / paste objects (works across pages) */}
+          <div className="flex items-center gap-0.5">
+            <ToolButton onClick={onCopy} disabled={!canCopy} title="Copy selected objects (Ctrl/Cmd+C)"><ICopy size={16} /></ToolButton>
+            <ToolButton onClick={onPaste} disabled={!canPaste} title="Paste (Ctrl/Cmd+V) — works on any page"><IPaste size={16} /></ToolButton>
+          </div>
+
+          <Divider />
+
+          <div className="flex items-center gap-0.5">
+            <ToolButton onClick={onClear} disabled={!hasObjects} title="Clear board"><IEraseAll size={16} /></ToolButton>
+            <ToolButton onClick={() => { setStyleFor(null); setShapeMenuOpen(false); setCollapsed(true); }} title="Collapse toolbar"><IChevronDownSmall size={15} /></ToolButton>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1659,41 +2594,121 @@ function RotateHandle({ x, y, yaw, tilt, onChange }) {
 
 /* ---------- Phase 4: Thumbnail sidebar ---------- */
 
-function ThumbnailSidebar({ slides, activeIndex, onSelect, onReorder, collapsed, onToggle }) {
+function ThumbnailSidebar({
+  slides, activeIndex, onSelect, onReorder, collapsed,
+  selectMode, setSelectMode, selectedIds, setSelectedIds, onDeleteSelected,
+}) {
   const [dragIdx, setDragIdx] = useState(null);
+  const anchorRef = useRef(null);
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const count = selectedIds.length;
+  // At least one page must always remain.
+  const canDelete = count > 0 && count < slides.length;
+
+  const toggleSelectMode = () => {
+    setSelectMode(!selectMode);
+    setSelectedIds([]);
+    anchorRef.current = null;
+  };
+  const toggleOne = (id, i) => {
+    setSelectedIds(selectedSet.has(id) ? selectedIds.filter((x) => x !== id) : [...selectedIds, id]);
+    anchorRef.current = i;
+  };
+  const selectRange = (i) => {
+    const a = anchorRef.current == null ? activeIndex : anchorRef.current;
+    const lo = Math.min(a, i), hi = Math.max(a, i);
+    const ids = new Set(selectedIds);
+    for (let k = lo; k <= hi; k++) { if (slides[k]) ids.add(slides[k].id); }
+    setSelectedIds(Array.from(ids));
+  };
+  const onCardClick = (e, i, s) => {
+    if (selectMode) {
+      if (e.shiftKey) selectRange(i); else toggleOne(s.id, i);
+      return;
+    }
+    // Desktop shortcuts: Shift+click = range, Ctrl/Cmd+click = add to selection.
+    if (e.shiftKey) { setSelectMode(true); selectRange(i); return; }
+    if (e.ctrlKey || e.metaKey) { setSelectMode(true); toggleOne(s.id, i); return; }
+    onSelect(i);
+  };
 
   return (
     <div
       className={`thumb-strip glass border-r border-slate-700/40 flex flex-col flex-shrink-0 overflow-hidden ${collapsed ? 'w-0' : 'w-[168px]'}`}
     >
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-700/40 flex-shrink-0">
-        <span className="mono text-[10px] tracking-wider text-slate-500">PAGES</span>
-        <span className="mono text-[10px] text-slate-600">{slides.length}</span>
+      <div className="px-3 py-2 border-b border-slate-700/40 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <span className="mono text-[10px] tracking-wider text-slate-500">PAGES</span>
+          <div className="flex items-center gap-1.5">
+            <span className="mono text-[10px] text-slate-600">{slides.length}</span>
+            <button
+              onClick={toggleSelectMode}
+              title={selectMode ? 'Exit selection mode' : 'Select multiple pages'}
+              className={`mono text-[10px] px-1.5 py-0.5 rounded border transition-colors focus-ring ${
+                selectMode ? 'text-indigo-300 border-indigo-400/50 bg-indigo-500/10' : 'text-slate-400 border-slate-700/60 hover:text-slate-200 hover:border-slate-500'
+              }`}
+            >
+              {selectMode ? 'Done' : 'Select'}
+            </button>
+          </div>
+        </div>
+        {selectMode && (
+          <div className="flex items-center gap-1 mt-2">
+            <button
+              onClick={() => setSelectedIds(slides.map((x) => x.id))}
+              className="mono text-[10px] px-1.5 py-0.5 rounded border border-slate-700/60 text-slate-400 hover:text-slate-200 transition-colors focus-ring"
+            >All</button>
+            <button
+              onClick={() => setSelectedIds([])}
+              className="mono text-[10px] px-1.5 py-0.5 rounded border border-slate-700/60 text-slate-400 hover:text-slate-200 transition-colors focus-ring"
+            >None</button>
+            <button
+              onClick={onDeleteSelected}
+              disabled={!canDelete}
+              title={count >= slides.length && count > 0 ? 'At least one page must remain' : 'Delete selected pages'}
+              className="ml-auto flex items-center gap-1 mono text-[10px] px-1.5 py-0.5 rounded border border-red-500/40 text-red-300 hover:bg-red-500/15 transition-colors focus-ring disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            >
+              <ITrash2 size={11} /> {count}
+            </button>
+          </div>
+        )}
       </div>
       <div className="flex-1 overflow-y-auto p-2.5 flex flex-col gap-2.5">
-        {slides.map((s, i) => (
-          <div
-            key={s.id}
-            draggable
-            onDragStart={() => setDragIdx(i)}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={() => { if (dragIdx !== null && dragIdx !== i) onReorder(dragIdx, i); setDragIdx(null); }}
-            onDragEnd={() => setDragIdx(null)}
-            onClick={() => onSelect(i)}
-            className={`thumb-card rounded-lg overflow-hidden relative flex-shrink-0 ${i === activeIndex ? 'active' : ''}`}
-            style={{ aspectRatio: '4 / 3', background: s.bg }}
-            title={`Page ${i + 1}`}
-          >
-            {s.thumb ? (
-              <img src={s.thumb} alt={`Page ${i + 1}`} className="w-full h-full object-cover" draggable={false} />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <span className="mono text-[9px] text-white/30">EMPTY</span>
-              </div>
-            )}
-            <span className="absolute bottom-1 right-1.5 mono text-[9px] px-1 rounded bg-black/50 text-white/70">{i + 1}</span>
-          </div>
-        ))}
+        {slides.map((s, i) => {
+          const isSel = selectedSet.has(s.id);
+          return (
+            <div
+              key={s.id}
+              draggable={!selectMode}
+              onDragStart={() => setDragIdx(i)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => { if (dragIdx !== null && dragIdx !== i) onReorder(dragIdx, i); setDragIdx(null); }}
+              onDragEnd={() => setDragIdx(null)}
+              onClick={(e) => onCardClick(e, i, s)}
+              className={`thumb-card rounded-lg overflow-hidden relative flex-shrink-0 ${i === activeIndex ? 'active' : ''} ${isSel ? 'selected' : ''}`}
+              style={{ aspectRatio: '4 / 3', background: s.bg }}
+              title={`Page ${i + 1}`}
+            >
+              {s.thumb ? (
+                <img src={s.thumb} alt={`Page ${i + 1}`} className="w-full h-full object-cover" draggable={false} />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="mono text-[9px] text-white/30">EMPTY</span>
+                </div>
+              )}
+              {selectMode && (
+                <span
+                  className={`absolute top-1 left-1 w-4 h-4 rounded-full border flex items-center justify-center ${
+                    isSel ? 'bg-indigo-400 border-indigo-200 text-slate-950' : 'bg-black/40 border-white/50'
+                  }`}
+                >
+                  {isSel && <ICheck size={10} />}
+                </span>
+              )}
+              <span className="absolute bottom-1 right-1.5 mono text-[9px] px-1 rounded bg-black/50 text-white/70">{i + 1}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -1726,7 +2741,7 @@ function DockSwapButton({ onClick, side }) {
   );
 }
 
-function NavDock({ index, total, onPrev, onNext, onAddPage, onDeletePage, onSwap, side = 'left' }) {
+function NavDock({ index, total, onPrev, onNext, onAddPage, onDuplicatePage, onDeletePage, onSwap, side = 'left' }) {
   return (
     <div className="glass-strong rounded-xl px-2 py-1.5 flex items-center gap-1 shadow-xl">
       <button className="navdock-btn focus-ring" onClick={onPrev} disabled={index === 0} title="Previous page">
@@ -1741,6 +2756,9 @@ function NavDock({ index, total, onPrev, onNext, onAddPage, onDeletePage, onSwap
       <div className="w-px h-5 bg-slate-700/60 mx-1" />
       <button className="navdock-btn focus-ring" onClick={onAddPage} title="New blank page">
         <IPlus size={16} />
+      </button>
+      <button className="navdock-btn focus-ring" onClick={onDuplicatePage} title="Duplicate this page">
+        <ICopy size={15} />
       </button>
       <button className="navdock-btn focus-ring" onClick={onDeletePage} disabled={total <= 1} title="Delete this page">
         <ITrash2 size={15} />
@@ -2285,6 +3303,8 @@ function WidgetDock({ open, onToggle, active, onLaunch, dropUp, dropSide }) {
     { id: 'timer', label: 'Timer / Stopwatch', icon: ITimerIcon },
     { id: 'calculator', label: 'Calculator', icon: ICalcIcon },
     { id: 'laser', label: 'Laser Pointer', icon: ILaserIcon },
+    { id: 'image', label: 'Image Upload', icon: IImageIcon, action: true },
+    { id: 'sticky', label: 'Sticky Note', icon: IStickyIcon, action: true },
   ];
 
   return (
@@ -2305,16 +3325,19 @@ function WidgetDock({ open, onToggle, active, onLaunch, dropUp, dropSide }) {
             dropUp ? 'bottom-full mb-2' : 'top-full mt-2'
           } ${dropSide === 'right' ? 'right-0' : 'left-0'}`}
         >
-          {items.map((it) => (
+          {items.map((it, idx) => (
+            <React.Fragment key={it.id}>
+            {it.action && !(items[idx - 1] && items[idx - 1].action) && <div className="h-px bg-slate-700/50 my-1 mx-2" />}
             <button
-              key={it.id}
               onClick={() => onLaunch(it.id)}
               className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-slate-200 hover:bg-slate-800/60 transition-colors focus-ring"
             >
               <it.icon size={15} className={active[it.id] ? 'text-cyan-300' : 'text-slate-500'} />
               {it.label}
               {active[it.id] && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400" />}
+              {it.action && <span className="ml-auto mono text-[10px] text-slate-600">add</span>}
             </button>
+            </React.Fragment>
           ))}
         </div>
       )}
@@ -2383,7 +3406,11 @@ function TopBarCollapseTab({ hidden, onToggle }) {
   );
 }
 
-const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, ref) {
+const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onContentChange }, ref) {
+  const onChangeRef = useRef(onContentChange);
+  onChangeRef.current = onContentChange;
+  const suppressNotifyRef = useRef(false);   // true while a page is being (re)loaded
+  const gestureBusyRef = useRef(null);       // () => is a shape/erase/text gesture in flight?
   const wrapRef = useRef(null);
   const canvasElRef = useRef(null);
   const fabricRef = useRef(null);
@@ -2402,6 +3429,9 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, r
   const [hasObjects, setHasObjects] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [rotateHandle, setRotateHandle] = useState(null); // {x,y,yaw,tilt} screen-space, for selected 3D object
+  const [hasSelection, setHasSelection] = useState(false);
+  const [hasClipboard, setHasClipboard] = useState(!!NB_CLIPBOARD.obj);
+  const stickyCounterRef = useRef(0);
 
   /* Mutable refs so Fabric event handlers (bound once) always read fresh values */
   const toolRef = useRef(tool);
@@ -2436,7 +3466,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, r
     if (!c || h.locked) return;
     // Snapshots exclude the locked page image (tracked separately) and record the
     // frame they were taken in, so undo/redo stays aligned after a resize.
-    const j = c.toJSON(['nbKind', 'nb3D', 'nbYaw', 'nbTilt']);
+    const j = c.toJSON(NB_PROPS);
     j.objects = (j.objects || []).filter((o) => o.nbKind !== 'bgImage');
     j.nbFrame = pageRef.current ? { ...frameRef.current } : null;
     const snap = JSON.stringify(j);
@@ -2445,6 +3475,8 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, r
     if (h.stack.length > 100) h.stack.shift();
     h.index = h.stack.length - 1;
     syncHistoryUI();
+    // Tell the auto-saver the page content changed (not for the initial snapshot taken on page load).
+    if (!suppressNotifyRef.current && onChangeRef.current) onChangeRef.current();
   }, [syncHistoryUI]);
 
   const historyDebounceRef = useRef(null);
@@ -2469,6 +3501,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, r
       h.index = idx;
       h.locked = false;
       syncHistoryUI();
+      if (onChangeRef.current) onChangeRef.current();
     });
   }, [syncHistoryUI]);
 
@@ -2727,6 +3760,8 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, r
 
     let erasedDuringGesture = false;
     let erasing = false;
+    let textPlace = null; // where the Text tool was pressed; the box is created on release
+    gestureBusyRef.current = () => !!(shapeStart || erasing || textPlace);
 
     canvas.on('mouse:down', (opt) => {
       const e = opt.e;
@@ -2751,6 +3786,8 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, r
         liveShape = makeShapeFromDrag(activeShapeRef.current, pointer.x, pointer.y, pointer.x + 0.01, pointer.y + 0.01);
         if (liveShape) canvas.add(liveShape);
         canvas.requestRenderAll();
+      } else if (t === 'text') {
+        textPlace = { x: pointer.x, y: pointer.y };
       }
     });
 
@@ -2793,7 +3830,37 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, r
       }
     });
 
+    /* Create an editable text box where the Text tool was clicked. Done on pointer
+       release (not press) so the browser's own mousedown focus handling can't
+       steal focus from the hidden editing textarea. */
+    const placeText = (p) => {
+      const txt = new fabric.IText('', {
+        left: p.x, top: p.y,
+        fontFamily: TEXT_FONT,
+        fontSize: textSizeFor(widthRef.current),
+        fill: colorRef.current,
+        editingBorderColor: '#38bdf8',
+        nbKind: 'text',
+        selectable: true, evented: true,
+      });
+      // Flip to Select straight away so the new box is draggable once editing ends.
+      toolRef.current = 'select';
+      canvas.skipTargetFind = false;
+      canvas.selection = true;
+      canvas.add(txt);
+      canvas.setActiveObject(txt);
+      setTool('select');
+      txt.enterEditing();
+      canvas.requestRenderAll();
+    };
+
     const finishGesture = () => {
+      if (textPlace) {
+        const p = textPlace;
+        textPlace = null;
+        placeText(p);
+        return;
+      }
       if (shapeStart) {
         const wasShape = liveShape;
         shapeStart = null;
@@ -2847,6 +3914,17 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, r
     /* Selection/transform modifications -> history */
     canvas.on('object:modified', () => { pushHistory(); });
 
+    /* A text/sticky box left empty is discarded. (If its text had changed, fabric
+       fires object:modified right after this and that records the removal.) */
+    canvas.on('text:editing:exited', (opt) => {
+      const t = opt && opt.target;
+      if (t && (t.nbKind === 'text' || t.nbKind === 'sticky') && !String(t.text || '').trim()) {
+        canvas.remove(t);
+        canvas.discardActiveObject();
+        canvas.requestRenderAll();
+      }
+    });
+
     /* ---- Resize handling (keep sharp on DPR + container changes) ---- */
     const ro = new ResizeObserver(() => {
       const w = wrapRef.current;
@@ -2893,7 +3971,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, r
       o.evented = isSelect;
     });
     if (!isSelect) { c.discardActiveObject(); }
-    c.defaultCursor = (tool === 'draw' || tool === 'shape') ? 'crosshair' : tool === 'eraser' ? 'cell' : 'default';
+    c.defaultCursor = (tool === 'draw' || tool === 'shape') ? 'crosshair' : tool === 'eraser' ? 'cell' : tool === 'text' ? 'text' : 'default';
     c.hoverCursor = isSelect ? 'move' : c.defaultCursor;
     c.requestRenderAll();
   }, [tool]);
@@ -2958,18 +4036,85 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, r
     return () => c.off('after:render', apply);
   }, []);
 
+  /* ---- Track whether anything is selected (drives the Copy button) ---- */
+  useEffect(() => {
+    const c = fabricRef.current;
+    if (!c) return;
+    const sync = () => {
+      const a = c.getActiveObject();
+      setHasSelection(!!a && a.nbKind !== 'bgImage');
+    };
+    c.on('selection:created', sync);
+    c.on('selection:updated', sync);
+    c.on('selection:cleared', sync);
+    return () => {
+      c.off('selection:created', sync);
+      c.off('selection:updated', sync);
+      c.off('selection:cleared', sync);
+    };
+  }, []);
+
+  /* ---- Object clipboard: copy on one page, paste on any other ---- */
+  const copySelection = useCallback(() => {
+    const c = fabricRef.current;
+    if (!c) return false;
+    const active = c.getActiveObject();
+    if (!active || active.nbKind === 'bgImage' || active.isEditing) return false;
+    // clone() works for single objects and for multi-selections (ActiveSelection).
+    active.clone((cloned) => {
+      NB_CLIPBOARD.obj = cloned;
+      setHasClipboard(true);
+    }, NB_PROPS);
+    return true;
+  }, []);
+
+  const pasteClipboard = useCallback(() => {
+    const c = fabricRef.current;
+    const clip = NB_CLIPBOARD.obj;
+    if (!c || !clip) return false;
+    clip.clone((clone) => {
+      c.discardActiveObject();
+      clone.set({ left: clone.left + 16, top: clone.top + 16, evented: true });
+      // Switch to Select so the pasted objects can be moved immediately.
+      toolRef.current = 'select';
+      c.skipTargetFind = false;
+      c.selection = true;
+      if (clone.type === 'activeSelection') {
+        clone.canvas = c;
+        clone.forEachObject((o) => { o.selectable = true; o.evented = true; c.add(o); });
+        clone.setCoords();
+      } else {
+        clone.selectable = true;
+        c.add(clone);
+      }
+      // Stagger repeated pastes so copies don't stack exactly on top of each other.
+      clip.set({ left: clip.left + 16, top: clip.top + 16 });
+      c.setActiveObject(clone);
+      c.requestRenderAll();
+      setTool('select');
+      pushHistory();
+    }, NB_PROPS);
+    return true;
+  }, [pushHistory]);
+
   /* ---- Keyboard shortcuts ---- */
   useEffect(() => {
     const onKey = (e) => {
       const tag = (e.target && e.target.tagName) || '';
+      // Also covers fabric's hidden editing <textarea>, so typing/Backspace/Ctrl+C inside a text box is untouched.
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       const mod = e.ctrlKey || e.metaKey;
-      if (mod && e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
-      if (mod && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) { e.preventDefault(); redo(); return; }
+      const lk = String(e.key || '').toLowerCase();
+      if (mod && lk === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
+      if (mod && (lk === 'y' || (lk === 'z' && e.shiftKey))) { e.preventDefault(); redo(); return; }
+      if (mod && lk === 'c') { if (copySelection()) e.preventDefault(); return; }
+      if (mod && lk === 'v') { if (NB_CLIPBOARD.obj) { e.preventDefault(); pasteClipboard(); } return; }
       if (mod) return;
-      const k = e.key.toLowerCase();
+      const k = lk;
       if (k === 'v') setTool('select');
       else if (k === 'e') setTool('eraser');
+      else if (k === 't') setTool('text');
+      else if (k === 's') setTool('shape');
       else if (k === 'b') { setTool('draw'); setPen('ballpoint'); }
       else if (k === 'h') { setTool('draw'); setPen('highlighter'); }
       else if (k === 'c') { setTool('draw'); setPen('calligraphy'); }
@@ -2989,7 +4134,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, r
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [undo, redo, pushHistory]);
+  }, [undo, redo, pushHistory, copySelection, pasteClipboard]);
 
   /* ---- Clear board (with confirm; undo also restores it) ---- */
   const doClear = useCallback(() => {
@@ -3015,7 +4160,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, r
       // in the per-slide vector JSON (it's tracked separately as slide.bgImage).
       if (bgImg) c.remove(bgImg);
       const hasObjects = c.getObjects().length > 0;
-      const json = hasObjects ? c.toJSON(['nbKind', 'nb3D', 'nbYaw', 'nbTilt']) : null;
+      const json = hasObjects ? c.toJSON(NB_PROPS) : null;
       // PDF slides persist vectors in page space (frame-independent).
       if (json && pageRef.current) reframeObjects(json.objects || [], frameRef.current, PAGE_SPACE);
       if (bgImg) { c.add(bgImg); c.sendToBack(bgImg); }
@@ -3050,7 +4195,9 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, r
           : { stack: [], index: -1, locked: false };
         if (historyRef.current.stack.length === 0) {
           historyRef.current.locked = false;
+          suppressNotifyRef.current = true;
           pushHistory();
+          suppressNotifyRef.current = false;
         }
         historyRef.current.locked = false;
         syncHistoryUI();
@@ -3105,6 +4252,97 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, r
       return c.toDataURL({ format: 'jpeg', quality: 0.55, multiplier: 0.22 });
     },
     getBackgroundColor() { return bgColor; },
+    /* True while a shape / erase gesture is mid-flight (auto-save waits so it never captures a half-drawn shape). */
+    isBusy() { const f = gestureBusyRef.current; return !!(f && f()); },
+
+    /* Tools menu -> Image Upload. Resolves once the picture is on the board. */
+    addImageFromFile(file) {
+      return new Promise((resolve, reject) => {
+        const c = fabricRef.current;
+        if (!c) { reject(new Error('The canvas is not ready yet.')); return; }
+        if (!file || !/^image\//.test(file.type || '')) {
+          reject(new Error('Please choose an image file (PNG, JPG, GIF, WebP or SVG).'));
+          return;
+        }
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Could not read that image file.'));
+        reader.onload = () => {
+          const raw = reader.result;
+          const probe = new Image();
+          probe.onerror = () => reject(new Error('That image could not be decoded.'));
+          probe.onload = () => {
+            const nw = probe.naturalWidth || probe.width;
+            const nh = probe.naturalHeight || probe.height;
+            if (!nw || !nh) { reject(new Error('That image has no readable size.')); return; }
+            // Downscale big photos so undo history and PDF export stay light.
+            const MAX = 1400;
+            let src = raw;
+            if (file.type !== 'image/svg+xml' && Math.max(nw, nh) > MAX) {
+              const k = MAX / Math.max(nw, nh);
+              const off = document.createElement('canvas');
+              off.width = Math.round(nw * k);
+              off.height = Math.round(nh * k);
+              off.getContext('2d').drawImage(probe, 0, 0, off.width, off.height);
+              src = off.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.85);
+            }
+            fabric.Image.fromURL(src, (img, isError) => {
+              if (isError || !img || !img.width || !img.height) { reject(new Error('That image could not be placed.')); return; }
+              const k = Math.min(1, (c.getWidth() * 0.6) / img.width, (c.getHeight() * 0.6) / img.height);
+              img.set({
+                left: c.getWidth() / 2, top: c.getHeight() / 2,
+                originX: 'center', originY: 'center',
+                scaleX: k, scaleY: k,
+                nbKind: 'image', selectable: true, evented: true,
+              });
+              toolRef.current = 'select';
+              c.skipTargetFind = false;
+              c.selection = true;
+              c.add(img);
+              c.setActiveObject(img);
+              setTool('select');
+              c.requestRenderAll();
+              pushHistory();
+              resolve();
+            });
+          };
+          probe.src = raw;
+        };
+        reader.readAsDataURL(file);
+      });
+    },
+
+    /* Tools menu -> Sticky Note: a coloured, wrapping, editable text box. */
+    addStickyNote() {
+      const c = fabricRef.current;
+      if (!c) return;
+      const n = stickyCounterRef.current++;
+      const color = STICKY_COLORS[n % STICKY_COLORS.length];
+      const W = c.getWidth(), H = c.getHeight();
+      const body = 'Type your note…';
+      // Blank first/last lines act as top/bottom padding inside the coloured box.
+      const note = new fabric.Textbox('\n' + body + '\n', {
+        left: W / 2 + (n % 4) * 18 - 27,
+        top: H / 2 + (n % 4) * 18 - 27,
+        originX: 'center', originY: 'center',
+        width: Math.max(150, Math.min(230, W * 0.45)),
+        fontSize: 22, lineHeight: 1.3, textAlign: 'center',
+        fontFamily: TEXT_FONT, fill: '#1f2937', backgroundColor: color,
+        shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.35)', blur: 14, offsetX: 3, offsetY: 6 }),
+        nbKind: 'sticky', selectable: true, evented: true,
+      });
+      toolRef.current = 'select';
+      c.skipTargetFind = false;
+      c.selection = true;
+      c.add(note);
+      c.setActiveObject(note);
+      setTool('select');
+      pushHistory();
+      note.enterEditing();
+      // Pre-select just the placeholder words so typing replaces them but keeps the padding lines.
+      note.setSelectionStart(1);
+      note.setSelectionEnd(1 + body.length);
+      c.requestRenderAll();
+    },
   }), [bgColor, pushHistory, syncHistoryUI]);
 
   return (
@@ -3135,6 +4373,8 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, r
         onClear={() => setConfirmClear(true)}
         hasObjects={hasObjects}
         activeShape={activeShape} onPickShape={pickShape}
+        onCopy={copySelection} onPaste={pasteClipboard}
+        canCopy={hasSelection} canPaste={hasClipboard}
       />
       {rotateHandle && (
         <RotateHandle
@@ -3157,7 +4397,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg }, r
   );
 });
 
-function CanvasScreen({ session, onBackHome, onNewBoard }) {
+function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
   const viewportRef = useRef(null);
   const [slides, setSlides] = useState(() => [makeSlide(session?.bg || '#0d3824')]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -3167,6 +4407,16 @@ function CanvasScreen({ session, onBackHome, onNewBoard }) {
   const [importError, setImportError] = useState(null);
   const [confirmDeletePage, setConfirmDeletePage] = useState(false);
   const [newPageOpen, setNewPageOpen] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
+  const imageInputRef = useRef(null);
+  const boardInputRef = useRef(null);
+  const [notice, setNotice] = useState(null);
+  const [pdfOverlay, setPdfOverlay] = useState(null);
+  const [restoring, setRestoring] = useState(true);
+  const [confirmLeave, setConfirmLeave] = useState(null);
+  const ovTimerRef = useRef(null);
 
   const [widgetDockOpen, setWidgetDockOpen] = useState(false);
   const [widgets, setWidgets] = useState({}); // { timer: {minimized}, calculator: {minimized}, laser: {} }
@@ -3216,17 +4466,224 @@ function CanvasScreen({ session, onBackHome, onNewBoard }) {
   useEffect(() => { slidesRef.current = slides; }, [slides]);
   useEffect(() => { activeIndexRef.current = activeIndex; }, [activeIndex]);
 
-  /* If the home screen already picked up a PDF, rasterize it into slides
-     as soon as the canvas mounts (the file itself is handed via session.pdfFile). */
-  const initialPdfHandled = useRef(false);
-  useEffect(() => {
-    if (initialPdfHandled.current) return;
-    initialPdfHandled.current = true;
-    if (session?.pdfFile) {
-      importPdfFile(session.pdfFile);
+  /* ================= Auto-save (IndexedDB) + restore ================= */
+  const boardIdRef = useRef((session && session.id) || uid());
+  const boardRef = useRef({
+    id: boardIdRef.current,
+    title: (session && session.title) || 'Untitled Board',
+    bg: (session && session.bg) || '#0d3824',
+    source: (session && session.source) || 'blank',
+  });
+  const readyRef = useRef(false);               // false until the stored board (if any) has been loaded
+  const persistedRef = useRef(new Map());       // page id -> page object as last written to disk
+  const inflightRef = useRef(new Set());        // page objects currently being written
+  const assetsRef = useRef(new Set());          // PDF page images already stored
+  const lastSigRef = useRef('');                // page order + active page as last written
+  const canvasDirtyRef = useRef(false);         // live canvas changed since the last capture
+  const saveTimerRef = useRef(null);
+  const saveChainRef = useRef(Promise.resolve());
+  const retrySaveRef = useRef(null);
+  const saveOkRef = useRef(true);
+  const [saveState, setSaveState] = useState({ status: 'saved', at: Date.now() });
+
+  const doSave = useCallback(async () => {
+    if (!readyRef.current) return;
+    const vp = viewportRef.current;
+    const idx = activeIndexRef.current;
+    let list = slidesRef.current;
+    // 1) Capture the live canvas into the active page (only if it changed).
+    if (canvasDirtyRef.current && vp && list[idx]) {
+      if (vp.isBusy()) { if (retrySaveRef.current) retrySaveRef.current(700); return; }
+      canvasDirtyRef.current = false;
+      const saved = vp.saveIntoSlide(list[idx]);
+      saved.thumb = vp.getThumbnail();
+      list = list.map((sl) => (sl.id === saved.id ? saved : sl));
+      slidesRef.current = list;
+      setSlides((prev) => {
+        const at = prev.findIndex((sl) => sl.id === saved.id);
+        if (at < 0) return prev;
+        const next = prev.slice(); next[at] = saved; slidesRef.current = next; return next;
+      });
     }
+    // 2) Write only the pages that changed, in one atomic transaction.
+    const sig = list.map((sl) => sl.id).join(',') + '|' + idx;
+    const batch = nbMakeBatch(boardRef.current, list, idx, (sl) => persistedRef.current.get(sl.id) !== sl, (k) => assetsRef.current.has(k));
+    if (batch.slideRecords.length === 0 && sig === lastSigRef.current) {
+      setSaveState((st) => (st.status === 'off' ? st : { status: 'saved', at: st.at || Date.now() }));
+      return;
+    }
+    const wrote = new Set(batch.slideRecords.map((r) => r.id));
+    const written = list.filter((sl) => wrote.has(sl.id));
+    written.forEach((sl) => inflightRef.current.add(sl));
+    try {
+      await NBStore.saveBoard(batch);
+      written.forEach((sl) => persistedRef.current.set(sl.id, sl));
+      const have = new Set(list.map((sl) => sl.id));
+      persistedRef.current.forEach((_, k) => { if (!have.has(k)) persistedRef.current.delete(k); });
+      batch.assetRecords.forEach((a) => assetsRef.current.add(a.key));
+      lastSigRef.current = sig;
+      saveOkRef.current = true;
+      nbWriteSessionFlag({ id: boardIdRef.current, clean: false });
+      setSaveState({ status: 'saved', at: Date.now() });
+    } catch (err) {
+      console.error('Auto-save failed', err);
+      const unavailable = /not available|blocked/i.test(String((err && err.message) || ''));
+      saveOkRef.current = false;
+      setSaveState({ status: unavailable ? 'off' : 'error', at: Date.now(), message: nbDescribeError(err) });
+      if (!unavailable && retrySaveRef.current) retrySaveRef.current(8000);
+    } finally {
+      written.forEach((sl) => inflightRef.current.delete(sl));
+    }
+  }, []);
+
+  /* Serialised: saves never overlap, and callers can await the one that is running. */
+  const flushNow = useCallback(() => {
+    if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
+    saveChainRef.current = saveChainRef.current.then(doSave).catch(() => {});
+    return saveChainRef.current;
+  }, [doSave]);
+
+  const scheduleSave = useCallback((delay) => {
+    if (!readyRef.current) return;
+    setSaveState((st) => (st.status === 'off' || st.status === 'saving' ? st : { status: 'saving', at: st.at }));
+    if (saveTimerRef.current) return;
+    saveTimerRef.current = setTimeout(() => { saveTimerRef.current = null; flushNow(); }, typeof delay === 'number' ? delay : 1200);
+  }, [flushNow]);
+  useEffect(() => { retrySaveRef.current = scheduleSave; }, [scheduleSave]);
+
+  const handleContentChange = useCallback(() => {
+    if (!readyRef.current) return;
+    canvasDirtyRef.current = true;
+    scheduleSave();
+  }, [scheduleSave]);
+
+  /* Structural changes (add / delete / duplicate / reorder / import) land in `slides`: save those too. */
+  useEffect(() => {
+    if (!readyRef.current) return;
+    const sig = slides.map((sl) => sl.id).join(',') + '|' + activeIndex;
+    const dirty = sig !== lastSigRef.current
+      || slides.some((sl) => persistedRef.current.get(sl.id) !== sl && !inflightRef.current.has(sl));
+    if (dirty) scheduleSave();
+  }, [slides, activeIndex, scheduleSave]);
+
+  /* Flush the moment the tab is hidden / closed (smartboard powering down, window closing). */
+  useEffect(() => {
+    const markClean = () => nbWriteSessionFlag({ id: boardIdRef.current, clean: true });
+    const onVis = () => { if (document.visibilityState === 'hidden') flushNow(); };
+    const onPageHide = () => { flushNow(); markClean(); };
+    const onPageShow = (e) => { if (e.persisted) nbWriteSessionFlag({ id: boardIdRef.current, clean: false }); };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('pageshow', onPageShow);
+    // Desktop app: the main process asks for a last save (and waits for it) before closing the window.
+    let offFlush = null;
+    if (window.novaDesktop && window.novaDesktop.onFlushRequest) {
+      offFlush = window.novaDesktop.onFlushRequest(() => flushNow().then(markClean));
+    }
+    return () => {
+      if (offFlush) offFlush();
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('pageshow', onPageShow);
+      flushNow(); // leaving the board: write anything still pending
+    };
+  }, [flushNow]);
+
+  /* Load the stored board (or start a new one / import the PDF picked on the dashboard). */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      let rec = null;
+      let storageDown = false;
+      try { rec = await NBStore.loadBoard(boardIdRef.current); }
+      catch (err) {
+        console.warn('Could not read the saved board', err);
+        storageDown = /not available|blocked/i.test(String((err && err.message) || ''));
+      }
+      if (cancelled) return;
+      if (rec && rec.slides.length) {
+        const idx = Math.max(0, Math.min(rec.meta.activeIndex || 0, rec.slides.length - 1));
+        const bid = boardIdRef.current;
+        rec.slides.forEach((sl) => {
+          persistedRef.current.set(sl.id, sl);
+          if (sl.bgImage) assetsRef.current.add(nbSlideKey(bid, sl.id));
+        });
+        lastSigRef.current = rec.slides.map((sl) => sl.id).join(',') + '|' + idx;
+        boardRef.current = {
+          ...boardRef.current,
+          title: rec.meta.title || boardRef.current.title,
+          bg: rec.meta.bg || boardRef.current.bg,
+          source: rec.meta.source || boardRef.current.source,
+        };
+        slidesRef.current = rec.slides;
+        activeIndexRef.current = idx;
+        setSlides(rec.slides);
+        setActiveIndex(idx);
+        setTimeout(() => { if (viewportRef.current) viewportRef.current.loadSlide(rec.slides[idx]); }, 0);
+      }
+      readyRef.current = true;
+      setRestoring(false);
+      nbWriteSessionFlag({ id: boardIdRef.current, clean: false });
+      if (storageDown) {
+        saveOkRef.current = false;
+        setSaveState({ status: 'off', at: Date.now(), message: 'Auto-save is unavailable in this browser. Use Save to keep a copy.' });
+      }
+      if (!rec) {
+        if (session && session.pdfFile) importPdfFile(session.pdfFile);
+        else if (!storageDown) scheduleSave();   // record the new board right away so it shows up in Recent sessions
+      }
+    })();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => () => { if (ovTimerRef.current) clearTimeout(ovTimerRef.current); }, []);
+  useEffect(() => {
+    if (!notice) return undefined;
+    const t = setTimeout(() => setNotice(null), 3200);
+    return () => clearTimeout(t);
+  }, [notice]);
+
+  /* Leave the board: wait for the last save; warn if it could not be saved. */
+  const leaveBoard = useCallback(async (after) => {
+    await flushNow();
+    if (!saveOkRef.current) { setConfirmLeave({ after }); return; }
+    nbWriteSessionFlag({ id: boardIdRef.current, clean: true });
+    after();
+  }, [flushNow]);
+
+  /* Top bar: Save as .novaboard. The picker is opened synchronously from the click. */
+  const handleSaveFile = useCallback(() => {
+    const fname = nbSafeFileName(boardRef.current.title) + '.novaboard';
+    nbSaveFile(async () => {
+      const vp = viewportRef.current;
+      const i = activeIndexRef.current;
+      const cur = slidesRef.current.slice();
+      if (vp && cur[i]) {
+        const saved = vp.saveIntoSlide(cur[i]);
+        saved.thumb = vp.getThumbnail();
+        cur[i] = saved;
+      }
+      return nbBuildBoardBlob(boardRef.current, cur, i);
+    }, fname).then((how) => {
+      if (how === 'cancelled') return;
+      setNotice({ text: how === 'picker' ? `Saved ${fname}` : `Downloaded ${fname}` });
+    }).catch((err) => {
+      console.error(err);
+      setImportError('Could not save the file: ' + ((err && err.message) || 'unknown error'));
+    });
+  }, []);
+
+  /* Top bar: Open a .novaboard file (the current board is flushed first and stays in Recent sessions). */
+  const handleOpenBoardFile = useCallback(async (file) => {
+    if (!file) return;
+    try {
+      await flushNow();
+      await onOpenFile(file);
+    } catch (err) {
+      setImportError((err && err.message) || 'Could not open that file.');
+    }
+  }, [flushNow, onOpenFile]);
 
   /* Snapshot the live canvas into slidesRef[activeIndex] (thumbnail + json + history). */
   const captureActiveSlide = useCallback(() => {
@@ -3309,13 +4766,92 @@ function CanvasScreen({ session, onBackHome, onNewBoard }) {
     });
   }, []);
 
-  /* ---- PDF import: rasterize every page into its own slide ---- */
+  /* Selected page ids, minus any that no longer exist (after deletes / PDF import). */
+  const validSelectedIds = useMemo(() => {
+    const have = new Set(slides.map((sl) => sl.id));
+    return selectedIds.filter((id) => have.has(id));
+  }, [selectedIds, slides]);
+  const selectedIdsRef = useRef([]);
+  useEffect(() => { selectedIdsRef.current = validSelectedIds; }, [validSelectedIds]);
+
+  /* Esc leaves page-selection mode. */
+  useEffect(() => {
+    if (!selectMode) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') { setSelectMode(false); setSelectedIds([]); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectMode]);
+
+  /* Feature: duplicate the current page (drawing, background, PDF image) right after itself. */
+  const handleDuplicatePage = useCallback(() => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    const i = activeIndexRef.current;
+    const prev = slidesRef.current;
+    if (!prev[i]) return;
+    const saved = vp.saveIntoSlide(prev[i]);
+    saved.thumb = vp.getThumbnail();
+    const copy = {
+      ...saved,
+      id: uid(),
+      json: saved.json ? JSON.parse(JSON.stringify(saved.json)) : null, // deep copy: never share objects between pages
+      history: { stack: [], index: -1 },                                 // the copy starts with its own undo history
+    };
+    const next = [...prev.slice(0, i), saved, copy, ...prev.slice(i + 1)];
+    slidesRef.current = next;
+    activeIndexRef.current = i + 1;
+    setSlides(next);
+    setActiveIndex(i + 1);
+    setTimeout(() => vp.loadSlide(copy), 0);
+  }, []);
+
+  /* Feature: delete every page ticked in the sidebar (always keeps at least one). */
+  const doDeleteSelected = useCallback(() => {
+    const vp = viewportRef.current;
+    setConfirmDeleteSelected(false);
+    const prev = slidesRef.current;
+    const ids = new Set(selectedIdsRef.current);
+    const survivors = prev.filter((sl) => !ids.has(sl.id));
+    if (survivors.length === 0 || survivors.length === prev.length) return;
+    const oldIdx = activeIndexRef.current;
+    const activeId = prev[oldIdx] && prev[oldIdx].id;
+    const activeSurvives = survivors.some((sl) => sl.id === activeId);
+    let newIndex;
+    if (activeSurvives) {
+      newIndex = survivors.findIndex((sl) => sl.id === activeId);
+    } else {
+      const before = prev.slice(0, oldIdx).filter((sl) => !ids.has(sl.id)).length;
+      newIndex = Math.min(before, survivors.length - 1);
+    }
+    slidesRef.current = survivors;
+    activeIndexRef.current = newIndex;
+    setSlides(survivors);
+    setActiveIndex(newIndex);
+    setSelectedIds([]);
+    // If the page being edited survives, the live canvas is already correct: no reload.
+    if (!activeSurvives && vp) setTimeout(() => vp.loadSlide(survivors[newIndex]), 0);
+  }, []);
+
+  /* Tools menu: Image Upload / Sticky Note act on the canvas; the rest open widgets. */
+  const handleLaunchTool = useCallback((id) => {
+    if (id === 'image') { setWidgetDockOpen(false); if (imageInputRef.current) imageInputRef.current.click(); return; }
+    if (id === 'sticky') { setWidgetDockOpen(false); if (viewportRef.current) viewportRef.current.addStickyNote(); return; }
+    launchWidget(id);
+  }, [launchWidget]);
+
+  /* ---- PDF import: rasterize every page into its own slide (with a progress overlay) ---- */
   const importPdfFile = useCallback(async (file) => {
     if (!file) return;
     setImportError(null);
     setImporting(true);
+    if (ovTimerRef.current) { clearTimeout(ovTimerRef.current); ovTimerRef.current = null; }
+    setPdfOverlay({ phase: 'working', done: 0, total: 0, name: file.name || 'document.pdf' });
     try {
-      const pages = await rasterizePdfPages(file);
+      const pages = await rasterizePdfPages(file, (done, total) => {
+        setPdfOverlay((o) => (o ? { ...o, done, total } : o));
+      });
       if (pages.length === 0) throw new Error('This PDF has no pages to import.');
       // Use the already-rasterized page image as an instant thumbnail too, so
       // the sidebar shows real content immediately instead of "EMPTY" until
@@ -3325,13 +4861,38 @@ function CanvasScreen({ session, onBackHome, onNewBoard }) {
         slide.thumb = p.dataUrl;
         return slide;
       });
-      setSlides(newSlides);
-      slidesRef.current = newSlides;
-      activeIndexRef.current = 0;
-      setActiveIndex(0);
-      setTimeout(() => viewportRef.current?.loadSlide(newSlides[0]), 0);
+      const vp = viewportRef.current;
+      const cur = slidesRef.current;
+      const pristine = cur.length === 1 && !cur[0].json && !cur[0].bgImage && !canvasDirtyRef.current;
+      let all; let startIndex;
+      if (pristine || !vp) {
+        all = newSlides; startIndex = 0;
+      } else {
+        // The board already has content (and is auto-saved): keep it and append the PDF pages after it.
+        const i = activeIndexRef.current;
+        const saved = vp.saveIntoSlide(cur[i]);
+        saved.thumb = vp.getThumbnail();
+        const base = cur.map((sl) => (sl.id === saved.id ? saved : sl));
+        all = [...base, ...newSlides];
+        startIndex = base.length;
+      }
+      canvasDirtyRef.current = false;
+      slidesRef.current = all;
+      activeIndexRef.current = startIndex;
+      setSlides(all);
+      setActiveIndex(startIndex);
+      setTimeout(() => { if (viewportRef.current) viewportRef.current.loadSlide(all[startIndex]); }, 0);
+      setSelectedIds([]);
+      setSelectMode(false);
+      // Pages are on the board: show "done", then fade the overlay out.
+      setPdfOverlay((o) => (o ? { ...o, phase: 'done', done: pages.length, total: pages.length } : o));
+      ovTimerRef.current = setTimeout(() => {
+        setPdfOverlay((o) => (o ? { ...o, phase: 'out' } : o));
+        ovTimerRef.current = setTimeout(() => { setPdfOverlay(null); ovTimerRef.current = null; }, 520);
+      }, 700);
     } catch (err) {
       console.error(err);
+      setPdfOverlay(null);
       setImportError(err.message || 'Could not read that PDF.');
     } finally {
       setImporting(false);
@@ -3401,15 +4962,55 @@ function CanvasScreen({ session, onBackHome, onNewBoard }) {
     <div ref={rootRef} className="track-in h-full flex flex-col relative">
       {!topBarHidden && (
         <CanvasTopBar
-          session={{ ...session, bg: activeSlide?.bg }}
-          onBackHome={onBackHome}
-          onNewBoard={onNewBoard}
+          session={{ ...session, title: boardRef.current.title, bg: activeSlide?.bg }}
+          onBackHome={() => leaveBoard(onBackHome)}
+          onNewBoard={() => leaveBoard(onNewBoard)}
           isFullscreen={isFullscreen}
           onToggleFullscreen={toggleFullscreen}
+          saveState={saveState}
+          onSaveFile={handleSaveFile}
+          onOpenFile={() => { if (boardInputRef.current) boardInputRef.current.click(); }}
         />
       )}
       <TopBarCollapseTab hidden={topBarHidden} onToggle={() => setTopBarHidden((v) => !v)} />
-      {topBarHidden && <PersistentClock />}
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files && e.target.files[0];
+          e.target.value = '';
+          if (!file || !viewportRef.current) return;
+          viewportRef.current.addImageFromFile(file).catch((err) => setImportError((err && err.message) || 'Could not add that image.'));
+        }}
+      />
+      <input
+        ref={boardInputRef}
+        type="file"
+        accept=".novaboard,.json,application/json"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files && e.target.files[0];
+          e.target.value = '';
+          handleOpenBoardFile(file);
+        }}
+      />
+      {topBarHidden && (
+        <>
+          <PersistentClock />
+          <div className="fixed top-3 right-[9.5rem] z-40 pointer-events-none"><SaveStatus state={saveState} /></div>
+        </>
+      )}
+      <Toast notice={notice} />
+      <PdfImportOverlay state={pdfOverlay} />
+      {restoring && (
+        <div className="nb-ov fixed inset-0 z-[55] flex items-center justify-center" style={{ animationDelay: '0.3s' }}>
+          <div className="glass-strong rounded-xl px-4 py-3 flex items-center gap-2.5 mono text-xs text-slate-300">
+            <ILoader size={14} className="text-cyan-300" /> Restoring your board…
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 min-h-0 flex relative">
         <ThumbnailSidebar
@@ -3418,7 +5019,11 @@ function CanvasScreen({ session, onBackHome, onNewBoard }) {
           onSelect={goToSlide}
           onReorder={handleReorder}
           collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed((v) => !v)}
+          selectMode={selectMode}
+          setSelectMode={setSelectMode}
+          selectedIds={validSelectedIds}
+          setSelectedIds={setSelectedIds}
+          onDeleteSelected={() => { if (validSelectedIds.length > 0 && validSelectedIds.length < slides.length) setConfirmDeleteSelected(true); }}
         />
         <SidebarToggle collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} />
         <div ref={canvasStageRef} className="flex-1 min-w-0 relative flex flex-col overflow-hidden">
@@ -3429,6 +5034,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard }) {
               onPrev={() => goToSlide(activeIndex - 1)}
               onNext={() => goToSlide(activeIndex + 1)}
               onAddPage={() => setNewPageOpen(true)}
+              onDuplicatePage={handleDuplicatePage}
               onDeletePage={() => setConfirmDeletePage(true)}
               onSwap={swapDocks}
               side={navSide}
@@ -3443,12 +5049,12 @@ function CanvasScreen({ session, onBackHome, onNewBoard }) {
               widgetDockOpen={widgetDockOpen}
               setWidgetDockOpen={setWidgetDockOpen}
               activeWidgets={activeWidgetFlags}
-              onLaunchWidget={launchWidget}
+              onLaunchWidget={handleLaunchTool}
               onSwap={swapDocks}
               side={actionSide}
             />
           </div>
-          <CanvasViewport ref={viewportRef} initialBg={activeSlide?.bg} />
+          <CanvasViewport ref={viewportRef} initialBg={activeSlide?.bg} onContentChange={handleContentChange} />
 
           {widgets.laser && (
             <LaserPointerOverlay containerRef={canvasStageRef} color="#38bdf8" />
@@ -3498,6 +5104,26 @@ function CanvasScreen({ session, onBackHome, onNewBoard }) {
           onCancel={() => setConfirmDeletePage(false)}
         />
       )}
+      {confirmDeleteSelected && (
+        <ConfirmDialog
+          title={`Delete ${validSelectedIds.length} page${validSelectedIds.length === 1 ? '' : 's'}?`}
+          body={`The selected page${validSelectedIds.length === 1 ? '' : 's'} and everything drawn on ${validSelectedIds.length === 1 ? 'it' : 'them'} will be removed. This can't be undone.`}
+          confirmLabel="Delete pages"
+          danger
+          onConfirm={doDeleteSelected}
+          onCancel={() => setConfirmDeleteSelected(false)}
+        />
+      )}
+      {confirmLeave && (
+        <ConfirmDialog
+          title="Leave without saving?"
+          body="NovaBoard couldn't auto-save this board on this device (storage is full or unavailable). Use Save to download a .novaboard file first, or leave anyway."
+          confirmLabel="Leave anyway"
+          danger
+          onConfirm={() => { const go = confirmLeave.after; setConfirmLeave(null); nbWriteSessionFlag({ id: boardIdRef.current, clean: true }); go(); }}
+          onCancel={() => setConfirmLeave(null)}
+        />
+      )}
       {importError && (
         <ConfirmDialog
           title="Import problem"
@@ -3512,39 +5138,69 @@ function CanvasScreen({ session, onBackHome, onNewBoard }) {
 }
 
 /* ============================== APP ROOT ============================== */
-
 const VIEWS = { SPLASH: 'VIEW_SPLASH', HOME: 'VIEW_HOME', CANVAS: 'VIEW_CANVAS' };
-
 function App() {
   const [view, setView] = useState(VIEWS.SPLASH);
   const [activeSession, setActiveSession] = useState(null);
   const [sessions, setSessions] = useState(() => loadSessions());
-
+  // Set when the PREVIOUS page session did not close cleanly (power loss, crash, killed tab).
+  const [recovery, setRecovery] = useState(() => (NB_BOOT_SESSION && NB_BOOT_SESSION.clean === false ? NB_BOOT_SESSION : null));
   const enterCanvas = useCallback((session) => {
+    setRecovery(null);
     setActiveSession(session);
     setView(VIEWS.CANVAS);
   }, []);
-
   const goHome = useCallback(() => {
     setActiveSession(null);
     setView(VIEWS.HOME);
   }, []);
+  const handleSplashDone = useCallback(() => setView(VIEWS.HOME), []);
+
+  /* Open a .novaboard file: validate, store it as a brand-new board, then open it. */
+  const openNovaboardFile = useCallback(async (file) => {
+    const parsed = await nbParseBoardFile(file);
+    const id = uid();
+    const board = { id, title: parsed.title, bg: parsed.bg, source: 'file' };
+    await NBStore.saveBoard(nbMakeBatch(board, parsed.slides, parsed.activeIndex, () => true, () => false));
+    const session = {
+      id, title: parsed.title, bg: parsed.slides[0].bg, pageCount: parsed.slides.length,
+      updatedAt: Date.now(), source: 'file',
+    };
+    setSessions((prev) => {
+      const next = nbCapSessions([session, ...prev.filter((x) => x.id !== id)]);
+      saveSessions(next.map(nbSlimSession));
+      return next;
+    });
+    enterCanvas(session);
+  }, [enterCanvas]);
 
   return (
     <div className="h-full w-full relative">
       {view === VIEWS.SPLASH && (
-        <SplashScreen onDone={() => setView(VIEWS.HOME)} />
+        <SplashScreen onDone={handleSplashDone} />
       )}
       {view === VIEWS.HOME && (
-        <HomeScreen onEnterCanvas={enterCanvas} sessions={sessions} setSessions={setSessions} />
+        <HomeScreen
+          onEnterCanvas={enterCanvas}
+          sessions={sessions}
+          setSessions={setSessions}
+          onOpenFile={openNovaboardFile}
+          recovery={recovery}
+          onDismissRecovery={() => setRecovery(null)}
+        />
       )}
-      {view === VIEWS.CANVAS && (
-        <CanvasScreen session={activeSession} onBackHome={goHome} onNewBoard={goHome} />
+      {view === VIEWS.CANVAS && activeSession && (
+        <CanvasScreen
+          key={activeSession.id}
+          session={activeSession}
+          onBackHome={goHome}
+          onNewBoard={goHome}
+          onOpenFile={openNovaboardFile}
+        />
       )}
     </div>
   );
 }
-
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
 </script>
