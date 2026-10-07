@@ -375,7 +375,8 @@ function saveSessions(sessions) {
 
 /* ============================== STORAGE: IndexedDB auto-save, .novaboard files, boot audio ============================== */
 
-const NB_VERSION = '2.0';
+const NB_VERSION = '2.1.2';
+const NB_LOGO_SRC = 'data:image/webp;base64,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';
 const NB_MAX_BOARDS = 40;          // recent boards kept on this device; older ones are removed
 const NB_FLAG_KEY = 'novaboard.session.v1';
 
@@ -918,12 +919,11 @@ function SplashScreen({ onDone }) {
           </div>
         ) : (
           <div key="logo" className="post-flick absolute inset-0 flex flex-col items-center justify-center px-4">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
-              style={{ border: '2px solid #38bdf8', boxShadow: '0 0 28px rgba(56,189,248,0.45), inset 0 0 18px rgba(56,189,248,0.18)' }}
-            >
-              <span className="text-3xl font-bold text-cyan-300" style={{ textShadow: '0 0 14px rgba(56,189,248,0.9)' }}>N</span>
-            </div>
+            <img
+              src={NB_LOGO_SRC} alt="NovaBoard" width="96" height="96" draggable={false}
+              className="w-24 h-24 rounded-[22px] mb-5"
+              style={{ boxShadow: '0 0 36px rgba(56,189,248,0.35)' }}
+            />
             <div className="text-3xl sm:text-4xl font-semibold text-white tracking-[0.28em] pl-[0.28em]">NOVABOARD</div>
             <div className="text-[11px] text-slate-500 tracking-[0.5em] mt-2 pl-[0.5em]">OPERATING SYSTEM {NB_VERSION}</div>
             <div className="mt-8 w-[min(86vw,360px)]">
@@ -1395,6 +1395,8 @@ function ConfirmDialog({ title, body, confirmLabel = 'Confirm', danger = false, 
 }
 
 function NewPageModal({ onPick, onCancel }) {
+  const [custom, setCustom] = useState('#0b1d3a');
+  const [hexText, setHexText] = useState('#0b1d3a');
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onCancel(); };
     window.addEventListener('keydown', onKey);
@@ -1405,11 +1407,20 @@ function NewPageModal({ onPick, onCancel }) {
     { id: 'black', label: 'Pure Black', hex: BLACK_BG, ring: 'rgba(148,163,184,0.45)' },
     { id: 'white', label: 'Pure White', hex: WHITE_BG, ring: 'rgba(148,163,184,0.6)' },
   ];
+  const presets = ['#0d3824', '#0b1d3a', '#3b0d1e', '#fdf6e3', '#e2e8f0', '#fef3c7', '#1e1b4b', '#334155'];
+  const setBoth = (v) => { setCustom(v); setHexText(v); };
+  const onHex = (v) => {
+    let t = v.trim();
+    if (t && t[0] !== '#') t = '#' + t;
+    setHexText(t);
+    if (/^#[0-9a-fA-F]{6}$/.test(t)) setCustom(t.toLowerCase());
+    else if (/^#[0-9a-fA-F]{3}$/.test(t)) setCustom('#' + t.slice(1).split('').map((c) => c + c).join('').toLowerCase());
+  };
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="New page background">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
-      <div className="glass-strong modal-in relative w-full max-w-sm rounded-2xl p-5">
+      <div className="glass-strong modal-in relative w-full max-w-sm rounded-2xl p-5 max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-medium text-slate-100">New page</h3>
           <button onClick={onCancel} className="navdock-btn focus-ring" title="Cancel" aria-label="Cancel"><IX size={15} /></button>
@@ -1430,6 +1441,28 @@ function NewPageModal({ onPick, onCancel }) {
             </button>
           ))}
         </div>
+
+        <div className="mt-4 pt-4 border-t border-slate-700/50">
+          <div className="text-xs text-slate-400 mb-2 mono tracking-wider">CUSTOM COLOUR</div>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {presets.map((c) => (
+              <button key={c} onClick={() => setBoth(c)} title={c} aria-label={`Use ${c}`}
+                className={`w-7 h-7 rounded-md focus-ring ${custom === c ? 'ring-2 ring-cyan-400' : 'ring-1 ring-slate-600/70'}`}
+                style={{ background: c }} />
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="color" value={custom} onChange={(e) => setBoth(e.target.value)}
+              aria-label="Pick a colour" className="w-10 h-10 rounded-lg bg-transparent border border-slate-600/70 cursor-pointer p-0.5" />
+            <input type="text" value={hexText} maxLength={7} spellCheck={false} onChange={(e) => onHex(e.target.value)}
+              aria-label="Hex colour" className="mono flex-1 min-w-0 rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2 text-sm text-slate-200 focus-ring" />
+            <div className="w-10 h-10 rounded-lg shrink-0" style={{ background: custom, boxShadow: 'inset 0 0 0 1px rgba(148,163,184,0.5)' }} />
+          </div>
+          <button onClick={() => onPick(custom)}
+            className="mt-3 w-full rounded-lg py-2.5 text-sm text-cyan-200 bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 transition-colors focus-ring">
+            Create page with this colour
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1447,12 +1480,17 @@ function ToolPlaceholder({ label }) {
   );
 }
 
-function ExportMenu({ onExportPdf, exporting, onClose }) {
+function ExportMenu({ onExportPdf, onExportPng, exporting, onClose }) {
   const ref = useRef(null);
   useEffect(() => {
-    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
+    // Ignore presses on the Export button itself so clicking it again closes the menu.
+    const onDoc = (e) => {
+      const root = ref.current && ref.current.closest('.relative');
+      if (root && root.contains(e.target)) return;
+      onClose();
+    };
+    document.addEventListener('pointerdown', onDoc);
+    return () => document.removeEventListener('pointerdown', onDoc);
   }, [onClose]);
   return (
     <div ref={ref} className="glass-strong modal-in absolute right-0 top-full mt-2 rounded-xl p-1.5 w-52 shadow-2xl z-40">
@@ -1464,6 +1502,13 @@ function ExportMenu({ onExportPdf, exporting, onClose }) {
         {exporting ? <ILoader size={15} className="text-cyan-300" /> : <IFileText size={15} className="text-cyan-300" />}
         {exporting ? 'Compiling PDF…' : 'Export as PDF'}
         <span className="ml-auto text-[10px] text-slate-500 mono">all pages</span>
+      </button>
+      <button
+        onClick={onExportPng}
+        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-slate-200 hover:bg-slate-800/60 transition-colors focus-ring"
+      >
+        <IImagePng size={15} className="text-cyan-300" /> Export page as PNG
+        <span className="ml-auto text-[10px] text-slate-500 mono">this page</span>
       </button>
     </div>
   );
@@ -1640,6 +1685,11 @@ const IPenBall = (p) => <Svg {...p}><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="
 const IHighlighter = (p) => <Svg {...p}><path d="M9 11l-6 6v3h9l3-3"/><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></Svg>;
 const ICalligraphy = (p) => <Svg {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></Svg>;
 const INeon = (p) => <Svg {...p}><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></Svg>;
+const IEmojiPen = (p) => <Svg {...p}><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></Svg>;
+const ILaserPen = (p) => <Svg {...p}><path d="M4 20L14 10"/><circle cx="17" cy="7" r="2.5" fill="currentColor" stroke="none"/><path d="M17 1.5v2M17 10.5v2M11.5 7h2M20.5 7h2"/></Svg>;
+const IDashedPen = (p) => <Svg {...p}><line x1="3" y1="12" x2="6" y2="12"/><line x1="10" y1="12" x2="14" y2="12"/><line x1="18" y1="12" x2="21" y2="12"/></Svg>;
+const IGridIcon = (p) => <Svg {...p}><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></Svg>;
+const IImagePng = (p) => <Svg {...p}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></Svg>;
 const IEraser = (p) => <Svg {...p}><path d="M20 20H9l-5-5a2 2 0 0 1 0-2.8l9-9a2 2 0 0 1 2.8 0l5 5a2 2 0 0 1 0 2.8L13 20"/><path d="M7 11l6 6"/></Svg>;
 const ICursor = (p) => <Svg {...p}><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></Svg>;
 const IUndo = (p) => <Svg {...p}><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></Svg>;
@@ -1680,6 +1730,16 @@ const IPaste = (p) => <Svg {...p}><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 
 const IImageIcon = (p) => <Svg {...p}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></Svg>;
 const IFolderOpen = (p) => <Svg {...p}><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></Svg>;
 const ISave = (p) => <Svg {...p}><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></Svg>;
+const IArrowRight = (p) => <Svg {...p}><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></Svg>;
+const ITriangle = (p) => <Svg {...p}><polygon points="12 4 21 20 3 20"/></Svg>;
+const IRightTriangle = (p) => <Svg {...p}><polygon points="4 4 4 20 20 20"/></Svg>;
+const IDiamond = (p) => <Svg {...p}><polygon points="12 3 21 12 12 21 3 12"/></Svg>;
+const IPentagon = (p) => <Svg {...p}><polygon points="12 3 21 10 17.5 20.5 6.5 20.5 3 10"/></Svg>;
+const IHexagon = (p) => <Svg {...p}><polygon points="7 4 17 4 22 12 17 20 7 20 2 12"/></Svg>;
+const IDiceIcon = (p) => <Svg {...p}><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></Svg>;
+const IRulerIcon = (p) => <Svg {...p}><rect x="2" y="8" width="20" height="8" rx="1.5"/><path d="M6 8v3M10 8v4M14 8v3M18 8v4"/></Svg>;
+const ISpotlightIcon = (p) => <Svg {...p}><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></Svg>;
+const ITableIcon = (p) => <Svg {...p}><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 10h18M3 15h18M9 4v16M15 4v16"/></Svg>;
 const IStickyIcon = (p) => <Svg {...p}><path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3z"/><path d="M15 3v6h6"/></Svg>;
 
 /* ---------- Helpers ---------- */
@@ -1819,7 +1879,6 @@ function safeEvalExpr(expr) {
 
   function parseNumber() {
     const start = i;
-    if (s[i] === '-') i++;
     while (i < s.length && /[0-9.]/.test(s[i])) i++;
     if (start === i) throw new Error('Expected number');
     const n = parseFloat(s.slice(start, i));
@@ -1828,19 +1887,23 @@ function safeEvalExpr(expr) {
   }
   function parseAtom() {
     if (peek() === '(') { eat('('); const v = parseExpr(); eat(')'); return v; }
-    if (peek() === '-') { i++; return -parseAtom(); }
     return parseNumber();
+  }
+  function parseUnary() {
+    if (peek() === '-') { i++; return -parseUnary(); }
+    if (peek() === '+') { i++; return parseUnary(); }
+    return parsePow();
   }
   function parsePow() {
     const left = parseAtom();
-    if (peek() === '^') { i++; return Math.pow(left, parsePow()); }
+    if (peek() === '^') { i++; return Math.pow(left, parseUnary()); }
     return left;
   }
   function parseTerm() {
-    let left = parsePow();
+    let left = parseUnary();
     while (peek() === '*' || peek() === '/' || peek() === '%') {
       const op = s[i]; i++;
-      const right = parsePow();
+      const right = parseUnary();
       if (op === '*') left *= right;
       else if (op === '/') { if (right === 0) throw new Error('Division by zero'); left /= right; }
       else left %= right;
@@ -1913,6 +1976,12 @@ const WHITE_BG = '#ffffff';
 
 /* Custom props that must survive every fabric toJSON()/clone() round-trip. */
 const NB_PROPS = ['nbKind', 'nb3D', 'nbYaw', 'nbTilt'];
+/* Emoji pen palette and the emoji font stack used for stamps. */
+const NB_EMOJIS = ['⭐', '❤️', '😀', '🔥', '🌸', '👍', '✨', '🎉', '🍎', '🦋'];
+const NB_EMOJI_FONT = "'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";
+/* Laser-pen strokes are temporary: they fade after this long and are never saved. */
+const NB_LASER_MS = 3000;
+const NB_EPHEMERAL = (o) => o && o.nbKind === 'laser';
 /* Object clipboard lives at module level so it survives slide switches. */
 const NB_CLIPBOARD = { obj: null };
 const STICKY_COLORS = ['#fde047', '#f9a8d4', '#86efac', '#93c5fd', '#fdba74'];
@@ -2043,6 +2112,12 @@ const SHAPES_2D = [
   { id: 'rectRound', label: 'Rounded rect', icon: IRectRound },
   { id: 'ellipse', label: 'Circle / ellipse', icon: ICircleShape },
   { id: 'star', label: '5-point star', icon: IStar },
+  { id: 'arrow', label: 'Arrow', icon: IArrowRight },
+  { id: 'triangle', label: 'Triangle', icon: ITriangle },
+  { id: 'rightTriangle', label: 'Right triangle', icon: IRightTriangle },
+  { id: 'diamond', label: 'Diamond', icon: IDiamond },
+  { id: 'pentagon', label: 'Pentagon', icon: IPentagon },
+  { id: 'hexagon', label: 'Hexagon', icon: IHexagon },
 ];
 
 const SHAPES_3D = [
@@ -2051,6 +2126,15 @@ const SHAPES_3D = [
   { id: 'sphere', label: 'Sphere', icon: ISphere },
   { id: 'pyramid', label: 'Pyramid', icon: IPyramid },
 ];
+
+/* Polygon shapes as points in the 0..1 drag box. */
+const NB_POLY_SHAPES = {
+  triangle: [[0.5, 0], [1, 1], [0, 1]],
+  rightTriangle: [[0, 0], [0, 1], [1, 1]],
+  diamond: [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]],
+  pentagon: [[0.5, 0], [1, 0.38], [0.81, 1], [0.19, 1], [0, 0.38]],
+  hexagon: [[0.25, 0], [0.75, 0], [1, 0.5], [0.75, 1], [0.25, 1], [0, 0.5]],
+};
 
 const SHAPE_3D_IDS = new Set(SHAPES_3D.map(s => s.id));
 
@@ -2206,17 +2290,22 @@ function useKeepInView(ref) {
   }, []);
 }
 
-function ShapeFlyout({ activeShape, onPick, onClose, down = false }) {
+function ShapeFlyout({ activeShape, onPick, onClose, anchorRef, down = false }) {
   const ref = useRef(null);
   const wrapRef = useRef(null);
   useKeepInView(wrapRef);
   useEffect(() => {
-    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    // The toggle button lives inside the anchor: ignore it here so its own click can close the menu.
+    const onDoc = (e) => {
+      const a = anchorRef && anchorRef.current;
+      if (a && a.contains(e.target)) return;
+      if (ref.current && !ref.current.contains(e.target)) onClose();
+    };
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('pointerdown', onDoc);
     window.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('mousedown', onDoc); window.removeEventListener('keydown', onKey); };
-  }, [onClose]);
+    return () => { document.removeEventListener('pointerdown', onDoc); window.removeEventListener('keydown', onKey); };
+  }, [anchorRef, onClose]);
 
   const Group = ({ title, items }) => (
     <div>
@@ -2242,6 +2331,50 @@ function ShapeFlyout({ activeShape, onPick, onClose, down = false }) {
         <Group title="2D PRIMITIVES" items={SHAPES_2D} />
         <div className="h-px bg-slate-700/50" />
         <Group title="3D WIREFRAME" items={SHAPES_3D} />
+      </div>
+    </div>
+  );
+}
+
+function PenFlyout({ pens, activePen, onPick, onStyle, onClose, anchorRef, down = false }) {
+  const wrapRef = useRef(null);
+  useKeepInView(wrapRef);
+  useEffect(() => {
+    const onDoc = (e) => {
+      const a = anchorRef && anchorRef.current;
+      if (a && a.contains(e.target)) return;
+      onClose();
+    };
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('pointerdown', onDoc);
+    window.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('pointerdown', onDoc); window.removeEventListener('keydown', onKey); };
+  }, [anchorRef, onClose]);
+
+  return (
+    <div ref={wrapRef} className={`absolute ${down ? 'top-full mt-3' : 'bottom-full mb-3'} left-1/2 -translate-x-1/2 z-40`}>
+      <div className="glass-strong modal-in rounded-2xl p-3 w-64 shadow-2xl flex flex-col gap-2.5" role="menu" aria-label="Pens">
+        <div className="mono text-[10px] tracking-wider text-slate-500 px-0.5">PENS</div>
+        <div className="grid grid-cols-4 gap-1.5">
+          {pens.map((pn) => (
+            <button
+              key={pn.id}
+              onClick={() => onPick(pn.id)}
+              title={pn.title}
+              className={`tool-btn focus-ring !w-full !h-14 flex-col gap-1 ${activePen === pn.id ? 'active' : ''}`}
+            >
+              <pn.icon size={17} />
+              <span className="text-[9px] leading-none truncate max-w-full">{pn.short}</span>
+            </button>
+          ))}
+        </div>
+        <div className="h-px bg-slate-700/50" />
+        <button
+          onClick={onStyle}
+          className="mono text-[11px] text-slate-300 hover:text-cyan-300 border border-slate-700/60 hover:border-cyan-500/40 rounded-lg py-1.5 transition-colors focus-ring"
+        >
+          Width &amp; colour…
+        </button>
       </div>
     </div>
   );
@@ -2331,6 +2464,7 @@ function DrawToolbar({
   canUndo, canRedo, onUndo, onRedo, onClear, hasObjects,
   activeShape, onPickShape,
   onCopy, onPaste, canCopy, canPaste,
+  emoji, setEmoji, gridMode, onCycleGrid,
 }) {
   const isDrawTool = tool === 'draw';
   const [shapeMenuOpen, setShapeMenuOpen] = useState(false);
@@ -2339,6 +2473,7 @@ function DrawToolbar({
   // null = docked bottom-centre; otherwise {left, top} in px inside the canvas stage.
   const [pos, setPos] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [penMenuOpen, setPenMenuOpen] = useState(false);
   const barRef = useRef(null);
   const closeStyle = useCallback(() => setStyleFor(null), []);
   const anchorRefs = useRef({});
@@ -2354,10 +2489,13 @@ function DrawToolbar({
   }, [activeShape]);
 
   const PENS = [
-    { id: 'ballpoint', title: 'Ballpoint (B)', icon: IPenBall },
-    { id: 'highlighter', title: 'Highlighter (H)', icon: IHighlighter },
-    { id: 'calligraphy', title: 'Calligraphy (C)', icon: ICalligraphy },
-    { id: 'neon', title: 'Neon glow (N)', icon: INeon },
+    { id: 'ballpoint', title: 'Ballpoint (B)', icon: IPenBall, short: 'Ballpoint' },
+    { id: 'highlighter', title: 'Highlighter (H)', icon: IHighlighter, short: 'Highlight' },
+    { id: 'calligraphy', title: 'Calligraphy (C)', icon: ICalligraphy, short: 'Callig.' },
+    { id: 'neon', title: 'Neon glow (N)', icon: INeon, short: 'Neon' },
+    { id: 'dashed', title: 'Dashed pen (D)', icon: IDashedPen, short: 'Dashed' },
+    { id: 'emoji', title: 'Emoji pen (M)', icon: IEmojiPen, short: 'Emoji' },
+    { id: 'laser', title: 'Laser pen — fades in 3s (L)', icon: ILaserPen, short: 'Laser' },
   ];
 
   /* ---- Drag the whole bar by its grip (mouse + touch). Double-click the grip to re-dock. ---- */
@@ -2369,6 +2507,7 @@ function DrawToolbar({
     e.preventDefault();
     setStyleFor(null);
     setShapeMenuOpen(false);
+    setPenMenuOpen(false);
     const pr = parent.getBoundingClientRect();
     const er = el.getBoundingClientRect();
     const start = {
@@ -2412,13 +2551,15 @@ function DrawToolbar({
     return () => ro.disconnect();
   }, []);
 
-  // Clicking an inactive pen just selects it; clicking the ACTIVE pen opens its style popover.
-  const onPenClick = (id) => {
+  // One pen button: it shows the current pen and opens the pen picker (also arms the pen tool).
+  const activePen = PENS.find((pn) => pn.id === pen) || PENS[0];
+  const onPenButtonClick = () => {
     setShapeMenuOpen(false);
-    if (isDrawTool && pen === id) { setStyleFor((v) => (v === id ? null : id)); return; }
     setStyleFor(null);
-    setTool('draw'); setPen(id);
+    if (!isDrawTool) setTool('draw');
+    setPenMenuOpen((v) => !v);
   };
+  const onPickPen = (id) => { setTool('draw'); setPen(id); setPenMenuOpen(false); };
   // Shape: inactive -> shape picker; active -> style popover.
   const onShapeClick = () => {
     if (tool === 'shape') { setShapeMenuOpen(false); setStyleFor((v) => (v === 'shape' ? null : 'shape')); return; }
@@ -2478,6 +2619,9 @@ function DrawToolbar({
         <>
           {/* Mode tools */}
           <div className="flex items-center gap-0.5">
+            <ToolButton active={gridMode !== 'off'} onClick={onCycleGrid} title={`Background guide: ${gridMode} (click to change)`}>
+              <IGridIcon size={16} />
+            </ToolButton>
             <ToolButton active={tool === 'select'} onClick={() => { setStyleFor(null); setTool('select'); }} title="Select / Move (V)">
               <ICursor size={16} />
             </ToolButton>
@@ -2488,21 +2632,32 @@ function DrawToolbar({
 
           <Divider />
 
-          {/* Pens — click the active one for width + colour */}
-          <div className="flex items-center gap-0.5">
-            {PENS.map((pn) => {
-              const active = isDrawTool && pen === pn.id;
-              return (
-                <div key={pn.id} ref={anchorRef(pn.id)} className="relative">
-                  <ToolButton active={active} onClick={() => onPenClick(pn.id)} title={active ? `${pn.title} — click for width & colour` : pn.title}>
-                    <pn.icon size={16} />
-                  </ToolButton>
-                  {active && <InkDot />}
-                  {popover(pn.id, pn.title.replace(/ \(.\)$/, ''))}
-                </div>
-              );
-            })}
+          {/* Pens — a single button that opens the pen picker */}
+          <div ref={anchorRef('pen')} className="relative">
+            <ToolButton active={isDrawTool} onClick={onPenButtonClick} title={`${activePen.title} — click to switch pen`}>
+              <activePen.icon size={16} />
+            </ToolButton>
+            {isDrawTool && <InkDot />}
+            {penMenuOpen && (
+              <PenFlyout
+                pens={PENS} activePen={isDrawTool ? pen : null} down={popDown} anchorRef={refFor('pen')}
+                onPick={onPickPen}
+                onStyle={() => { setPenMenuOpen(false); setTool('draw'); setStyleFor('pen'); }}
+                onClose={() => setPenMenuOpen(false)}
+              />
+            )}
+            {popover('pen', activePen.title.replace(/ \(.\)$/, ''))}
           </div>
+
+          {isDrawTool && pen === 'emoji' && (
+            <div className="flex items-center gap-0.5 max-w-full overflow-x-auto" aria-label="Emoji palette">
+              {NB_EMOJIS.map((em) => (
+                <button key={em} onClick={() => setEmoji(em)} title={`Stamp ${em}`}
+                  className={`w-7 h-7 rounded-md text-base leading-none focus-ring ${emoji === em ? 'bg-cyan-500/25 ring-1 ring-cyan-400/60' : 'hover:bg-slate-700/50'}`}
+                  style={{ fontFamily: NB_EMOJI_FONT }}>{em}</button>
+              ))}
+            </div>
+          )}
 
           <Divider />
 
@@ -2515,7 +2670,7 @@ function DrawToolbar({
               {tool === 'shape' && <InkDot />}
               {shapeMenuOpen && (
                 <ShapeFlyout
-                  activeShape={activeShape} down={popDown}
+                  activeShape={activeShape} down={popDown} anchorRef={refFor('shape')}
                   onPick={(id) => { onPickShape(id); setShapeMenuOpen(false); }}
                   onClose={() => setShapeMenuOpen(false)}
                 />
@@ -2597,9 +2752,19 @@ function RotateHandle({ x, y, yaw, tilt, onChange }) {
 function ThumbnailSidebar({
   slides, activeIndex, onSelect, onReorder, collapsed,
   selectMode, setSelectMode, selectedIds, setSelectedIds, onDeleteSelected,
+  onAddPage, onDuplicateAt,
 }) {
-  const [dragIdx, setDragIdx] = useState(null);
+  // While a page is being dragged: { from, gap, x, y }. `gap` is the slot (0..n) it would drop into.
+  const [drag, setDrag] = useState(null);
   const anchorRef = useRef(null);
+  const listRef = useRef(null);
+  const cellRefs = useRef([]);
+  const dragRef = useRef(null);
+  const justDraggedRef = useRef(false);
+  const countRef = useRef(slides.length);
+  countRef.current = slides.length;
+  const reorderRef = useRef(onReorder);
+  reorderRef.current = onReorder;
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const count = selectedIds.length;
   // At least one page must always remain.
@@ -2622,6 +2787,7 @@ function ThumbnailSidebar({
     setSelectedIds(Array.from(ids));
   };
   const onCardClick = (e, i, s) => {
+    if (justDraggedRef.current) return; // the click that ends a drag is not a selection
     if (selectMode) {
       if (e.shiftKey) selectRange(i); else toggleOne(s.id, i);
       return;
@@ -2631,6 +2797,89 @@ function ThumbnailSidebar({
     if (e.ctrlKey || e.metaKey) { setSelectMode(true); toggleOne(s.id, i); return; }
     onSelect(i);
   };
+
+  /* ---- Drag to reorder (pointer events: mouse, pen and touch). Touch drags start from the grip. ---- */
+  const gapAt = (clientY) => {
+    const n = countRef.current;
+    for (let k = 0; k < n; k++) {
+      const el = cellRefs.current[k];
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (clientY < r.top + r.height / 2) return k;
+    }
+    return n;
+  };
+  const overList = (x) => {
+    const l = listRef.current;
+    if (!l) return false;
+    const r = l.getBoundingClientRect();
+    return x >= r.left - 30 && x <= r.right + 30;
+  };
+  const onCellPointerDown = (e, i, fromGrip) => {
+    if (selectMode || dragRef.current) return;
+    if (e.button !== undefined && e.button !== 0) return;
+    if (e.target.closest && e.target.closest('[data-nodrag]')) return;
+    if (e.pointerType === 'touch' && !fromGrip) return; // a touch on the card scrolls the list
+    const st = { from: i, sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY, active: false };
+    dragRef.current = st;
+    let raf = 0;
+    const publish = () => setDrag({ from: st.from, gap: overList(st.x) ? gapAt(st.y) : null, x: st.x, y: st.y });
+    const scrollLoop = () => {
+      if (dragRef.current !== st || !st.active) return;
+      const l = listRef.current;
+      if (l) {
+        const r = l.getBoundingClientRect();
+        const edge = 36;
+        let dy = 0;
+        if (st.y < r.top + edge) dy = -Math.ceil((r.top + edge - st.y) / 4);
+        else if (st.y > r.bottom - edge) dy = Math.ceil((st.y - (r.bottom - edge)) / 4);
+        if (dy) { const before = l.scrollTop; l.scrollTop += dy; if (l.scrollTop !== before) publish(); }
+      }
+      raf = requestAnimationFrame(scrollLoop);
+    };
+    const move = (ev) => {
+      st.x = ev.clientX; st.y = ev.clientY;
+      if (!st.active) {
+        if (Math.hypot(st.x - st.sx, st.y - st.sy) < (fromGrip ? 3 : 6)) return;
+        st.active = true;
+        justDraggedRef.current = true;
+        raf = requestAnimationFrame(scrollLoop);
+      }
+      publish();
+    };
+    const end = (commit) => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
+      window.removeEventListener('keydown', onKey);
+      cancelAnimationFrame(raf);
+      dragRef.current = null;
+      if (st.active) {
+        if (commit && overList(st.x)) {
+          const gap = gapAt(st.y);
+          const to = gap > st.from ? gap - 1 : gap;
+          if (to !== st.from) reorderRef.current(st.from, to);
+        }
+        setTimeout(() => { justDraggedRef.current = false; }, 0);
+      }
+      setDrag(null);
+    };
+    const onUp = () => end(true);
+    const onCancel = () => end(false);
+    const onKey = (ev) => { if (ev.key === 'Escape') end(false); };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
+    window.addEventListener('keydown', onKey);
+  };
+
+  const DropBar = ({ edge }) => (
+    <div
+      className="pointer-events-none absolute left-0 right-0 h-[3px] rounded-full bg-cyan-400 z-10"
+      style={{ [edge]: -7, boxShadow: '0 0 8px rgba(34,211,238,0.85)' }}
+    />
+  );
+  const btn = 'flex-1 flex items-center justify-center gap-1 mono text-[10px] px-1.5 py-1 rounded border transition-colors focus-ring';
 
   return (
     <div
@@ -2652,6 +2901,20 @@ function ThumbnailSidebar({
             </button>
           </div>
         </div>
+        {!selectMode && (
+          <div className="flex items-center gap-1.5 mt-2">
+            <button
+              onClick={onAddPage}
+              title="New page (added after the current page)"
+              className={`${btn} text-cyan-300 border-cyan-500/40 hover:bg-cyan-500/10`}
+            ><IPlus size={11} /> New</button>
+            <button
+              onClick={() => onDuplicateAt(activeIndex)}
+              title="Copy the current page"
+              className={`${btn} text-slate-300 border-slate-700/60 hover:text-cyan-300 hover:border-cyan-500/40`}
+            ><ICopy size={11} /> Copy</button>
+          </div>
+        )}
         {selectMode && (
           <div className="flex items-center gap-1 mt-2">
             <button
@@ -2673,43 +2936,74 @@ function ThumbnailSidebar({
           </div>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto p-2.5 flex flex-col gap-2.5">
+      <div ref={listRef} className="flex-1 overflow-y-auto p-2.5 flex flex-col gap-2.5 select-none">
         {slides.map((s, i) => {
           const isSel = selectedSet.has(s.id);
+          const gap = drag ? drag.gap : null;
+          const barBefore = drag && gap === i && gap !== drag.from && gap !== drag.from + 1;
+          const barAfter = drag && i === slides.length - 1 && gap === slides.length && drag.from !== slides.length - 1;
           return (
             <div
               key={s.id}
-              draggable={!selectMode}
-              onDragStart={() => setDragIdx(i)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => { if (dragIdx !== null && dragIdx !== i) onReorder(dragIdx, i); setDragIdx(null); }}
-              onDragEnd={() => setDragIdx(null)}
-              onClick={(e) => onCardClick(e, i, s)}
-              className={`thumb-card rounded-lg overflow-hidden relative flex-shrink-0 ${i === activeIndex ? 'active' : ''} ${isSel ? 'selected' : ''}`}
-              style={{ aspectRatio: '4 / 3', background: s.bg }}
-              title={`Page ${i + 1}`}
+              ref={(el) => { cellRefs.current[i] = el; }}
+              className="relative flex-shrink-0"
+              onPointerDown={(e) => onCellPointerDown(e, i, false)}
             >
-              {s.thumb ? (
-                <img src={s.thumb} alt={`Page ${i + 1}`} className="w-full h-full object-cover" draggable={false} />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="mono text-[9px] text-white/30">EMPTY</span>
-                </div>
-              )}
-              {selectMode && (
-                <span
-                  className={`absolute top-1 left-1 w-4 h-4 rounded-full border flex items-center justify-center ${
-                    isSel ? 'bg-indigo-400 border-indigo-200 text-slate-950' : 'bg-black/40 border-white/50'
-                  }`}
-                >
-                  {isSel && <ICheck size={10} />}
-                </span>
-              )}
-              <span className="absolute bottom-1 right-1.5 mono text-[9px] px-1 rounded bg-black/50 text-white/70">{i + 1}</span>
+              {barBefore && <DropBar edge="top" />}
+              <div
+                onClick={(e) => onCardClick(e, i, s)}
+                className={`thumb-card rounded-lg overflow-hidden relative ${i === activeIndex ? 'active' : ''} ${isSel ? 'selected' : ''} ${drag && drag.from === i ? 'opacity-40' : ''}`}
+                style={{ aspectRatio: '4 / 3', background: s.bg }}
+                title={`Page ${i + 1}`}
+              >
+                {s.thumb ? (
+                  <img src={s.thumb} alt={`Page ${i + 1}`} className="w-full h-full object-cover" draggable={false} />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="mono text-[9px] text-white/30">EMPTY</span>
+                  </div>
+                )}
+                {selectMode && (
+                  <span
+                    className={`absolute top-1 left-1 w-4 h-4 rounded-full border flex items-center justify-center ${
+                      isSel ? 'bg-indigo-400 border-indigo-200 text-slate-950' : 'bg-black/40 border-white/50'
+                    }`}
+                  >
+                    {isSel && <ICheck size={10} />}
+                  </span>
+                )}
+                {!selectMode && (
+                  <>
+                    <button
+                      data-nodrag
+                      onClick={(e) => { e.stopPropagation(); onDuplicateAt(i); }}
+                      title={`Copy page ${i + 1}`}
+                      aria-label={`Copy page ${i + 1}`}
+                      className="absolute top-1 right-1 w-7 h-7 rounded-md bg-black/55 text-white/80 hover:text-cyan-300 hover:bg-black/75 flex items-center justify-center focus-ring"
+                    ><ICopy size={13} /></button>
+                    <span
+                      onPointerDown={(e) => { e.stopPropagation(); onCellPointerDown(e, i, true); }}
+                      title="Drag to move this page"
+                      aria-label={`Move page ${i + 1}`}
+                      className="absolute bottom-1 left-1 w-7 h-6 rounded-md bg-black/55 text-white/70 hover:text-cyan-300 flex items-center justify-center cursor-grab active:cursor-grabbing"
+                      style={{ touchAction: 'none' }}
+                    ><IGrip size={14} /></span>
+                  </>
+                )}
+                <span className="absolute bottom-1 right-1.5 mono text-[9px] px-1 rounded bg-black/50 text-white/70">{i + 1}</span>
+              </div>
+              {barAfter && <DropBar edge="bottom" />}
             </div>
           );
         })}
       </div>
+      {drag && drag.gap !== null && ReactDOM.createPortal(
+        <div
+          className="fixed z-[90] pointer-events-none mono text-[11px] px-2 py-1 rounded-md bg-slate-900/90 border border-cyan-400/60 text-cyan-200 shadow-xl"
+          style={{ left: drag.x + 14, top: drag.y + 10 }}
+        >Page {drag.from + 1}</div>,
+        document.body
+      )}
     </div>
   );
 }
@@ -3100,6 +3394,7 @@ function CalculatorWidget() {
         default: return;
       }
       val = Math.round(val * 1e10) / 1e10;
+      if (val === 0) val = 0; // avoid '-0'
       setExpr(String(val));
       setResult(null);
     } catch (e) {
@@ -3193,6 +3488,189 @@ function CalculatorWidget() {
 }
 
 /* ---------- Phase 5: Widget 3 — Laser Pointer trail overlay ---------- */
+
+/* ---------- Dice & random number widget ---------- */
+
+function DiceWidget() {
+  const [mode, setMode] = useState('dice');   // 'dice' | 'number'
+  const [count, setCount] = useState(2);
+  const [faces, setFaces] = useState([1, 1]);
+  const [lo, setLo] = useState(1);
+  const [hi, setHi] = useState(30);
+  const [num, setNum] = useState(null);
+  const [rolling, setRolling] = useState(false);
+  const timerRef = useRef(null);
+  useEffect(() => () => clearInterval(timerRef.current), []);
+  const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+
+  const roll = () => {
+    if (rolling) return;
+    setRolling(true);
+    let n = 0;
+    clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      n += 1;
+      if (mode === 'dice') setFaces(Array.from({ length: count }, () => rnd(1, 6)));
+      else setNum(rnd(Math.min(lo, hi), Math.max(lo, hi)));
+      if (n >= 9) { clearInterval(timerRef.current); setRolling(false); }
+    }, 70);
+  };
+  const pickCount = (c) => { setCount(c); setFaces(Array.from({ length: c }, (_, i) => faces[i] || 1)); };
+  const asInt = (v) => { const n = parseInt(v, 10); return Number.isFinite(n) ? Math.max(-9999, Math.min(9999, n)) : 0; };
+  const tab = (active) => `flex-1 text-xs mono py-1.5 rounded-md border transition-colors focus-ring ${active ? 'text-cyan-300 border-cyan-500/40 bg-cyan-500/10' : 'text-slate-400 border-slate-700/60 hover:text-slate-200'}`;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex gap-1.5">
+        <button className={tab(mode === 'dice')} onClick={() => setMode('dice')}>Dice</button>
+        <button className={tab(mode === 'number')} onClick={() => setMode('number')}>Number</button>
+      </div>
+      {mode === 'dice' ? (
+        <>
+          <div className="flex items-center gap-1.5">
+            <span className="mono text-[10px] tracking-wider text-slate-500 mr-auto">DICE</span>
+            {[1, 2, 3].map((c) => (
+              <button key={c} onClick={() => pickCount(c)} className={`w-7 h-7 rounded-md text-xs mono border focus-ring ${count === c ? 'text-cyan-300 border-cyan-500/40 bg-cyan-500/10' : 'text-slate-400 border-slate-700/60'}`}>{c}</button>
+            ))}
+          </div>
+          <div className="flex items-center justify-center gap-2.5 min-h-[56px]">
+            {faces.slice(0, count).map((f, i) => (
+              <div key={i} className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-semibold text-slate-900 bg-slate-100 shadow-lg" style={{ transform: rolling ? `rotate(${(i % 2 ? 1 : -1) * 8}deg)` : 'none', transition: 'transform 0.07s' }}>{f}</div>
+            ))}
+          </div>
+          {!rolling && count > 1 && <div className="text-center mono text-[11px] text-slate-400">Total {faces.slice(0, count).reduce((a, b) => a + b, 0)}</div>}
+        </>
+      ) : (
+        <>
+          <div className="flex items-center gap-2">
+            <input type="number" value={lo} onChange={(e) => setLo(asInt(e.target.value))} aria-label="Minimum" className="mono text-xs text-slate-200 bg-slate-900/60 border border-slate-700/60 rounded-lg px-2 h-8 w-full min-w-0 focus-ring" />
+            <span className="text-slate-500 text-xs">to</span>
+            <input type="number" value={hi} onChange={(e) => setHi(asInt(e.target.value))} aria-label="Maximum" className="mono text-xs text-slate-200 bg-slate-900/60 border border-slate-700/60 rounded-lg px-2 h-8 w-full min-w-0 focus-ring" />
+          </div>
+          <div className="flex items-center justify-center min-h-[56px] text-5xl font-semibold text-cyan-300 tabular-nums">{num === null ? '–' : num}</div>
+        </>
+      )}
+      <button onClick={roll} disabled={rolling} className="rounded-lg py-2 text-sm font-medium text-slate-950 bg-gradient-to-r from-cyan-300 to-indigo-300 disabled:opacity-60 focus-ring">
+        {mode === 'dice' ? 'Roll' : 'Pick a number'}
+      </button>
+    </div>
+  );
+}
+
+/* ---------- Ruler overlay: drag to move, buttons to rotate ---------- */
+
+function RulerOverlay({ boundsRef, onClose }) {
+  const CM = 37.8;                 // CSS pixels per centimetre
+  const LEN = 15;                  // ruler length in cm
+  const PAD = 14;
+  const W = Math.round(LEN * CM + PAD * 2);
+  const H = 64;
+  const [st, setSt] = useState({ x: 60, y: 110, angle: 0 });
+  const stRef = useRef(st);
+  stRef.current = st;
+
+  const onDown = (e) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    e.preventDefault();
+    const o = { px: e.clientX, py: e.clientY, x: stRef.current.x, y: stRef.current.y };
+    const move = (ev) => {
+      let x = o.x + ev.clientX - o.px, y = o.y + ev.clientY - o.py;
+      const el = boundsRef && boundsRef.current;
+      if (el) {
+        const r = el.getBoundingClientRect();
+        x = Math.max(-W + 90, Math.min(x, r.width - 90));
+        y = Math.max(-30, Math.min(y, r.height - 40));
+      }
+      setSt((p) => ({ ...p, x, y }));
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  };
+  const rot = (d) => setSt((p) => ({ ...p, angle: (((p.angle + d) % 360) + 360) % 360 }));
+  const stop = (e) => e.stopPropagation();
+  const ticks = [];
+  for (let i = 0; i <= LEN * 10; i++) {
+    const x = PAD + i * CM / 10;
+    const len = i % 10 === 0 ? 20 : i % 5 === 0 ? 14 : 9;
+    ticks.push(<line key={i} x1={x} y1={0} x2={x} y2={len} stroke="#451a03" strokeWidth={i % 10 === 0 ? 1.4 : 1} />);
+    if (i % 10 === 0 && i > 0 && i < LEN * 10) ticks.push(<text key={'t' + i} x={x} y={32} fontSize="10" textAnchor="middle" fill="#451a03" fontFamily="JetBrains Mono, monospace">{i / 10}</text>);
+  }
+  const rb = 'w-7 h-6 rounded-md bg-amber-900/15 hover:bg-amber-900/30 text-amber-950 flex items-center justify-center focus-ring';
+
+  return (
+    <div
+      className="absolute z-[26] select-none"
+      style={{ left: st.x, top: st.y, width: W, height: H, transform: `rotate(${st.angle}deg)`, transformOrigin: '50% 50%', touchAction: 'none', cursor: 'grab' }}
+      onPointerDown={onDown}
+    >
+      <div className="absolute inset-0 rounded-md shadow-2xl" style={{ background: 'linear-gradient(180deg, rgba(253,230,138,0.95), rgba(251,191,36,0.9))', border: '1px solid rgba(120,53,15,0.5)' }} />
+      <svg width={W} height={H} className="absolute inset-0 pointer-events-none"><g>{ticks}</g></svg>
+      <div className="absolute left-0 right-0 bottom-1 flex items-center justify-center gap-1.5" onPointerDown={stop}>
+        <button className={rb} onClick={() => rot(-15)} title="Rotate left 15°" aria-label="Rotate left"><IRotateCcw size={13} /></button>
+        <span className="mono text-[10px] text-amber-950 w-9 text-center tabular-nums">{st.angle}°</span>
+        <button className={rb} onClick={() => rot(15)} title="Rotate right 15°" aria-label="Rotate right"><IRotate size={13} /></button>
+        <button className={rb} onClick={() => setSt((p) => ({ ...p, angle: 0 }))} title="Level" aria-label="Level">0°</button>
+        <button className={rb} onClick={onClose} title="Close ruler" aria-label="Close ruler"><IX size={13} /></button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Spotlight overlay: dims the board except for a movable circle ---------- */
+
+function SpotlightOverlay({ boundsRef, onClose }) {
+  const [st, setSt] = useState(() => {
+    const el = boundsRef && boundsRef.current;
+    return { x: el ? el.clientWidth / 2 : 320, y: el ? el.clientHeight / 2 : 220, r: 120 };
+  });
+  const stRef = useRef(st);
+  stRef.current = st;
+  const onDown = (e) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    e.preventDefault();
+    const o = { px: e.clientX, py: e.clientY, x: stRef.current.x, y: stRef.current.y };
+    const move = (ev) => {
+      let x = o.x + ev.clientX - o.px, y = o.y + ev.clientY - o.py;
+      const el = boundsRef && boundsRef.current;
+      if (el) { x = Math.max(0, Math.min(x, el.clientWidth)); y = Math.max(0, Math.min(y, el.clientHeight)); }
+      setSt((p) => ({ ...p, x, y }));
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  };
+  const size = (d) => setSt((p) => ({ ...p, r: Math.max(50, Math.min(400, p.r + d)) }));
+  const chipAbove = st.y - st.r - 46 > 4;
+  const cb = 'w-7 h-7 rounded-md text-slate-300 hover:text-cyan-300 hover:bg-slate-700/50 flex items-center justify-center focus-ring';
+  return (
+    <>
+      <div
+        className="absolute inset-0 z-20 pointer-events-none"
+        style={{ background: `radial-gradient(circle at ${st.x}px ${st.y}px, rgba(0,0,0,0) ${st.r}px, rgba(0,0,0,0.82) ${st.r + 1.5}px)` }}
+      />
+      <div
+        className="glass-strong absolute z-30 -translate-x-1/2 rounded-lg px-1 py-1 flex items-center gap-0.5 shadow-xl"
+        style={{ left: st.x, top: chipAbove ? st.y - st.r - 42 : st.y + st.r + 8 }}
+      >
+        <span onPointerDown={onDown} title="Drag to move the spotlight" className="w-8 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-cyan-300 cursor-grab active:cursor-grabbing" style={{ touchAction: 'none' }}><IGrip size={14} /></span>
+        <button className={cb} onClick={() => size(-20)} title="Smaller" aria-label="Smaller spotlight"><IMinimize size={14} /></button>
+        <button className={cb} onClick={() => size(20)} title="Larger" aria-label="Larger spotlight"><IPlus size={14} /></button>
+        <button className={cb} onClick={onClose} title="Close spotlight" aria-label="Close spotlight"><IX size={14} /></button>
+      </div>
+    </>
+  );
+}
 
 function LaserPointerOverlay({ containerRef, color = '#38bdf8' }) {
   const canvasRef = useRef(null);
@@ -3291,24 +3769,29 @@ function LaserPointerOverlay({ containerRef, color = '#38bdf8' }) {
 /* ---------- Phase 5: Widget dock ---------- */
 
 function WidgetDock({ open, onToggle, active, onLaunch, dropUp, dropSide }) {
-  const ref = useRef(null);
+  const ref = useRef(null); // whole dock (button + menu)
   useEffect(() => {
     if (!open) return;
+    // Ignore presses on the Tools button itself so clicking it again closes the menu.
     const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) onToggle(false); };
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
+    document.addEventListener('pointerdown', onDoc);
+    return () => document.removeEventListener('pointerdown', onDoc);
   }, [open, onToggle]);
 
   const items = [
     { id: 'timer', label: 'Timer / Stopwatch', icon: ITimerIcon },
     { id: 'calculator', label: 'Calculator', icon: ICalcIcon },
     { id: 'laser', label: 'Laser Pointer', icon: ILaserIcon },
+    { id: 'dice', label: 'Dice & Random', icon: IDiceIcon },
+    { id: 'ruler', label: 'Ruler', icon: IRulerIcon },
+    { id: 'spotlight', label: 'Spotlight', icon: ISpotlightIcon },
     { id: 'image', label: 'Image Upload', icon: IImageIcon, action: true },
     { id: 'sticky', label: 'Sticky Note', icon: IStickyIcon, action: true },
+    { id: 'table', label: 'Table', icon: ITableIcon, action: true },
   ];
 
   return (
-    <div className="relative">
+    <div className="relative" ref={ref}>
       <button
         onClick={() => onToggle((v) => !v)}
         title="Tools / Widgets"
@@ -3320,8 +3803,7 @@ function WidgetDock({ open, onToggle, active, onLaunch, dropUp, dropSide }) {
       </button>
       {open && (
         <div
-          ref={ref}
-          className={`glass-strong modal-in absolute rounded-xl p-1.5 w-56 shadow-2xl z-40 ${
+          className={`glass-strong modal-in absolute rounded-xl p-1.5 w-56 shadow-2xl z-40 max-h-[min(70vh,26rem)] overflow-y-auto ${
             dropUp ? 'bottom-full mb-2' : 'top-full mt-2'
           } ${dropSide === 'right' ? 'right-0' : 'left-0'}`}
         >
@@ -3347,12 +3829,27 @@ function WidgetDock({ open, onToggle, active, onLaunch, dropUp, dropSide }) {
 
 /* ---------- Bottom action dock: Import / Export / Tools, swappable to the opposite corner ---------- */
 
-function ActionDock({ onImportPdf, importing, onExportPdf, exporting, widgetDockOpen, setWidgetDockOpen, activeWidgets, onLaunchWidget, onSwap, side }) {
+function ActionDock({ panelsHidden, onTogglePanels, onExportPng, onImportPdf, importing, onExportPdf, exporting, widgetDockOpen, setWidgetDockOpen, activeWidgets, onLaunchWidget, onSwap, side }) {
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const pdfInputRef = useRef(null);
 
+  const panelsBtn = (
+    <button
+      onClick={onTogglePanels}
+      title={panelsHidden ? 'Show side bars' : 'Hide left & right side bars'}
+      aria-label={panelsHidden ? 'Show side bars' : 'Hide side bars'}
+      className="flex items-center justify-center text-slate-400 hover:text-cyan-300 transition-colors focus-ring rounded-md px-2 py-1.5 border border-slate-700/60 hover:border-cyan-500/40"
+    >
+      {panelsHidden ? <IChevronUpSmall size={14} /> : <IChevronDownSmall size={14} />}
+    </button>
+  );
+  if (panelsHidden) {
+    return <div className="glass-strong rounded-xl px-1.5 py-1.5 flex items-center shadow-xl">{panelsBtn}</div>;
+  }
+
   return (
     <div className="glass-strong rounded-xl px-2 py-1.5 flex items-center gap-1.5 shadow-xl">
+      {panelsBtn}
       <button
         onClick={() => pdfInputRef.current?.click()}
         disabled={importing}
@@ -3375,7 +3872,7 @@ function ActionDock({ onImportPdf, importing, onExportPdf, exporting, widgetDock
         </button>
         {exportMenuOpen && (
           <div className={`absolute bottom-full mb-2 ${side === 'right' ? 'right-0' : 'left-0'}`}>
-            <ExportMenu exporting={exporting} onExportPdf={() => { onExportPdf(); setExportMenuOpen(false); }} onClose={() => setExportMenuOpen(false)} />
+            <ExportMenu exporting={exporting} onExportPng={() => { onExportPng && onExportPng(); setExportMenuOpen(false); }} onExportPdf={() => { onExportPdf(); setExportMenuOpen(false); }} onClose={() => setExportMenuOpen(false)} />
           </div>
         )}
       </div>
@@ -3421,6 +3918,9 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
 
   const [tool, setTool] = useState('draw');
   const [pen, setPen] = useState('ballpoint');
+  const [emoji, setEmoji] = useState('⭐');
+  const [gridMode, setGridMode] = useState('off'); // off | grid | dots | lines
+  const [selChip, setSelChip] = useState(null);   // floating 'erase selection' button position
   const [color, setColor] = useState('#ffffff');
   const [width, setWidth] = useState(6);
   const [activeShape, setActiveShape] = useState('rect');
@@ -3436,11 +3936,13 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
   /* Mutable refs so Fabric event handlers (bound once) always read fresh values */
   const toolRef = useRef(tool);
   const penRef = useRef(pen);
+  const emojiRef = useRef(emoji);
   const colorRef = useRef(color);
   const widthRef = useRef(width);
   const activeShapeRef = useRef(activeShape);
   useEffect(() => { toolRef.current = tool; }, [tool]);
   useEffect(() => { penRef.current = pen; }, [pen]);
+  useEffect(() => { emojiRef.current = emoji; }, [emoji]);
   useEffect(() => { colorRef.current = color; }, [color]);
   useEffect(() => { widthRef.current = width; }, [width]);
   useEffect(() => { activeShapeRef.current = activeShape; }, [activeShape]);
@@ -3467,7 +3969,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
     // Snapshots exclude the locked page image (tracked separately) and record the
     // frame they were taken in, so undo/redo stays aligned after a resize.
     const j = c.toJSON(NB_PROPS);
-    j.objects = (j.objects || []).filter((o) => o.nbKind !== 'bgImage');
+    j.objects = (j.objects || []).filter((o) => o.nbKind !== 'bgImage' && o.nbKind !== 'laser');
     j.nbFrame = pageRef.current ? { ...frameRef.current } : null;
     const snap = JSON.stringify(j);
     h.stack = h.stack.slice(0, h.index + 1);
@@ -3607,6 +4109,15 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
           + `M ${x1} ${y1} L ${x0} ${y0} ${makeArrowHeadPath(x1, y1, x0, y0, size).slice(1)}`;
         return new fabric.Path(d, { ...commonShapeProps(), fill: null, strokeLineJoin: 'round', strokeLineCap: 'round', nbKind: 'arrow2' });
       }
+      if (kind === 'arrow') {
+        const size = Math.max(10, widthRef.current * 2.2);
+        const d = `M ${x0} ${y0} L ${x1} ${y1} ${makeArrowHeadPath(x0, y0, x1, y1, size).slice(1)}`;
+        return new fabric.Path(d, { ...commonShapeProps(), fill: null, strokeLineJoin: 'round', strokeLineCap: 'round', nbKind: 'arrow' });
+      }
+      if (NB_POLY_SHAPES[kind]) {
+        const d = 'M ' + NB_POLY_SHAPES[kind].map(([px, py]) => `${left + px * w} ${top + py * h}`).join(' L ') + ' Z';
+        return new fabric.Path(d, { ...commonShapeProps(), strokeLineJoin: 'round', nbKind: kind });
+      }
       if (kind === 'rect') {
         return new fabric.Rect({ ...commonShapeProps(), left, top, width: w, height: h, nbKind: 'rect' });
       }
@@ -3692,6 +4203,16 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
           nbKind: 'highlighter',
         });
       }
+      if (p === 'dashed') {
+        return new fabric.Path(d, { ...common, stroke: col, strokeWidth: w, strokeDashArray: [w * 2.2, w * 2.2], nbKind: 'dashed' });
+      }
+      if (p === 'laser') {
+        return new fabric.Path(d, {
+          ...common, stroke: col, strokeWidth: Math.max(w, 4),
+          shadow: new fabric.Shadow({ color: col, blur: 22, offsetX: 0, offsetY: 0 }),
+          nbKind: 'laser',
+        });
+      }
       if (p === 'neon') {
         return new fabric.Path(d, {
           ...common,
@@ -3733,12 +4254,53 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       glowRaf = requestAnimationFrame(tick);
     };
 
+    /* Emoji pen: stamp glyphs along the drag, spaced so they don't overlap. */
+    let emojiStamps = [];
+    let emojiLast = null;
+    const emojiSize = () => Math.max(20, widthRef.current * 3.4);
+    const addStamp = (x, y) => {
+      const t = new fabric.Text(emojiRef.current, {
+        left: x, top: y, originX: 'center', originY: 'center',
+        fontSize: emojiSize(), fontFamily: NB_EMOJI_FONT,
+        selectable: false, evented: false, objectCaching: false,
+      });
+      emojiStamps.push(t);
+      canvas.add(t);
+    };
+    const stampTo = (pointer) => {
+      const step = emojiSize() * 0.9;
+      let guard = 0;
+      while (emojiLast && guard++ < 200) {
+        const dx = pointer.x - emojiLast.x, dy = pointer.y - emojiLast.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < step) break;
+        emojiLast = { x: emojiLast.x + (dx / dist) * step, y: emojiLast.y + (dy / dist) * step };
+        addStamp(emojiLast.x, emojiLast.y);
+      }
+      canvas.requestRenderAll();
+    };
+    /* Laser strokes glow for NB_LASER_MS, fade out, then disappear (never saved). */
+    const scheduleLaserFade = (obj) => {
+      setTimeout(() => {
+        const t0 = performance.now();
+        const tick = (t) => {
+          if (!fabricRef.current) return;
+          const k = Math.min(1, (t - t0) / 500);
+          obj.set('opacity', 1 - k);
+          canvas.requestRenderAll();
+          if (k < 1) requestAnimationFrame(tick);
+          else { canvas.remove(obj); canvas.requestRenderAll(); }
+        };
+        requestAnimationFrame(tick);
+      }, NB_LASER_MS);
+    };
+
     const eraseAt = (pointer) => {
       const objs = canvas.getObjects();
       let hit = null;
       for (let i = objs.length - 1; i >= 0; i--) {
         const o = objs[i];
-        if (!o.visible || o === livePath) continue;
+        if (!o.visible || o === livePath || NB_EPHEMERAL(o)) continue;
         // The locked PDF/background image is never erasable, regardless of
         // hit-testing below — scrubbing the eraser over a PDF page must
         // never remove the page itself.
@@ -3769,7 +4331,13 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       const t = toolRef.current;
       const pointer = canvas.getPointer(e);
 
-      if (t === 'draw') {
+      if (t === 'draw' && penRef.current === 'emoji') {
+        drawing = true;
+        emojiStamps = [];
+        emojiLast = { x: pointer.x, y: pointer.y };
+        addStamp(pointer.x, pointer.y);
+        canvas.requestRenderAll();
+      } else if (t === 'draw') {
         drawing = true;
         pts = [{ x: pointer.x, y: pointer.y }];
         widths = [widthRef.current];
@@ -3803,7 +4371,11 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
         return;
       }
 
-      if (t === 'draw' && drawing) {
+      if (t === 'draw' && drawing && penRef.current === 'emoji') {
+        stampTo(pointer);
+        return;
+      }
+      if (t === 'draw' && drawing && pts.length) {
         const last = pts[pts.length - 1];
         const dist = Math.hypot(pointer.x - last.x, pointer.y - last.y);
         if (dist < 1.5) return;
@@ -3850,8 +4422,17 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       canvas.add(txt);
       canvas.setActiveObject(txt);
       setTool('select');
-      txt.enterEditing();
       canvas.requestRenderAll();
+      // Defer until the pointer-up, React re-render and tool effect have all settled,
+      // otherwise the hidden textarea is focused and then immediately blurred.
+      const startEdit = () => {
+        if (!canvas.contains(txt)) return;
+        canvas.setActiveObject(txt);
+        txt.enterEditing();
+        if (txt.hiddenTextarea) { try { txt.hiddenTextarea.focus({ preventScroll: true }); } catch (_) { txt.hiddenTextarea.focus(); } }
+        canvas.requestRenderAll();
+      };
+      setTimeout(startEdit, 30);
     };
 
     const finishGesture = () => {
@@ -3888,8 +4469,26 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
         }
         return;
       }
+      if (drawing && emojiStamps.length) {
+        drawing = false;
+        const stamps = emojiStamps; emojiStamps = []; emojiLast = null;
+        stamps.forEach((st) => canvas.remove(st));
+        const grp = new fabric.Group(stamps, { nbKind: 'emoji', selectable: true, evented: true, objectCaching: false });
+        canvas.add(grp);
+        grp.setCoords();
+        canvas.requestRenderAll();
+        pushHistory();
+        return;
+      }
       if (drawing) {
         drawing = false;
+        if (livePath && livePath.nbKind === 'laser') {
+          const lp = livePath; livePath = null; pts = []; widths = [];
+          lp.set({ selectable: false, evented: false });
+          scheduleLaserFade(lp);
+          canvas.requestRenderAll();
+          return;
+        }
         if (livePath) {
           // freeze finished stroke: make it selectable for the Select tool
           livePath.set({ selectable: true, evented: true, objectCaching: true });
@@ -3966,7 +4565,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
     c.selection = isSelect;
     c.skipTargetFind = !isSelect;
     c.forEachObject((o) => {
-      if (o.nbKind === 'bgImage') return; // locked background never becomes selectable
+      if (o.nbKind === 'bgImage' || o.nbKind === 'laser') return; // locked background / temporary laser never selectable
       o.selectable = isSelect;
       o.evented = isSelect;
     });
@@ -4013,6 +4612,41 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
     };
   }, [updateRotateHandle]);
 
+  /* Floating 'Erase' chip over the current selection: select, then one click removes it. */
+  const eraseSelection = useCallback(() => {
+    const c = fabricRef.current;
+    if (!c) return;
+    const act = c.getActiveObjects().filter((o) => o.nbKind !== 'bgImage');
+    if (!act.length) return;
+    c.discardActiveObject();
+    act.forEach((o) => c.remove(o));
+    c.requestRenderAll();
+    setSelChip(null);
+    pushHistory();
+  }, [pushHistory]);
+
+  useEffect(() => {
+    const c = fabricRef.current;
+    if (!c) return;
+    const update = () => {
+      const a = c.getActiveObject();
+      if (!a || a.isEditing || a.nbKind === 'bgImage' || toolRef.current !== 'select') {
+        setSelChip((prev) => (prev ? null : prev));
+        return;
+      }
+      const br = a.getBoundingRect(true, true);
+      const n = c.getActiveObjects().length;
+      const x = Math.round(br.left + br.width / 2);
+      const y = Math.round(Math.max(8, br.top - 40));
+      setSelChip((prev) => (prev && prev.x === x && prev.y === y && prev.n === n ? prev : { x, y, n }));
+    };
+    const evs = ['selection:created', 'selection:updated', 'selection:cleared', 'object:moving', 'object:scaling',
+      'object:rotating', 'object:modified', 'text:editing:entered', 'text:editing:exited'];
+    evs.forEach((e) => c.on(e, update));
+    update();
+    return () => evs.forEach((e) => c.off(e, update));
+  }, [tool]);
+
   const rebuild3DPathRef = useRef(null);
 
   const setObjectYawTilt = useCallback((obj, yaw, tilt) => {
@@ -4030,7 +4664,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
     if (!c) return;
     const apply = () => {
       const isSelect = toolRef.current === 'select';
-      c.forEachObject((o) => { if (o.nbKind === 'bgImage') return; o.selectable = isSelect; o.evented = isSelect; });
+      c.forEachObject((o) => { if (o.nbKind === 'bgImage' || o.nbKind === 'laser') return; o.selectable = isSelect; o.evented = isSelect; });
     };
     c.on('after:render', apply);
     return () => c.off('after:render', apply);
@@ -4107,6 +4741,20 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       const lk = String(e.key || '').toLowerCase();
       if (mod && lk === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
       if (mod && (lk === 'y' || (lk === 'z' && e.shiftKey))) { e.preventDefault(); redo(); return; }
+      if (mod && lk === 'a') {
+        const c = fabricRef.current;
+        if (c) {
+          e.preventDefault();
+          setTool('select');
+          const objs = c.getObjects().filter((o) => o.nbKind !== 'bgImage' && !NB_EPHEMERAL(o));
+          c.discardActiveObject();
+          objs.forEach((o) => { o.selectable = true; o.evented = true; });
+          if (objs.length === 1) c.setActiveObject(objs[0]);
+          else if (objs.length > 1) c.setActiveObject(new fabric.ActiveSelection(objs, { canvas: c }));
+          c.requestRenderAll();
+        }
+        return;
+      }
       if (mod && lk === 'c') { if (copySelection()) e.preventDefault(); return; }
       if (mod && lk === 'v') { if (NB_CLIPBOARD.obj) { e.preventDefault(); pasteClipboard(); } return; }
       if (mod) return;
@@ -4119,6 +4767,20 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       else if (k === 'h') { setTool('draw'); setPen('highlighter'); }
       else if (k === 'c') { setTool('draw'); setPen('calligraphy'); }
       else if (k === 'n') { setTool('draw'); setPen('neon'); }
+      else if (k === 'd') { setTool('draw'); setPen('dashed'); }
+      else if (k === 'm') { setTool('draw'); setPen('emoji'); }
+      else if (k === 'l') { setTool('draw'); setPen('laser'); }
+      else if (k === 'escape') { const c = fabricRef.current; if (c) { c.discardActiveObject(); c.requestRenderAll(); } }
+      else if (k.startsWith('arrow')) {
+        const c = fabricRef.current;
+        const act = c ? c.getActiveObject() : null;
+        if (act && act.nbKind !== 'bgImage') {
+          e.preventDefault();
+          const d = e.shiftKey ? 10 : 2;
+          act.set({ left: act.left + (k === 'arrowright' ? d : k === 'arrowleft' ? -d : 0), top: act.top + (k === 'arrowdown' ? d : k === 'arrowup' ? -d : 0) });
+          act.setCoords(); c.requestRenderAll(); pushHistoryDebounced();
+        }
+      }
       else if (k === 'delete' || k === 'backspace') {
         const c = fabricRef.current;
         if (!c) return;
@@ -4160,7 +4822,8 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       // in the per-slide vector JSON (it's tracked separately as slide.bgImage).
       if (bgImg) c.remove(bgImg);
       const hasObjects = c.getObjects().length > 0;
-      const json = hasObjects ? c.toJSON(NB_PROPS) : null;
+      let json = hasObjects ? c.toJSON(NB_PROPS) : null;
+      if (json) { json.objects = (json.objects || []).filter((o) => o.nbKind !== 'laser'); if (!json.objects.length) json = null; }
       // PDF slides persist vectors in page space (frame-independent).
       if (json && pageRef.current) reframeObjects(json.objects || [], frameRef.current, PAGE_SPACE);
       if (bgImg) { c.add(bgImg); c.sendToBack(bgImg); }
@@ -4252,6 +4915,18 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       return c.toDataURL({ format: 'jpeg', quality: 0.55, multiplier: 0.22 });
     },
     getBackgroundColor() { return bgColor; },
+    /* Current page as a PNG data URL (temporary laser strokes are hidden). */
+    getPagePng() {
+      const c = fabricRef.current;
+      if (!c) return null;
+      c.discardActiveObject();
+      const lasers = c.getObjects().filter(NB_EPHEMERAL);
+      lasers.forEach((o) => { o.visible = false; });
+      const url = c.toDataURL({ format: 'png', multiplier: 2 });
+      lasers.forEach((o) => { o.visible = true; });
+      c.requestRenderAll();
+      return url;
+    },
     /* True while a shape / erase gesture is mid-flight (auto-save waits so it never captures a half-drawn shape). */
     isBusy() { const f = gestureBusyRef.current; return !!(f && f()); },
 
@@ -4311,6 +4986,32 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       });
     },
 
+    /* Tools menu -> Table: a 4 x 3 grid of ruled lines, moved and scaled as one object. */
+    addTable() {
+      const c = fabricRef.current;
+      if (!c) return;
+      const W = c.getWidth(), H = c.getHeight();
+      const cols = 4, rows = 3;
+      const tw = Math.max(160, Math.min(W * 0.7, 560));
+      const th = Math.max(110, Math.min(H * 0.5, tw * 0.55));
+      const ln = { stroke: colorRef.current, strokeWidth: 2, strokeUniform: true };
+      const parts = [new fabric.Rect({ left: 0, top: 0, width: tw, height: th, fill: 'transparent', ...ln })];
+      for (let i = 1; i < cols; i++) parts.push(new fabric.Line([tw * i / cols, 0, tw * i / cols, th], ln));
+      for (let j = 1; j < rows; j++) parts.push(new fabric.Line([0, th * j / rows, tw, th * j / rows], ln));
+      const table = new fabric.Group(parts, {
+        left: W / 2, top: H / 2, originX: 'center', originY: 'center',
+        nbKind: 'table', selectable: true, evented: true,
+      });
+      toolRef.current = 'select';
+      c.skipTargetFind = false;
+      c.selection = true;
+      c.add(table);
+      c.setActiveObject(table);
+      setTool('select');
+      pushHistory();
+      c.requestRenderAll();
+    },
+
     /* Tools menu -> Sticky Note: a coloured, wrapping, editable text box. */
     addStickyNote() {
       const c = fabricRef.current;
@@ -4355,6 +5056,25 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       <div ref={wrapRef} className="absolute inset-0">
         <canvas ref={canvasElRef} />
       </div>
+      {gridMode !== 'off' && (() => {
+        const ink = isLightColor(bgColor) ? '0,0,0' : '255,255,255';
+        const g = (a) => `rgba(${ink},${a})`;
+        const bgImg = gridMode === 'grid'
+          ? `linear-gradient(${g(0.12)} 1px, transparent 1px), linear-gradient(90deg, ${g(0.12)} 1px, transparent 1px)`
+          : gridMode === 'dots' ? `radial-gradient(${g(0.3)} 1.4px, transparent 1.6px)`
+          : `linear-gradient(${g(0.14)} 1px, transparent 1px)`;
+        return <div className="pointer-events-none absolute inset-0" style={{ backgroundImage: bgImg, backgroundSize: gridMode === 'lines' ? '100% 36px' : '32px 32px' }} />;
+      })()}
+      {selChip && (
+        <button
+          onClick={eraseSelection}
+          title="Erase selected (Delete)"
+          className="glass-strong absolute z-30 -translate-x-1/2 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-rose-300 hover:text-rose-200 hover:bg-rose-500/20 focus-ring shadow-xl"
+          style={{ left: selChip.x, top: selChip.y }}
+        >
+          <ITrash size={13} /> Erase{selChip.n > 1 ? ` ${selChip.n}` : ''}
+        </button>
+      )}
       {!hasObjects && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="text-center px-6">
@@ -4375,6 +5095,8 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
         activeShape={activeShape} onPickShape={pickShape}
         onCopy={copySelection} onPaste={pasteClipboard}
         canCopy={hasSelection} canPaste={hasClipboard}
+        emoji={emoji} setEmoji={setEmoji}
+        gridMode={gridMode} onCycleGrid={() => setGridMode((g) => ({ off: 'grid', grid: 'dots', dots: 'lines', lines: 'off' }[g]))}
       />
       {rotateHandle && (
         <RotateHandle
@@ -4402,6 +5124,16 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
   const [slides, setSlides] = useState(() => [makeSlide(session?.bg || '#0d3824')]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [panelsHidden, setPanelsHidden] = useState(false); // hides thumbnails + page dock
+  const handleExportPng = useCallback(() => {
+    const vp = viewportRef.current;
+    const url = vp && vp.getPagePng && vp.getPagePng();
+    if (!url) return;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `novaboard-page-${activeIndexRef.current + 1}.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+  }, []);
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importError, setImportError] = useState(null);
@@ -4459,7 +5191,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
   const toggleMinimize = useCallback((id, val) => {
     setWidgets((prev) => ({ ...prev, [id]: { ...prev[id], minimized: val } }));
   }, []);
-  const activeWidgetFlags = { timer: !!widgets.timer, calculator: !!widgets.calculator, laser: !!widgets.laser };
+  const activeWidgetFlags = { timer: !!widgets.timer, calculator: !!widgets.calculator, laser: !!widgets.laser, dice: !!widgets.dice, ruler: !!widgets.ruler, spotlight: !!widgets.spotlight };
 
   const slidesRef = useRef(slides);
   const activeIndexRef = useRef(activeIndex);
@@ -4784,28 +5516,32 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [selectMode]);
 
-  /* Feature: duplicate the current page (drawing, background, PDF image) right after itself. */
-  const handleDuplicatePage = useCallback(() => {
+  /* Duplicate any page (drawing, background, PDF image) right after itself and jump to the copy. */
+  const handleDuplicateAt = useCallback((idx) => {
     const vp = viewportRef.current;
-    if (!vp) return;
-    const i = activeIndexRef.current;
-    const prev = slidesRef.current;
-    if (!prev[i]) return;
-    const saved = vp.saveIntoSlide(prev[i]);
-    saved.thumb = vp.getThumbnail();
+    if (!vp || typeof idx !== 'number') return;
+    const cur = activeIndexRef.current;
+    const list = slidesRef.current.slice();
+    if (!list[idx] || !list[cur]) return;
+    // Flush the live canvas into the current page first, so the copy always includes the latest strokes.
+    const live = vp.saveIntoSlide(list[cur]);
+    live.thumb = vp.getThumbnail();
+    list[cur] = live;
+    const src = list[idx];
     const copy = {
-      ...saved,
+      ...src,
       id: uid(),
-      json: saved.json ? JSON.parse(JSON.stringify(saved.json)) : null, // deep copy: never share objects between pages
-      history: { stack: [], index: -1 },                                 // the copy starts with its own undo history
+      json: src.json ? JSON.parse(JSON.stringify(src.json)) : null, // deep copy: never share objects between pages
+      history: { stack: [], index: -1 },                             // the copy starts with its own undo history
     };
-    const next = [...prev.slice(0, i), saved, copy, ...prev.slice(i + 1)];
+    const next = [...list.slice(0, idx + 1), copy, ...list.slice(idx + 1)];
     slidesRef.current = next;
-    activeIndexRef.current = i + 1;
+    activeIndexRef.current = idx + 1;
     setSlides(next);
-    setActiveIndex(i + 1);
+    setActiveIndex(idx + 1);
     setTimeout(() => vp.loadSlide(copy), 0);
   }, []);
+  const handleDuplicatePage = useCallback(() => handleDuplicateAt(activeIndexRef.current), [handleDuplicateAt]);
 
   /* Feature: delete every page ticked in the sidebar (always keeps at least one). */
   const doDeleteSelected = useCallback(() => {
@@ -4838,6 +5574,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
   const handleLaunchTool = useCallback((id) => {
     if (id === 'image') { setWidgetDockOpen(false); if (imageInputRef.current) imageInputRef.current.click(); return; }
     if (id === 'sticky') { setWidgetDockOpen(false); if (viewportRef.current) viewportRef.current.addStickyNote(); return; }
+    if (id === 'table') { setWidgetDockOpen(false); if (viewportRef.current) viewportRef.current.addTable(); return; }
     launchWidget(id);
   }, [launchWidget]);
 
@@ -5018,16 +5755,18 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
           activeIndex={activeIndex}
           onSelect={goToSlide}
           onReorder={handleReorder}
-          collapsed={sidebarCollapsed}
+          onAddPage={() => setNewPageOpen(true)}
+          onDuplicateAt={handleDuplicateAt}
+          collapsed={sidebarCollapsed || panelsHidden}
           selectMode={selectMode}
           setSelectMode={setSelectMode}
           selectedIds={validSelectedIds}
           setSelectedIds={setSelectedIds}
           onDeleteSelected={() => { if (validSelectedIds.length > 0 && validSelectedIds.length < slides.length) setConfirmDeleteSelected(true); }}
         />
-        <SidebarToggle collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} />
+        {!panelsHidden && <SidebarToggle collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} />}
         <div ref={canvasStageRef} className="flex-1 min-w-0 relative flex flex-col overflow-hidden">
-          <div ref={navWrapRef} className={`absolute bottom-4 z-30 ${navSide === 'right' ? 'right-4' : 'left-4'}`}>
+          <div ref={navWrapRef} style={panelsHidden ? { display: 'none' } : undefined} className={`absolute bottom-4 z-30 ${navSide === 'right' ? 'right-4' : 'left-4'}`}>
             <NavDock
               index={activeIndex}
               total={slides.length}
@@ -5042,6 +5781,9 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
           </div>
           <div ref={actWrapRef} className={`absolute bottom-4 z-30 ${actionSide === 'right' ? 'right-4' : 'left-4'}`}>
             <ActionDock
+              panelsHidden={panelsHidden}
+              onTogglePanels={() => setPanelsHidden((v) => !v)}
+              onExportPng={handleExportPng}
               onImportPdf={importPdfFile}
               importing={importing}
               onExportPdf={handleExportPdf}
@@ -5058,6 +5800,22 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
 
           {widgets.laser && (
             <LaserPointerOverlay containerRef={canvasStageRef} color="#38bdf8" />
+          )}
+
+          {widgets.spotlight && <SpotlightOverlay boundsRef={canvasStageRef} onClose={() => closeWidget('spotlight')} />}
+          {widgets.ruler && <RulerOverlay boundsRef={canvasStageRef} onClose={() => closeWidget('ruler')} />}
+
+          {widgets.dice && (
+            <WidgetWindow
+              title="Dice & Random" icon={IDiceIcon} width={240}
+              initialPos={{ x: 200, y: 90 }} boundsRef={canvasStageRef}
+              minimized={widgets.dice.minimized}
+              onMinimize={() => toggleMinimize('dice', true)}
+              onRestore={() => toggleMinimize('dice', false)}
+              onClose={() => closeWidget('dice')}
+            >
+              <DiceWidget />
+            </WidgetWindow>
           )}
 
           {widgets.timer && (
