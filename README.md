@@ -8,6 +8,14 @@ An interactive smartboard-style whiteboard and presentation workspace that runs 
 
 ---
 
+## What's new in 3.0
+
+- **Futuristic material redesign:** layered glass surfaces, elevation, glow accents and an animated aurora home screen
+- **Settings (home screen and board top bar):** organiser / school name, your name, tagline and profile picture; dark, light or system mode; 8 themes plus a custom accent colour; glass blur, corner roundness, interface size and animation controls; export / import / reset settings
+- **11 new smart tools** (Tools menu): Live Poll, Scoreboard, Name Picker, Group Maker, Noise Meter, Lesson Agenda, QR Code, Unit Converter, Analog Clock, Protractor and Screen Shade
+- **PDF pan & zoom:** with the Select arrow, drag empty space to move the page and pinch with two fingers (or Ctrl + wheel, or the ± buttons) to zoom 50–600%; Shift + drag still box-selects
+- All 2.x features (drawing, shapes, pages, PDF, widgets, auto-save, `.novaboard` files) are unchanged
+
 ## What's new in 2.0
 
 - **Auto-save with crash recovery:** boards are saved continuously in your browser (IndexedDB) and restored if the page closes unexpectedly
@@ -43,6 +51,7 @@ An interactive smartboard-style whiteboard and presentation workspace that runs 
 | Drawing canvas | fabric.js 5.3 |
 | PDF import | pdf.js 3.11 |
 | PDF export | jsPDF 2.5 |
+| QR codes | qrcode.js 1.0 |
 | Fonts | Space Grotesk, JetBrains Mono |
 
 ## Your data

@@ -3,11 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>NovaBoard OS</title>
+<title>NovaBoard OS 3.0</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{slate:{50:'rgb(var(--s-50) / <alpha-value>)',100:'rgb(var(--s-100) / <alpha-value>)',200:'rgb(var(--s-200) / <alpha-value>)',300:'rgb(var(--s-300) / <alpha-value>)',400:'rgb(var(--s-400) / <alpha-value>)',500:'rgb(var(--s-500) / <alpha-value>)',600:'rgb(var(--s-600) / <alpha-value>)',700:'rgb(var(--s-700) / <alpha-value>)',800:'rgb(var(--s-800) / <alpha-value>)',900:'rgb(var(--s-900) / <alpha-value>)',950:'rgb(var(--s-950) / <alpha-value>)'},cyan:{50:'rgb(var(--a-50) / <alpha-value>)',100:'rgb(var(--a-100) / <alpha-value>)',200:'rgb(var(--a-200) / <alpha-value>)',300:'rgb(var(--a-300) / <alpha-value>)',400:'rgb(var(--a-400) / <alpha-value>)',500:'rgb(var(--a-500) / <alpha-value>)',600:'rgb(var(--a-600) / <alpha-value>)',700:'rgb(var(--a-700) / <alpha-value>)',800:'rgb(var(--a-800) / <alpha-value>)',900:'rgb(var(--a-900) / <alpha-value>)'},indigo:{50:'rgb(var(--b-50) / <alpha-value>)',100:'rgb(var(--b-100) / <alpha-value>)',200:'rgb(var(--b-200) / <alpha-value>)',300:'rgb(var(--b-300) / <alpha-value>)',400:'rgb(var(--b-400) / <alpha-value>)',500:'rgb(var(--b-500) / <alpha-value>)',600:'rgb(var(--b-600) / <alpha-value>)',700:'rgb(var(--b-700) / <alpha-value>)',800:'rgb(var(--b-800) / <alpha-value>)',900:'rgb(var(--b-900) / <alpha-value>)'}}}}};</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<meta name="theme-color" content="#090d16">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -18,8 +21,8 @@
   :root {
     --bg-deep: #090d16;
     --bg-panel: #0f1420;
-    --cyan: #38bdf8;
-    --indigo: #818cf8;
+    --cyan: rgb(var(--a-400));
+    --indigo: rgb(var(--b-400));
     --line: rgba(148, 163, 184, 0.14);
   }
   * { box-sizing: border-box; }
@@ -36,25 +39,25 @@
   /* ---- Splash ---- */
   .splash-bg {
     background:
-      radial-gradient(60% 60% at 50% 42%, rgba(56,189,248,0.10) 0%, rgba(56,189,248,0) 70%),
+      radial-gradient(60% 60% at 50% 42%, rgb(var(--a-400) / 0.10) 0%, rgb(var(--a-400) / 0) 70%),
       radial-gradient(80% 80% at 50% 50%, #0b101c 0%, #090d16 100%);
   }
   .orbit-ring {
     position: absolute;
     top: 50%; left: 50%;
     border-radius: 50%;
-    border: 1px solid rgba(56,189,248,0.28);
+    border: 1px solid rgb(var(--a-400) / 0.28);
     transform: translate(-50%, -50%);
   }
-  .orbit-ring.r2 { border-color: rgba(129,140,248,0.22); }
+  .orbit-ring.r2 { border-color: rgb(var(--b-400) / 0.22); }
   @keyframes spin-slow { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
   @keyframes spin-rev { from { transform: translate(-50%, -50%) rotate(360deg); } to { transform: translate(-50%, -50%) rotate(0deg); } }
   .spin-a { animation: spin-slow 6s linear infinite; }
   .spin-b { animation: spin-rev 9s linear infinite; }
 
   @keyframes core-pulse {
-    0%, 100% { opacity: 0.65; filter: drop-shadow(0 0 10px rgba(56,189,248,0.6)); transform: translate(-50%, -50%) scale(1); }
-    50% { opacity: 1; filter: drop-shadow(0 0 26px rgba(56,189,248,0.95)); transform: translate(-50%, -50%) scale(1.08); }
+    0%, 100% { opacity: 0.65; filter: drop-shadow(0 0 10px rgb(var(--a-400) / 0.6)); transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 1; filter: drop-shadow(0 0 26px rgb(var(--a-400) / 0.95)); transform: translate(-50%, -50%) scale(1.08); }
   }
   .core-dot { animation: core-pulse 1.8s ease-in-out infinite; }
 
@@ -90,7 +93,7 @@
     border: 1px solid rgba(148, 163, 184, 0.18);
   }
   .scanline-hairline {
-    background: linear-gradient(90deg, transparent, rgba(56,189,248,0.5), transparent);
+    background: linear-gradient(90deg, transparent, rgb(var(--a-400) / 0.5), transparent);
   }
 
   ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -134,11 +137,11 @@
   .post-cursor { display: inline-block; width: 0.6em; height: 1.05em; margin-left: 2px; vertical-align: text-bottom; background: #d1d5db; animation: post-blink 1s steps(1) infinite; }
   .boot-blocks { display: flex; gap: 3px; padding: 4px; border: 1px solid rgba(148,163,184,0.55); border-radius: 3px; }
   .boot-blocks i { display: block; width: 100%; height: 14px; background: rgba(148,163,184,0.12); }
-  .boot-blocks i.on { background: linear-gradient(#67e8f9, #0ea5e9); box-shadow: 0 0 8px rgba(56,189,248,0.7); }
+  .boot-blocks i.on { background: linear-gradient(#67e8f9, #0ea5e9); box-shadow: 0 0 8px rgb(var(--a-400) / 0.7); }
 
   /* ---- Import overlay, save HUD, toast ---- */
   .nb-ov {
-    background: radial-gradient(60% 60% at 50% 50%, rgba(56,189,248,0.10), rgba(4,6,11,0.72));
+    background: radial-gradient(60% 60% at 50% 50%, rgb(var(--a-400) / 0.10), rgba(4,6,11,0.72));
     backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
     animation: nb-ov-in 0.3s ease both;
   }
@@ -150,7 +153,7 @@
   .nb-prog { height: 6px; border-radius: 6px; background: rgba(148,163,184,0.16); overflow: hidden; position: relative; }
   .nb-prog > i {
     display: block; height: 100%; border-radius: 6px; position: relative; overflow: hidden;
-    background: linear-gradient(90deg, #22d3ee, #818cf8); box-shadow: 0 0 16px rgba(56,189,248,0.85);
+    background: linear-gradient(90deg, #22d3ee, rgb(var(--b-400))); box-shadow: 0 0 16px rgb(var(--a-400) / 0.85);
     transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .nb-prog > i::after {
@@ -187,9 +190,9 @@
   }
   .tool-btn:hover { background: rgba(148,163,184,0.08); color: #cbd5e1; }
   .tool-btn.active {
-    background: rgba(56,189,248,0.14);
-    border-color: rgba(56,189,248,0.4);
-    color: #38bdf8;
+    background: rgb(var(--a-400) / 0.14);
+    border-color: rgb(var(--a-400) / 0.4);
+    color: rgb(var(--a-400));
   }
   .tool-btn:disabled { opacity: 0.35; cursor: not-allowed; }
   .tool-btn:disabled:hover { background: transparent; color: #94a3b8; }
@@ -203,15 +206,15 @@
   input[type="range"].nb-slider::-webkit-slider-thumb {
     -webkit-appearance: none; appearance: none;
     width: 14px; height: 14px; border-radius: 50%;
-    background: #38bdf8;
-    box-shadow: 0 0 8px rgba(56,189,248,0.7);
+    background: rgb(var(--a-400));
+    box-shadow: 0 0 8px rgb(var(--a-400) / 0.7);
     cursor: pointer;
     border: 2px solid #0f1420;
   }
   input[type="range"].nb-slider::-moz-range-thumb {
     width: 14px; height: 14px; border-radius: 50%;
-    background: #38bdf8; border: 2px solid #0f1420;
-    box-shadow: 0 0 8px rgba(56,189,248,0.7);
+    background: rgb(var(--a-400)); border: 2px solid #0f1420;
+    box-shadow: 0 0 8px rgb(var(--a-400) / 0.7);
     cursor: pointer;
   }
 
@@ -231,7 +234,7 @@
     flex-shrink: 0;
   }
   .preset-swatch:hover { transform: scale(1.15); }
-  .preset-swatch.active { outline: 2px solid #38bdf8; outline-offset: 2px; }
+  .preset-swatch.active { outline: 2px solid rgb(var(--a-400)); outline-offset: 2px; }
 
   /* ---- Phase 4: slides + PDF ---- */
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -245,12 +248,12 @@
   }
   .thumb-card:hover { transform: translateY(-1px); }
   .thumb-card.active {
-    border-color: #38bdf8;
-    box-shadow: 0 0 0 1px rgba(56,189,248,0.3), 0 0 16px rgba(56,189,248,0.35);
+    border-color: rgb(var(--a-400));
+    box-shadow: 0 0 0 1px rgb(var(--a-400) / 0.3), 0 0 16px rgb(var(--a-400) / 0.35);
   }
   .thumb-card.selected {
-    border-color: #818cf8;
-    box-shadow: 0 0 0 1px rgba(129,140,248,0.35), 0 0 14px rgba(129,140,248,0.35);
+    border-color: rgb(var(--b-400));
+    box-shadow: 0 0 0 1px rgb(var(--b-400) / 0.35), 0 0 14px rgb(var(--b-400) / 0.35);
   }
   .navdock-btn {
     display: flex; align-items: center; justify-content: center;
@@ -287,14 +290,172 @@
   }
   .calc-key:hover { background: rgba(148,163,184,0.16); }
   .calc-key:active { transform: scale(0.94); }
-  .calc-key.op { background: rgba(56,189,248,0.16); color: #7dd3fc; }
-  .calc-key.op:hover { background: rgba(56,189,248,0.26); }
+  .calc-key.op { background: rgb(var(--a-400) / 0.16); color: #7dd3fc; }
+  .calc-key.op:hover { background: rgb(var(--a-400) / 0.26); }
   .calc-key.fn { background: rgba(148,163,184,0.05); color: #94a3b8; font-size: 12px; }
-  .calc-key.accent { background: linear-gradient(135deg, #38bdf8, #818cf8); color: #0b1220; }
+  .calc-key.accent { background: linear-gradient(135deg, rgb(var(--a-400)), rgb(var(--b-400))); color: #0b1220; }
 
   .laser-trail-canvas { position: absolute; inset: 0; pointer-events: auto; z-index: 25; cursor: crosshair; }
 
   @keyframes ring-dash { to { stroke-dashoffset: var(--ring-target, 0); } }
+
+:root{--a-50:235 248 254;--a-100:215 242 254;--a-200:175 229 252;--a-300:136 215 251;--a-400:86 199 249;--a-500:56 189 248;--a-600:48 161 211;--a-700:39 132 174;--a-800:28 94 124;--a-900:20 66 87;--b-50:242 244 254;--b-100:230 232 254;--b-200:205 209 252;--b-300:179 186 251;--b-400:148 157 249;--b-500:129 140 248;--b-600:110 119 211;--b-700:90 98 174;--b-800:64 70 124;--b-900:45 49 87;--s-50:248 250 252;--s-100:241 245 249;--s-200:226 232 240;--s-300:203 213 225;--s-400:148 163 184;--s-500:100 116 139;--s-600:71 85 105;--s-700:51 65 85;--s-800:30 41 59;--s-900:15 23 42;--s-950:2 6 23;}
+
+  /* ================= NovaBoard 3.0 : theme system + material-futuristic skin ================= */
+  :root {
+    --a-300: 125 211 252; --a-400: 56 189 248; --a-500: 14 165 233;
+    --b-400: 129 140 248; --b-500: 99 102 241;
+    --blur: 14px; --rk: 1; --fs: 1;
+    --bg-deep: #090d16; --bg-panel: #0f1420;
+    --glass-a: rgba(24,29,43,0.62); --glass-b: rgba(15,20,32,0.82);
+    --line: rgba(148,163,184,0.16);
+    --elev1: 0 1px 2px rgba(0,0,0,.35), 0 4px 14px -4px rgba(0,0,0,.4);
+    --elev2: 0 2px 4px rgba(0,0,0,.3), 0 16px 40px -12px rgba(0,0,0,.55);
+    --hi: inset 0 1px 0 rgba(255,255,255,.07);
+    --on-accent: #04101c;
+  }
+  html { font-size: calc(16px * var(--fs)); }
+  html[data-mode="light"] {
+    --bg-deep: #eef2f9; --bg-panel: #ffffff;
+    --glass-a: rgba(255,255,255,0.84); --glass-b: rgba(255,255,255,0.95);
+    --line: rgba(71,85,105,0.24);
+    --elev1: 0 1px 2px rgba(30,41,59,.08), 0 4px 14px -4px rgba(30,41,59,.14);
+    --elev2: 0 2px 4px rgba(30,41,59,.08), 0 16px 40px -12px rgba(30,41,59,.25);
+    --hi: inset 0 1px 0 rgba(255,255,255,.9);
+  }
+  body { background: var(--bg-deep); color: rgb(var(--s-200, 226 232 240)); transition: background .3s ease, color .3s ease; }
+  .text-slate-950 { color: var(--on-accent) !important; }
+
+  .glass {
+    background: linear-gradient(145deg, var(--glass-a), color-mix(in srgb, var(--glass-a) 70%, transparent));
+    backdrop-filter: blur(var(--blur)) saturate(1.4); -webkit-backdrop-filter: blur(var(--blur)) saturate(1.4);
+    border: 1px solid var(--line); box-shadow: var(--elev1), var(--hi);
+  }
+  .glass-strong {
+    background: var(--glass-b);
+    backdrop-filter: blur(calc(var(--blur) + 4px)) saturate(1.5); -webkit-backdrop-filter: blur(calc(var(--blur) + 4px)) saturate(1.5);
+    border: 1px solid var(--line); box-shadow: var(--elev2), var(--hi);
+  }
+  .rounded-md { border-radius: calc(.375rem * var(--rk)); }
+  .rounded-lg { border-radius: calc(.5rem * var(--rk)); }
+  .rounded-xl { border-radius: calc(.75rem * var(--rk)); }
+  .rounded-2xl { border-radius: calc(1rem * var(--rk)); }
+  .rounded-3xl { border-radius: calc(1.5rem * var(--rk)); }
+
+  .card-hover:hover { box-shadow: var(--elev2), 0 0 0 1px rgb(var(--a-400) / .35), 0 0 28px -6px rgb(var(--a-400) / .35); }
+  button { transition: background-color .18s ease, border-color .18s ease, color .18s ease, transform .12s ease, box-shadow .18s ease; }
+  button:active:not(:disabled) { transform: scale(.97); }
+  .from-cyan-500.bg-gradient-to-r, .bg-gradient-to-r.from-cyan-500 { box-shadow: 0 6px 18px -6px rgb(var(--a-400) / .6), var(--hi); }
+  .scanline-hairline { background: linear-gradient(90deg, transparent, rgb(var(--a-400) / .55), transparent); }
+
+  /* aurora backdrop (home) */
+  .nb-aurora { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .nb-aurora i { position: absolute; border-radius: 50%; filter: blur(90px); opacity: .32; animation: nb-float 22s ease-in-out infinite alternate; }
+  .nb-aurora i:nth-child(1) { width: 46vw; height: 46vw; left: -10vw; top: -14vw; background: rgb(var(--a-400)); }
+  .nb-aurora i:nth-child(2) { width: 40vw; height: 40vw; right: -10vw; top: 18vh; background: rgb(var(--b-400)); animation-delay: -7s; }
+  .nb-aurora i:nth-child(3) { width: 34vw; height: 34vw; left: 30vw; bottom: -18vw; background: rgb(var(--a-500)); opacity: .2; animation-delay: -13s; }
+  html[data-mode="light"] .nb-aurora i { opacity: .22; }
+  .nb-aurora::after { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgb(var(--s-500, 100 116 139) / .07) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--s-500, 100 116 139) / .07) 1px, transparent 1px); background-size: 44px 44px; -webkit-mask-image: radial-gradient(70% 60% at 50% 30%, #000, transparent); mask-image: radial-gradient(70% 60% at 50% 30%, #000, transparent); }
+  @keyframes nb-float { to { transform: translate3d(6vw, 5vh, 0) scale(1.15); } }
+
+  .nb-avatar { border-radius: 9999px; object-fit: cover; background: linear-gradient(135deg, rgb(var(--a-400)), rgb(var(--b-400))); color: var(--on-accent); display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; box-shadow: 0 0 0 2px rgb(var(--a-400) / .5), 0 6px 18px -6px rgb(var(--a-400) / .7); }
+  .nb-chip { padding: .35rem .7rem; border-radius: 9999px; font-size: 12px; border: 1px solid var(--line); cursor: pointer; }
+  .nb-chip.on { border-color: rgb(var(--a-400) / .7); background: rgb(var(--a-400) / .15); color: rgb(var(--a-300)); }
+  .nb-swatch { width: 44px; height: 44px; border-radius: 14px; border: 2px solid transparent; cursor: pointer; box-shadow: var(--elev1); }
+  .nb-swatch.on { border-color: rgb(var(--s-100, 241 245 249)); outline: 2px solid rgb(var(--a-400)); outline-offset: 2px; }
+  .nb-range { width: 100%; accent-color: rgb(var(--a-400)); }
+  .nb-toggle { width: 42px; height: 24px; border-radius: 99px; background: rgb(var(--s-700, 51 65 85)); position: relative; cursor: pointer; flex-shrink: 0; }
+  .nb-toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .2s ease; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+  .nb-toggle.on { background: rgb(var(--a-500)); }
+  .nb-toggle.on::after { transform: translateX(18px); }
+  .nb-drawer { animation: nb-drawer-in .3s cubic-bezier(.16,1,.3,1) forwards; }
+  @keyframes nb-drawer-in { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+  .nb-in { background: rgb(var(--s-800, 30 41 59) / .6); border: 1px solid rgb(var(--s-700, 51 65 85) / .6); border-radius: calc(.5rem * var(--rk)); padding: .4rem .6rem; font-size: 13px; color: rgb(var(--s-100, 241 245 249)); outline: none; width: 100%; }
+  .nb-in:focus { border-color: rgb(var(--a-400) / .7); box-shadow: 0 0 0 3px rgb(var(--a-400) / .15); }
+  .nb-btn { padding: .4rem .7rem; border-radius: calc(.5rem * var(--rk)); font-size: 12px; font-weight: 600; background: rgb(var(--a-400) / .16); color: rgb(var(--a-300)); border: 1px solid rgb(var(--a-400) / .35); cursor: pointer; }
+  .nb-btn:hover { background: rgb(var(--a-400) / .28); }
+  .nb-btn.sec { background: rgb(var(--s-700, 51 65 85) / .35); color: rgb(var(--s-300, 203 213 225)); border-color: rgb(var(--s-600, 71 85 105) / .5); }
+  .nb-btn.sec:hover { background: rgb(var(--s-700, 51 65 85) / .6); }
+  .nb-btn.pri { background: linear-gradient(135deg, rgb(var(--a-400)), rgb(var(--b-400))); color: var(--on-accent); border: 0; }
+  @keyframes nb-pop { 0% { transform: scale(.85); opacity: .3; } 100% { transform: scale(1); opacity: 1; } }
+  .nb-pop { animation: nb-pop .25s ease; }
+
+  html[data-motion="off"] *:not(.splash-bg):not(.splash-bg *) { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+
+  /* ---- light-mode fixes for hard-coded dark surfaces ---- */
+  html[data-mode="light"] .widget-window, html[data-mode="light"] .widget-pill { background: rgba(255,255,255,.92); border-color: rgba(71,85,105,.22); box-shadow: var(--elev2); }
+  html[data-mode="light"] .calc-key { background: rgba(71,85,105,.09); color: #1e293b; }
+  html[data-mode="light"] .calc-key:hover { background: rgba(71,85,105,.18); }
+  html[data-mode="light"] .calc-key.fn { color: #475569; }
+  html[data-mode="light"] .calc-key.op { color: #0369a1; }
+  html[data-mode="light"] .tool-btn { color: #475569; }
+  html[data-mode="light"] .tool-btn:hover { background: rgba(71,85,105,.1); color: #0f172a; }
+  html[data-mode="light"] .navdock-btn { color: #475569; }
+  html[data-mode="light"] .navdock-btn:hover:not(:disabled) { background: rgba(71,85,105,.12); color: #0f172a; }
+  html[data-mode="light"] .splash-bg, html[data-mode="light"] .post-bg { filter: none; }
+  html[data-mode="light"] ::-webkit-scrollbar-thumb { background: rgba(71,85,105,.3); }
+    html[data-mode="light"] .bg-gradient-to-r .text-white, html[data-mode="light"] .nb-btn.pri { color: var(--on-accent); }
+
+  /* ---- light mode: readable coloured text, labels and surfaces ---- */
+  html[data-mode="light"] .text-cyan-200, html[data-mode="light"] .text-cyan-300, html[data-mode="light"] .text-cyan-400,
+  html[data-mode="light"] .text-cyan-400\/80, html[data-mode="light"] .hover\:text-cyan-300:hover, html[data-mode="light"] .nb-chip.on,
+  html[data-mode="light"] .nb-btn, html[data-mode="light"] .nb-btn.sec:hover { color: rgb(var(--a-700)); }
+  html[data-mode="light"] .nb-btn.pri { color: var(--on-accent); }
+  html[data-mode="light"] .nb-btn.sec { color: #334155; }
+  html[data-mode="light"] .text-indigo-300 { color: rgb(var(--b-700)); }
+  html[data-mode="light"] .text-emerald-300, html[data-mode="light"] .text-emerald-400 { color: #047857; }
+  html[data-mode="light"] .text-amber-300, html[data-mode="light"] .text-amber-400 { color: #b45309; }
+  html[data-mode="light"] .text-rose-300, html[data-mode="light"] .text-rose-400, html[data-mode="light"] .text-red-300,
+  html[data-mode="light"] .hover\:text-red-400:hover, html[data-mode="light"] .hover\:text-rose-400:hover, html[data-mode="light"] .hover\:text-red-300:hover { color: #be123c; }
+  html[data-mode="light"] .hover\:text-rose-200:hover { color: #9f1239; }
+  html[data-mode="light"] .bg-red-500\/90 { color: #fff; }
+  html[data-mode="light"] .nb-in { background: #fff; border-color: rgba(71,85,105,.35); color: #0f172a; }
+  html[data-mode="light"] .nb-toggle { background: #cbd5e1; }
+  html[data-mode="light"] .nb-toggle.on { background: rgb(var(--a-500)); }
+  html[data-mode="light"] ::placeholder { color: #64748b; opacity: 1; }
+  html[data-mode="light"] .nb-avatar { color: #04101c; }
+  html[data-mode="light"] .glass-strong, html[data-mode="light"] .glass { color: #1e293b; }
+
+  /* ---- 3.0 launch animation: droplet -> ripple -> logo ---- */
+  .nbs-stage { background: radial-gradient(80% 80% at 50% 50%, color-mix(in srgb, var(--bg-deep) 92%, rgb(var(--a-400))) 0%, var(--bg-deep) 100%); cursor: pointer; }
+  .nbs-exit { animation: nbs-out .45s ease forwards; }
+  @keyframes nbs-out { to { opacity: 0; transform: scale(1.06); filter: blur(6px); } }
+  .nbs-glow { position: absolute; left: 50%; top: 50%; width: 60vmin; height: 60vmin; margin: -30vmin 0 0 -30vmin; border-radius: 50%; background: radial-gradient(circle, rgb(var(--a-400) / .35), transparent 65%); opacity: 0; animation: nbs-glow 1.6s ease 1.2s forwards; }
+  @keyframes nbs-glow { to { opacity: 1; } }
+  .nbs-drop { position: absolute; left: 50%; top: 50%; margin: -23px 0 0 -17px; opacity: 0; filter: drop-shadow(0 0 14px rgb(var(--a-400) / .8)); animation: nbs-fall .9s cubic-bezier(.55,0,.95,.45) .2s forwards; }
+  @keyframes nbs-fall {
+    0% { transform: translateY(-55vh) scaleY(1.35) scaleX(.8); opacity: 0; }
+    12% { opacity: 1; }
+    88% { transform: translateY(0) scaleY(1.25) scaleX(.85); opacity: 1; }
+    100% { transform: translateY(2px) scale(.3); opacity: 0; }
+  }
+  .nbs-ring { position: absolute; left: 50%; top: 50%; width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 50%; border: 2px solid rgb(var(--a-400) / .8); opacity: 0; transform: scale(.05); animation: nbs-ripple 1.7s cubic-bezier(.15,.6,.3,1) forwards; }
+  @keyframes nbs-ripple { 0% { opacity: .9; transform: scale(.05); } 100% { opacity: 0; transform: scale(5.5); } }
+  .nbs-blob { position: absolute; left: 50%; top: 50%; width: 150px; height: 150px; margin: -75px 0 0 -75px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgb(var(--a-300)), rgb(var(--a-500)) 55%, rgb(var(--b-500))); box-shadow: 0 0 60px rgb(var(--a-400) / .6); transform: scale(0); opacity: 0; animation: nbs-blob 1s cubic-bezier(.2,.9,.3,1.2) 1.1s forwards; }
+  @keyframes nbs-blob { 0% { transform: scale(0); opacity: 1; } 45% { transform: scale(1.1); opacity: 1; border-radius: 46% 54% 52% 48%; } 100% { transform: scale(1.5); opacity: 0; } }
+  .nbs-logo-wrap { width: min(34vmin, 170px); height: min(34vmin, 170px); border-radius: 28%; overflow: hidden; opacity: 0; transform: scale(.4); filter: blur(14px); box-shadow: 0 0 0 1px rgb(var(--a-400) / .35), 0 20px 60px -10px rgb(var(--a-400) / .55); animation: nbs-logo .8s cubic-bezier(.2,.9,.3,1.15) 1.35s forwards; }
+  @keyframes nbs-logo { to { opacity: 1; transform: scale(1); filter: blur(0); } }
+  .nbs-logo { width: 100%; height: 100%; object-fit: cover; display: block; user-select: none; }
+  .nbs-word { margin-top: 28px; display: flex; font-size: clamp(22px, 5vmin, 38px); font-weight: 600; letter-spacing: .28em; padding-left: .28em; color: rgb(var(--s-100)); }
+  .nbs-word span { opacity: 0; transform: translateY(14px); filter: blur(6px); animation: nbs-letter .55s cubic-bezier(.2,.9,.3,1) forwards; }
+  @keyframes nbs-letter { to { opacity: 1; transform: none; filter: blur(0); } }
+  .nbs-sub { margin-top: 10px; font-size: 11px; letter-spacing: .3em; color: rgb(var(--s-400)); opacity: 0; animation: nbs-letter .6s ease 2.6s forwards; text-transform: uppercase; }
+  .nbs-sub b { color: rgb(var(--a-400)); font-weight: 600; }
+  .nbs-skip { position: absolute; bottom: 22px; font-size: 10px; letter-spacing: .25em; color: rgb(var(--s-500)); opacity: 0; text-transform: uppercase; animation: nbs-letter .6s ease 1.8s forwards; }
+  html[data-mode="light"] .nbs-logo-wrap { box-shadow: 0 0 0 1px rgb(var(--a-500) / .4), 0 20px 50px -12px rgb(var(--a-500) / .5); }
+  .nbs-reduced .nbs-logo-wrap, .nbs-reduced .nbs-glow { animation-delay: 0s; }
+  .nbs-reduced .nbs-sub { animation-delay: .5s; }
+
+  .nb-hue { -webkit-appearance: none; appearance: none; width: 100%; height: 12px; border-radius: 99px; outline: none; background: linear-gradient(90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); box-shadow: inset 0 0 0 1px rgba(148,163,184,.35); }
+  .nb-hue::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 2px solid #fff; box-shadow: 0 0 0 1.5px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.4); cursor: pointer; }
+  .nb-hue::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 2px solid #fff; box-shadow: 0 0 0 1.5px rgba(0,0,0,.55); cursor: pointer; }
+  html[data-font="system"] body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important; }
+  html[data-font="rounded"] body { font-family: ui-rounded, 'Nunito', 'Quicksand', 'Segoe UI Variable', system-ui, sans-serif !important; }
+  html[data-font="serif"] body { font-family: Georgia, 'Times New Roman', serif !important; }
+  html[data-font="mono"] body { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace !important; }
+  html[data-glow="off"] .card-hover:hover { box-shadow: var(--elev2); }
+  html[data-glow="off"] .nb-avatar, html[data-glow="off"] .nbs-logo-wrap { box-shadow: var(--elev1); }
+  html[data-glow="off"] .nb-aurora i { opacity: .12; }
 </style>
 </head>
 <body>
@@ -375,7 +536,7 @@ function saveSessions(sessions) {
 
 /* ============================== STORAGE: IndexedDB auto-save, .novaboard files, boot audio ============================== */
 
-const NB_VERSION = '2.1.2';
+const NB_VERSION = '3.0.0';
 const NB_LOGO_SRC = 'data:image/webp;base64,UklGRuoNAABXRUJQVlA4WAoAAAAQAAAAvwAAvwAAQUxQSIECAAABCjm2bS1v83+f/tJLE/ByHeZMgBk6xhnYEwiUGkU4qQyVRhDmjIAqrNTh/39itK9L3fu9iHDDto0kWcnM7DzAddfFqTkOPiXJ4sHbpbVPvyqNsKGIFdpa6fbBYkIy9ZwKBZHas7j8vRY2MIzLi+YTqjCFFcmd97/mQVLGJvONJ2ZG9vyAr/d3JmSc+CpeKNeD1LRcGxqaSaqXY2GiC+cTd/VtkBqZIMAo6a25xLvJ7Z54GZR13sOAlkkvTySME9pdeBrUzAQGmvR0YRKbIm/+DhkFCFK/Y0I/9rXig86uQGESi2PeSrnti5q5YEHTl5ikY62P/g0NQSPKjo6xTHmx2rkGDlOVIy+N1zJR8KB4bcSIvJQTYErMeSmJI+WhWk5BhKzFEcJzy//OKUio/1uG/v84zX0LTcHEFOc8h+09DA0BJeohC0PyWjexBgeGd/P/M2IV+T+6AXfEF51LYDG9oB+wd6SbeIN9W86n7zGLqXe98+VuIo7LvZNLP+cZYjG31PXMZwQ5JSp2J88y5m/JVKanuLWWE7PI2tbEp7yDepZMTFJnX1GfSNTXzuXdjQCcuJtcCsAjaolcxX0imVZZ/B5y3KKiHawJOrTbypCLul1Cr7imJnKZ4mf0g/1SjlzUrwp6xYbAAz+lmf+a+a+Z/5r5rxnhgq8IP/HX7cRfNxV/3Vr8dYPx123GXzcbf91y/HXj4dft3wR8E/D7VuD3DcHv24LfNwe+bxF+3yj0vl2bgG8aft86+L6B8H0b8ftmwvcthe8bi9+3F75vMnzfavi+4fB92+H75sPvWwB+3wjw+3aA3zcF/L410PcNAr9vE/R9s6DvW2bT6hsHft8+BABWUDggQgsAAPA3AJ0BKsAAwAA+PR6MRKIhoRI5nPAgA8SgO3bmxlJ0fW18b/a/1tzhxgO2rO36UfFh6lPm883j/keuH0AP6r/wPWR9W70AP1p9Kr9rfg7/az9sfaK6gDh+MAlVLEaD/1vuA90P5Z/lP+n/evgG/k39j/5HYj9HkgwLZ6Qd/3C+OnfYjSUq1XAbuluaoXZ79wdapOd8CTJ74dSfrjf8aeqD03ybvKFjRGEEAAEV/s2KRaf6WHZU83uZaU3Ts3dtMVsZkw6/jffK0jt+52ZseSnFe1NxOUX9yI5tSbdjLD+5xU4nxirh3tEyRrPvaN50576GLVlCxrnSjb3+BOg82H5C5wImeSqzxfv+6a71IkeOwtoy1TILGEth3xK9OnGBDovmX4tOYeETZ3snunbqlMZVjYb/tCwaHS6x0N2rL7NvYLo9vpFY9M6BFgfCKaf3Dvm17oZUlZnK3mT25np/xVArPbCu6OMNqNIeOq0iWVbdTZZvgN/orOTR6TVYU0Ob3k5tKi8OSsq2ZLMLv8BYqTujoQkPUdO7Vk0mn6OXc/CQrQyISCnP3NelIsnN1y26shvle31Lfa4fxhqpJS5lg7FD7v14em1GAAD+/ngZWlwOiHwZ1Jfjp2ygKn4h6hRKlO7guweijVfjgYF7QEaxTfbPgARo2GLWHpC1Tx3qeLMx4GVR4IO5XI2kI7HkM45SWHEdItS1HOze7oKliNMO2l75iAbSQ/2zgtB5XoUScx/9KLM/WQCYNYfLNZ0HvKU7kpSVzuGMut/HUye4T3KnxcSD73zl3AaINZ3KHku46v+WoBlLyLdyGzCydV27jX2ayXz/XQ6qaXzlWkXjyxkFMqymFc8lhMZ7vKrauqcbJlKfs9vm5RFNE9BGBBkqpk3Qbxe/x9fTm0i6q3GRO//aT3X/+Z/jFg+D0RkD8I+fWG33RAGCYgsDawP+n3+apLsunbJKauHp+SDs/4zAWdMAOpQDAbJOrQBAGGHUUCNtxuGY3jEMEBQT9EVOhpipZtRodgAz+v0XqvM56Y/qFabQdTtER3CJ8iNhnVsXJqLLeego4NXcFR61uyc/uvh4h0NCCOdVo7s4JxcPh/0Gmd32mYZS7ozpwzqGvC7CCX/+nxHyAAXW85/j1vOAjB9C/m+//8zVoL37nQB1NxRq5dC/zfn/bG5acwD8IuAFbKxbdAyznYeHGjvrGgOxN+ZvDiHdtBOFUGslhFlw0afC/fxgv+YDw8RfIJ5jzAxYWh4pFORdOyv6W0hLAPEj0Ydx43Au9qKI1mwp71qWwJGIwFffIgQy6932RUieoTXpNrhnUfDp9IOxotjrtMnF52aVFd/j+fR5vzj4wJh4Mcf1Gm1M6pyjen2ETJ+K24D+6vejRRPmrrCe05eNgsjh1s+QwzsWbNOlj8KCvkXgislSOtPEz3CDChPHN3l6P8ntCUb3Wd75dXPXgyJyLBayYvSlWTEReW2/lj9jgcM3uTWeIVFT44iLBVn/kQB7iOdFM3rgfhvhyeKIYx/Z14gayuI49JxDuJ93v6uihZNx7DWnWVLQkyRBveczRFgPr32l4DlBy8dwWUzZdW4Z9u0Y11dzu4BnSMRhq0tcrAJ5wuMgxBzG2L+wHIlh3+xjZxpqS96b+G+vyHMO59RhubVnpU820CV5Hv+18dGHjx2raiheksn6cRwY+T3yDJ+Zf1Te3kAZ+Ytfm4EcC2+jH9fOVGl3BFWrYxNnfEt4IjxgFRj+wZtp2GXTlOdBS2wvMkWVZps8zdbPckdfn/B74+KrGYPR39i5mKYPjjL9yjPYt7PzAluNuOD0TRmvfbAoC9ajjPD9wClK40dE44IPfNGMwb5y/am9UbuwxS9Fl9BuGkyGfA4RnE87PCcrx4JchT64XbVbVkYyjwveJmgwUUckkYUfrYuN37CbSPp9gjT3CuYx02qbg9dJwKBPXHQc9f6DA+vA6XooLDjk3KUAvVZJWsIRB8n14ze4LzVU4E8OHCRLuHT3zJVUD4Z/2u92BroSiMmI3v2+rPNwsEWS0ouAXIBT6IB1ZHuZUsLg/cPhDa7ubdtvL9eHQqrFHyWN6X2yDUM8j5fKkvynTmU7pnkQUhdtigObjusd4spbP3H2A8C4N4sdOfPU1/XIpqbWQcRg/s398UKe8/SdlbZGRP2Dt37sPQ+ma4fn+YmqCnUrBJHCpc8+xQ3LRdOpeVZA6MudqN1yz4gXD1M3Dj5cyVl9FiT/yxEx/Bbw0F1TVHHLoaqKBWvzdyEQi827wubi6B5Ng6Skl1rV7bTS2p3rjvEDuZQxlXugt9VEL4+Ld+YSXwUrC7qfT8GdbAz/ud2ZdQJ0LT+UvpkM30fRhsh/Papr9NEA9AxhYjzimB6H1IdQyaHU0EAcdq3Mv0VtygS7Adi53qaFCkaTPaeN3wUiSTbTQ5UD62jq74VOJfj4OHXjfQmgBIp30s2qmAlQcoNP/zTAh7jbPFQF/UDm1aSgOXeXFHo+fn1OdU5chTuOC9Z+oLq+b5pp++X9j640sZS+DRPzpg/dyp/P4xRZJZzXV2IvGUdDw1iH/ROn8UhhiCvyO2Qt4VbM6zpAv6firESyYXuG2s4L2GejenO5t00eyTW5OhaN9npYLYgD7maoJIIB4N/NLfb+/GBDBXo/6WL635rmOz0R2DPUP/DAlaNqGUsI/bTRhXB8Y1SeyvtonQ2btich82A9CGstfmY40iVyGOfmW3866vLxM4Vo4F/LRY7YLMBmBg4jke9jvanCvDjZqEa6o4j7sCcTJ6IuQiNXzjiUmp3heWcI05Ez7JQPytkuM4c1Vt0w7JZHoEs4mABpw5NNYRLUI0dW7IhpU+XMNBtTpMnJLLcZ8zwrrOHS1hnsmP21nPvTpJ925NxgaPIpLWnQtAHc7aXHdVXi6XKxhgYUmck5PG3Z4ReQWcyN4N6TnU5bpk+xlTkXIjWWcNUM/mndLNhzr7tXWlOxcbv2SjB+SmcPhYEQThXEdYFLm2rMpE3T5vrDmgE0w5BK3ls8ZqXx3LAfMQQmZTRnr7c7p+MZAS3Ywx5yv/p/prN/TP4BArORenaeeFYgYX4zwiezyJ9uM422lhBHA6iAT93j0Zd/tYe0R46nd1039mVyoHbLr85kl8zKbWWc6OPOmvd90HxAQ7p6xP4/yGdn3MlwTJvUpiXrA9mfdXXZFSUH5tRNKkTdRuH7CX41TAzDHIpb0F6pteUeO8cB6dVfdpXqfWOk0+ZgwOPG3IhwH5+qS1Mz81tkA/dw4d6T3CCrX69L0r+sLH7N61wBjjB7MP6z22L1KVhsbUwHDMCoWc3L30WkvmyCNlmaNveJCep9elJx8nnCu+a+pKzM48ZSt+miRxD91c4+0mV9FmeXvGMzD7Fv6gClnWcRghPJssHdh0CyrD7UcEzrlO2YjVBkKwgs/jKYigC2sMmJrvv4pbD9MPYvzawk7VCf+1BO2bFZsjOdDk2rC9ER3pvCtjPiUHDB/8SdCY9X6PDVg9AsH/fLglpeYl3ykftAMmBG1x3lf9fNdcoqo9nEeBlc+BUiWctaNgxmNtdRJeT/5V6RnzFMcMaByPl0luXV/y6HdlAp3mZHKt53qEBEtVK6++NV6uh84luHVPC2n1mC2ex9PSvDvS+dRfiYNdYV4d+O3Rjk3UKobePw/hoJtW+K2X/sOGvkh9HX2CaupIt0rJP1IgCzajWuUkpBb0HKGLBYzp1ZrbZkqgxsc46Z6kE0ZODhXb0hHlCrzNmgxT8H7bfSu05UgAytP3LB0VrfzV7DwHXtCqmoAbiNBWFptxnlLrkJgmrL4IwUEAExtMMaQ6FE9vrZdg3GRrZR4Nv1foAA';
 const NB_MAX_BOARDS = 40;          // recent boards kept on this device; older ones are removed
 const NB_FLAG_KEY = 'novaboard.session.v1';
@@ -794,180 +955,72 @@ const IDot = (p) => <Svg {...p}><circle cx="12" cy="12" r="3" fill="currentColor
 
 /* ============================== SPLASH ============================== */
 
-function SplashScreen({ onDone }) {
-  const [t, setT] = useState(0);            // milliseconds into the sequence
-  const [exiting, setExiting] = useState(false);
-  const [audioLocked, setAudioLocked] = useState(false);
-  const [storage, setStorage] = useState({ ok: true, text: 'probing…' });
-  const doneRef = useRef(onDone);
-  doneRef.current = onDone;                 // latest callback without restarting the sequence on re-render
-  const finishedRef = useRef(false);
-  const audioRef = useRef({ ctx: null, beepDone: false, chimeDone: false, pendingChime: false });
-  const reduced = useMemo(() => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches), []);
+function nbPlayDrop(ctx) {
+  try {
+    const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(1100, t); o.frequency.exponentialRampToValueAtTime(260, t + 0.16);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.22, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+    o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 0.3);
+  } catch (e) { /* sound is optional */ }
+}
 
-  // Timeline (ms): POST text -> beep -> logo screen + chime -> fade out.
-  const K = useMemo(() => {
-    const k = reduced ? 0.45 : 1;
-    return { postEnd: 2050 * k, logo: 2400 * k, end: 5000 * k, k };
-  }, [reduced]);
+function SplashScreen({ onDone }) {
+  const [exiting, setExiting] = useState(false);
+  const doneRef = useRef(onDone); doneRef.current = onDone;
+  const finishedRef = useRef(false);
+  const reduced = useMemo(() => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches), []);
+  const org = useMemo(() => (nbLoadSettings().org || '').trim(), []);
+  const sndOn = useMemo(() => nbLoadSettings().sound !== false, []);
+  const T = reduced ? { drop: 0, logo: 0, end: 1400 } : { drop: 1100, logo: 1350, end: 3900 };
 
   const finish = useCallback(() => {
-    if (finishedRef.current) return;
-    finishedRef.current = true;
-    setExiting(true);
-    setTimeout(() => { if (doneRef.current) doneRef.current(); }, 450);
+    if (finishedRef.current) return; finishedRef.current = true;
+    setExiting(true); setTimeout(() => { doneRef.current && doneRef.current(); }, 450);
   }, []);
 
-  /* Browsers only allow sound after a user gesture, so the first tap / key press re-tries it. */
   useEffect(() => {
-    const a = audioRef.current;
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtx) { a.ctx = new AudioCtx(); if (a.ctx.state !== 'running') a.ctx.resume().catch(() => {}); }
-    } catch (e) { /* sound is optional */ }
-    const unlock = () => {
-      const c = a.ctx;
-      if (!c) return;
-      c.resume().then(() => {
-        if (c.state === 'running' && a.pendingChime && !finishedRef.current) {
-          a.pendingChime = false; setAudioLocked(false); nbPlayStartupChime(c);
-        }
-      }).catch(() => {});
-    };
-    const onKey = (e) => { unlock(); if (e.key === 'Escape' || e.key === 'Enter') finish(); };
-    window.addEventListener('pointerdown', unlock);
-    window.addEventListener('keydown', onKey);
+    let ctx = null; const timers = [];
+    try { const AC = window.AudioContext || window.webkitAudioContext; if (AC) { ctx = new AC(); ctx.resume().catch(() => {}); } } catch (e) { /* optional */ }
+    const play = (fn) => { if (sndOn && ctx && ctx.state === 'running') fn(ctx); };
+    if (!reduced) timers.push(setTimeout(() => play(nbPlayDrop), T.drop));
+    timers.push(setTimeout(() => play(nbPlayStartupChime), T.logo));
+    timers.push(setTimeout(finish, T.end));
+    const unlock = () => { ctx && ctx.resume().catch(() => {}); };
+    const onKey = (e) => { if (e.key === 'Escape' || e.key === 'Enter') finish(); };
+    window.addEventListener('pointerdown', unlock); window.addEventListener('keydown', onKey);
     return () => {
-      window.removeEventListener('pointerdown', unlock);
-      window.removeEventListener('keydown', onKey);
-      const c = a.ctx;
-      if (c) setTimeout(() => { try { c.close(); } catch (e) { /* ignore */ } }, 5000); // let the chime ring out
+      timers.forEach(clearTimeout);
+      window.removeEventListener('pointerdown', unlock); window.removeEventListener('keydown', onKey);
+      if (ctx) setTimeout(() => { try { ctx.close(); } catch (e) { /* ignore */ } }, 4000);
     };
-  }, [finish]);
+  }, [finish, reduced]);
 
-  useEffect(() => {
-    let raf = 0;
-    const t0 = performance.now();
-    const tick = (now) => {
-      if (finishedRef.current) return;
-      const el = now - t0;
-      setT(el);
-      const a = audioRef.current;
-      const running = !!(a.ctx && a.ctx.state === 'running');
-      if (!a.beepDone && el >= K.postEnd) { a.beepDone = true; if (running) nbPlayPostBeep(a.ctx); }
-      if (!a.chimeDone && el >= K.logo) {
-        a.chimeDone = true;
-        if (running) nbPlayStartupChime(a.ctx);
-        else { a.pendingChime = true; setAudioLocked(true); }
-      }
-      if (el >= K.end) { finish(); return; }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [K, finish]);
-
-  useEffect(() => {
-    let alive = true;
-    nbProbeStorage().then((r) => { if (alive) setStorage(r); });
-    return () => { alive = false; };
-  }, []);
-
-  const lines = useMemo(() => nbBootTelemetry(storage), [storage]);
-  const clamp01 = (v) => Math.max(0, Math.min(1, v));
-  const inPost = t < K.logo;
-  const memFrac = clamp01((t - 450 * K.k) / (800 * K.k));
-  const memKB = Math.round(16384 * memFrac);
-  const memDone = memFrac >= 1;
-  const rowAt = (i) => (950 + i * 120) * K.k;       // when telemetry row i appears
-  const totalBlocks = 24;
-  const loadFrac = clamp01((t - K.logo) / (K.end - K.logo - 250 * K.k));
-  const litBlocks = Math.round(loadFrac * totalBlocks);
-
+  const word = 'NOVABOARD'.split('');
   return (
-    <div
-      className={`post-bg post-text fixed inset-0 ${exiting ? 'splash-exit' : ''}`}
-      role="status" aria-live="polite" aria-label="NovaBoard OS is starting"
-    >
-      <div className="crt-on absolute inset-0">
-        {inPost ? (
-          <div key="post" className="absolute inset-0 p-5 sm:p-8 text-[12px] sm:text-[13px] leading-[1.55] overflow-hidden">
-            <div className="text-white font-semibold">NovaBoard BIOS v{NB_VERSION}</div>
-            <div className="text-slate-500">Copyright (C) NovaBoard Systems. All rights reserved.</div>
-            <div className="h-3" />
-            {t > 250 * K.k && (
-              <div>CPU : {navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency}-core processor` : 'generic processor'}</div>
-            )}
-            {t > 450 * K.k && (
-              <div>
-                Memory Test : <span className="tabular-nums">{String(memKB).padStart(5, ' ')}K</span>
-                {memDone && <span className="text-emerald-400"> OK</span>}
-              </div>
-            )}
-            <div className="h-3" />
-            <div className="max-w-xl">
-              {lines.map((l, i) => (t >= rowAt(i) ? (
-                <div key={l.label} className="flex gap-2">
-                  <span className="w-32 sm:w-36 text-slate-400 flex-shrink-0">{l.label}</span>
-                  <span className="flex-1 truncate">{l.value}</span>
-                  <span className={l.ok ? 'text-emerald-400' : 'text-amber-400'}>{l.ok ? '[ OK ]' : '[WARN]'}</span>
-                </div>
-              ) : null))}
-            </div>
-            {t >= K.postEnd - 120 * K.k && <div className="mt-3 text-white">All systems nominal. Starting NovaBoard OS…</div>}
-            <div className="mt-1"><span className="post-cursor" /></div>
-          </div>
-        ) : (
-          <div key="logo" className="post-flick absolute inset-0 flex flex-col items-center justify-center px-4">
-            <img
-              src={NB_LOGO_SRC} alt="NovaBoard" width="96" height="96" draggable={false}
-              className="w-24 h-24 rounded-[22px] mb-5"
-              style={{ boxShadow: '0 0 36px rgba(56,189,248,0.35)' }}
-            />
-            <div className="text-3xl sm:text-4xl font-semibold text-white tracking-[0.28em] pl-[0.28em]">NOVABOARD</div>
-            <div className="text-[11px] text-slate-500 tracking-[0.5em] mt-2 pl-[0.5em]">OPERATING SYSTEM {NB_VERSION}</div>
-            <div className="mt-8 w-[min(86vw,360px)]">
-              <div className="boot-blocks" aria-hidden="true">
-                {Array.from({ length: totalBlocks }, (_, i) => <i key={i} className={i < litBlocks ? 'on' : ''} />)}
-              </div>
-              <div className="text-[11px] text-slate-500 mt-2.5 text-center tracking-wider">
-                {loadFrac >= 1 ? 'Ready' : 'Starting NovaBoard OS…'}
-              </div>
-            </div>
-          </div>
-        )}
+    <div className={`nbs-stage absolute inset-0 z-50 overflow-hidden flex items-center justify-center ${exiting ? 'nbs-exit' : ''} ${reduced ? 'nbs-reduced' : ''}`} onClick={finish} role="presentation">
+      <div className="nbs-glow" />
+      {!reduced && (<>
+        <svg className="nbs-drop" width="34" height="46" viewBox="0 0 24 32" aria-hidden="true">
+          <defs><linearGradient id="nbsg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="rgb(var(--a-300))" /><stop offset="1" stopColor="rgb(var(--b-500))" /></linearGradient></defs>
+          <path d="M12 1C12 1 3 13 3 20a9 9 0 0 0 18 0C21 13 12 1 12 1z" fill="url(#nbsg)" />
+          <ellipse cx="8.5" cy="19" rx="1.6" ry="3.2" fill="#fff" opacity=".55" transform="rotate(12 8.5 19)" />
+        </svg>
+        <i className="nbs-ring" style={{ animationDelay: '1.1s' }} /><i className="nbs-ring" style={{ animationDelay: '1.25s' }} /><i className="nbs-ring" style={{ animationDelay: '1.4s' }} />
+        <i className="nbs-blob" />
+      </>)}
+      <div className="relative flex flex-col items-center">
+        <div className="nbs-logo-wrap"><img src={NB_LOGO_SRC} alt="NovaBoard" className="nbs-logo" draggable="false" /></div>
+        <div className="nbs-word" aria-label="NovaBoard">
+          {word.map((c, i) => <span key={i} style={{ animationDelay: `${(reduced ? 0.2 : 2.0) + i * 0.05}s` }}>{c}</span>)}
+        </div>
+        <div className="nbs-sub mono">{org ? org : 'SMART BOARD WORKSPACE'} <b>3.0</b></div>
       </div>
-
-      <div className="crt-lines" />
-      <button
-        onClick={finish}
-        className="absolute bottom-4 right-5 z-10 text-[11px] text-slate-500 hover:text-cyan-300 tracking-widest transition-colors focus-ring rounded px-2 py-1"
-      >
-        SKIP ›
-      </button>
-      {audioLocked && (
-        <div className="absolute bottom-4 left-5 z-10 text-[10px] text-slate-600 tracking-widest">TAP ANYWHERE FOR STARTUP SOUND</div>
-      )}
+      <div className="nbs-skip mono">click to skip</div>
     </div>
   );
 }
 
 /* ============================== HOME ============================== */
-
-function HeroGreeting() {
-  const now = useClock();
-  return (
-    <div>
-      <div className="mono text-xs text-cyan-400/80 tracking-wider mb-2">{formatDateLong(now).toUpperCase()}</div>
-      <h1 className="text-4xl sm:text-5xl font-semibold text-slate-100 leading-tight">
-        {greetingFor(now)}.
-      </h1>
-      <p className="text-slate-400 mt-2 max-w-md">
-        Pick up where you left off, or start a fresh board.
-      </p>
-    </div>
-  );
-}
 
 const BG_PRESETS = [
   { id: 'chalk-green', label: 'Chalkboard Green', hex: '#0d3824' },
@@ -1234,7 +1287,7 @@ function HomeScreen({ onEnterCanvas, sessions, setSessions, onOpenFile, recovery
   return (
     <div className="track-in relative h-full overflow-y-auto">
       <div className="max-w-5xl mx-auto px-6 sm:px-10 pt-16 pb-20">
-        <HeroGreeting />
+        <div className="flex items-start justify-between gap-4"><HeroGreeting /><HomeBar /></div>
 
         {recoverySession && (
           <div
@@ -1451,9 +1504,9 @@ function NewPageModal({ onPick, onCancel }) {
                 style={{ background: c }} />
             ))}
           </div>
+          <ColorCanvas value={custom} onChange={setBoth} />
           <div className="flex items-center gap-2">
-            <input type="color" value={custom} onChange={(e) => setBoth(e.target.value)}
-              aria-label="Pick a colour" className="w-10 h-10 rounded-lg bg-transparent border border-slate-600/70 cursor-pointer p-0.5" />
+            <div className="w-10 h-10 rounded-lg shrink-0" style={{ background: custom, boxShadow: 'inset 0 0 0 1px rgba(148,163,184,0.5)' }} />
             <input type="text" value={hexText} maxLength={7} spellCheck={false} onChange={(e) => onHex(e.target.value)}
               aria-label="Hex colour" className="mono flex-1 min-w-0 rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2 text-sm text-slate-200 focus-ring" />
             <div className="w-10 h-10 rounded-lg shrink-0" style={{ background: custom, boxShadow: 'inset 0 0 0 1px rgba(148,163,184,0.5)' }} />
@@ -1630,6 +1683,7 @@ function CanvasTopBar({ session, onBackHome, onNewBoard, isFullscreen, onToggleF
 
       <div className="flex-1" />
 
+      <OrgBadge />
       <SaveStatus state={saveState} />
 
       <button
@@ -1798,6 +1852,28 @@ function placeBgImage(img, page, frame) {
     scaleY: (page.h * frame.scale) / img.height,
   });
   img.setCoords();
+}
+
+/* ---- PDF view zoom / pan (Fabric viewportTransform; page-space objects are never touched) ---- */
+const NB_ZOOM_MIN = 0.5, NB_ZOOM_MAX = 6;
+/* Apply zoom + pan, keeping the page from being dragged completely out of view. */
+function nbApplyView(canvas, page, frame, z, tx, ty) {
+  z = Math.min(NB_ZOOM_MAX, Math.max(NB_ZOOM_MIN, z));
+  if (page && frame) {
+    const W = canvas.getWidth(), H = canvas.getHeight();
+    const m = Math.min(96, W / 4, H / 4);
+    const l = (frame.offsetX) * z, r = (frame.offsetX + page.w * frame.scale) * z;
+    const t = (frame.offsetY) * z, b = (frame.offsetY + page.h * frame.scale) * z;
+    tx = Math.min(W - m - l, Math.max(m - r, tx));
+    ty = Math.min(H - m - t, Math.max(m - b, ty));
+  }
+  canvas.setViewportTransform([z, 0, 0, z, tx, ty]);
+  return z;
+}
+/* Screen-space bounding box of an object (accounts for zoom / pan). */
+function nbScreenRect(canvas, obj) {
+  const br = obj.getBoundingRect(true, true), v = canvas.viewportTransform || [1, 0, 0, 1, 0, 0];
+  return { left: br.left * v[0] + v[4], top: br.top * v[3] + v[5], width: br.width * v[0], height: br.height * v[3] };
 }
 
 /* Perceived-luminance test on a #rrggbb / #rgb colour. */
@@ -2409,7 +2485,7 @@ function StylePopover({ anchorRef, label, color, setColor, width, setWidth, onCl
 
   return (
     <div ref={popWrapRef} className={`absolute ${down ? 'top-full mt-3' : 'bottom-full mb-3'} left-1/2 -translate-x-1/2 z-40`}>
-      <div className="glass-strong modal-in rounded-2xl p-3.5 w-60 shadow-2xl flex flex-col gap-3.5" role="dialog" aria-label={`${label} style`}>
+      <div className="glass-strong modal-in rounded-2xl p-3.5 w-64 shadow-2xl flex flex-col gap-3.5" role="dialog" aria-label={`${label} style`}>
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="mono text-[10px] tracking-wider text-slate-500">{widthLabel}</span>
@@ -2425,6 +2501,7 @@ function StylePopover({ anchorRef, label, color, setColor, width, setWidth, onCl
         <div className="h-px bg-slate-700/50" />
         <div>
           <div className="mono text-[10px] tracking-wider text-slate-500 mb-2">COLOR</div>
+          <ColorCanvas value={color} onChange={setColor} />
           <div className="grid grid-cols-8 gap-1.5 mb-3">
             {PRESET_COLORS.map((c) => (
               <button
@@ -2438,13 +2515,7 @@ function StylePopover({ anchorRef, label, color, setColor, width, setWidth, onCl
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <input
-              type="color" value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="nb-swatch"
-              aria-label="Custom color"
-              title="Custom color"
-            />
+            <span className="nb-swatch shrink-0" style={{ background: color, width: 30, height: 30, borderRadius: 8 }} title="Current colour" />
             <input
               type="text" value={hexDraft} maxLength={7} spellCheck={false}
               onChange={(e) => onHexInput(e.target.value)}
@@ -2464,8 +2535,10 @@ function DrawToolbar({
   canUndo, canRedo, onUndo, onRedo, onClear, hasObjects,
   activeShape, onPickShape,
   onCopy, onPaste, canCopy, canPaste,
-  emoji, setEmoji, gridMode, onCycleGrid,
+  emoji, setEmoji, gridMode, onCycleGrid, gridSize, onGridMode, onGridSize,
 }) {
+  const [gridMenuOpen, setGridMenuOpen] = useState(false);
+  const closeGrid = useCallback(() => setGridMenuOpen(false), []);
   const isDrawTool = tool === 'draw';
   const [shapeMenuOpen, setShapeMenuOpen] = useState(false);
   // Which tool's stroke popover is open: a pen id, 'shape', 'text', or null.
@@ -2559,7 +2632,7 @@ function DrawToolbar({
     if (!isDrawTool) setTool('draw');
     setPenMenuOpen((v) => !v);
   };
-  const onPickPen = (id) => { setTool('draw'); setPen(id); setPenMenuOpen(false); };
+  const onPickPen = (id) => { setTool('draw'); setPen(id); setPenMenuOpen(false); setStyleFor(id === 'emoji' ? null : 'pen'); };
   // Shape: inactive -> shape picker; active -> style popover.
   const onShapeClick = () => {
     if (tool === 'shape') { setShapeMenuOpen(false); setStyleFor((v) => (v === 'shape' ? null : 'shape')); return; }
@@ -2619,9 +2692,12 @@ function DrawToolbar({
         <>
           {/* Mode tools */}
           <div className="flex items-center gap-0.5">
-            <ToolButton active={gridMode !== 'off'} onClick={onCycleGrid} title={`Background guide: ${gridMode} (click to change)`}>
-              <IGridIcon size={16} />
-            </ToolButton>
+            <div className="relative" ref={anchorRef('grid')}>
+              <ToolButton active={gridMode !== 'off' || gridMenuOpen} onClick={() => { setStyleFor(null); setShapeMenuOpen(false); setPenMenuOpen(false); setGridMenuOpen((v) => !v); }} title={`Background guide: ${gridMode}`}>
+                <IGridIcon size={16} />
+              </ToolButton>
+              {gridMenuOpen && <GridMenu anchorRef={refFor('grid')} mode={gridMode} size={gridSize} onMode={onGridMode} onSize={onGridSize} onClose={closeGrid} down={popDown} />}
+            </div>
             <ToolButton active={tool === 'select'} onClick={() => { setStyleFor(null); setTool('select'); }} title="Select / Move (V)">
               <ICursor size={16} />
             </ToolButton>
@@ -3785,6 +3861,7 @@ function WidgetDock({ open, onToggle, active, onLaunch, dropUp, dropSide }) {
     { id: 'dice', label: 'Dice & Random', icon: IDiceIcon },
     { id: 'ruler', label: 'Ruler', icon: IRulerIcon },
     { id: 'spotlight', label: 'Spotlight', icon: ISpotlightIcon },
+    ...NB_NEW_TOOLS.map((x) => ({ ...x, isNew: true })),
     { id: 'image', label: 'Image Upload', icon: IImageIcon, action: true },
     { id: 'sticky', label: 'Sticky Note', icon: IStickyIcon, action: true },
     { id: 'table', label: 'Table', icon: ITableIcon, action: true },
@@ -3803,7 +3880,7 @@ function WidgetDock({ open, onToggle, active, onLaunch, dropUp, dropSide }) {
       </button>
       {open && (
         <div
-          className={`glass-strong modal-in absolute rounded-xl p-1.5 w-56 shadow-2xl z-40 max-h-[min(70vh,26rem)] overflow-y-auto ${
+          className={`glass-strong modal-in absolute rounded-xl p-1.5 w-60 shadow-2xl z-40 max-h-[min(70vh,26rem)] overflow-y-auto ${
             dropUp ? 'bottom-full mb-2' : 'top-full mt-2'
           } ${dropSide === 'right' ? 'right-0' : 'left-0'}`}
         >
@@ -3816,6 +3893,7 @@ function WidgetDock({ open, onToggle, active, onLaunch, dropUp, dropSide }) {
             >
               <it.icon size={15} className={active[it.id] ? 'text-cyan-300' : 'text-slate-500'} />
               {it.label}
+              {it.isNew && <span className="mono text-[8px] px-1 rounded bg-cyan-500/20 text-cyan-300">NEW</span>}
               {active[it.id] && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400" />}
               {it.action && <span className="ml-auto mono text-[10px] text-slate-600">add</span>}
             </button>
@@ -3919,10 +3997,13 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
   const [tool, setTool] = useState('draw');
   const [pen, setPen] = useState('ballpoint');
   const [emoji, setEmoji] = useState('⭐');
-  const [gridMode, setGridMode] = useState('off'); // off | grid | dots | lines
+  const [gridMode, setGridMode] = useState(() => nbLoadSettings().defGrid || 'off'); // off | grid | dots | lines | graph | iso
+  const [gridSize, setGridSize] = useState(() => nbLoadSettings().gridSize || 32);
+  const [viewZoom, setViewZoom] = useState(1);        // PDF view zoom (1 = fit)
+  const [isPdfView, setIsPdfView] = useState(false);   // true only on PDF page slides
   const [selChip, setSelChip] = useState(null);   // floating 'erase selection' button position
-  const [color, setColor] = useState('#ffffff');
-  const [width, setWidth] = useState(6);
+  const [color, setColor] = useState(() => nbLoadSettings().penColor || '#ffffff');
+  const [width, setWidth] = useState(() => nbLoadSettings().penWidth || 6);
   const [activeShape, setActiveShape] = useState('rect');
 
   const [historyState, setHistoryState] = useState({ canUndo: false, canRedo: false });
@@ -4524,6 +4605,61 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       }
     });
 
+    /* ---- PDF view: drag empty space to pan, two-finger pinch / Ctrl+wheel to zoom (Select tool, PDF pages only) ---- */
+    const canView = () => !!pageRef.current && toolRef.current === 'select';
+    const setView = (z, tx, ty) => { const nz = nbApplyView(canvas, pageRef.current, frameRef.current, z, tx, ty); setViewZoom(nz); };
+    let panFrom = null;
+    canvas.on('mouse:down', (opt) => {
+      const e = opt.e;
+      if (!canView() || (e.button !== undefined && e.button !== 0) || e.shiftKey) return; // Shift+drag keeps box-select
+      if (opt.target && opt.target.nbKind !== 'bgImage') return;                          // objects still drag normally
+      canvas._groupSelector = null;                                                       // no rubber-band while panning
+      const p = canvas.getPointer(e, true);
+      panFrom = { x: p.x, y: p.y };
+      canvas.setCursor('grabbing');
+    });
+    canvas.on('mouse:move', (opt) => {
+      if (!panFrom) return;
+      const p = canvas.getPointer(opt.e, true), v = canvas.viewportTransform;
+      setView(v[0], v[4] + p.x - panFrom.x, v[5] + p.y - panFrom.y);
+      panFrom = { x: p.x, y: p.y };
+    });
+    canvas.on('mouse:up', () => { panFrom = null; });
+
+    let pinch = null;
+    const tPts = (e) => { const r = canvas.upperCanvasEl.getBoundingClientRect(); const a = e.touches[0], b = e.touches[1];
+      return { cx: (a.clientX + b.clientX) / 2 - r.left, cy: (a.clientY + b.clientY) / 2 - r.top, d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) || 1 }; };
+    const onTS = (e) => {
+      if (e.touches.length !== 2 || !canView() || canvas._currentTransform) return;
+      panFrom = null; canvas._groupSelector = null;
+      const q = tPts(e), v = canvas.viewportTransform;
+      pinch = { d: q.d, z: v[0], sx: (q.cx - v[4]) / v[0], sy: (q.cy - v[5]) / v[3] }; // scene point under the fingers
+      e.preventDefault(); e.stopPropagation();
+    };
+    const onTM = (e) => {
+      if (!pinch) return;
+      if (e.touches.length !== 2) { pinch = null; return; }
+      const q = tPts(e), z = Math.min(NB_ZOOM_MAX, Math.max(NB_ZOOM_MIN, pinch.z * q.d / pinch.d));
+      setView(z, q.cx - pinch.sx * z, q.cy - pinch.sy * z);   // zoom + two-finger pan together
+      e.preventDefault(); e.stopPropagation();
+    };
+    const onTE = (e) => { if (e.touches.length < 2) pinch = null; };
+    const onWheel = (e) => {
+      if (!canView() || !(e.ctrlKey || e.metaKey)) return;
+      const r = canvas.upperCanvasEl.getBoundingClientRect(), v = canvas.viewportTransform;
+      const cx = e.clientX - r.left, cy = e.clientY - r.top;
+      const z = Math.min(NB_ZOOM_MAX, Math.max(NB_ZOOM_MIN, v[0] * Math.exp(-e.deltaY * 0.01)));
+      setView(z, cx - (cx - v[4]) / v[0] * z, cy - (cy - v[5]) / v[3] * z);
+      e.preventDefault(); e.stopPropagation();
+    };
+    // Capture on the wrapper so these run before Fabric's own listeners on the canvas.
+    wrap.addEventListener('touchstart', onTS, { capture: true, passive: false });
+    wrap.addEventListener('touchmove', onTM, { capture: true, passive: false });
+    wrap.addEventListener('touchend', onTE, { capture: true });
+    wrap.addEventListener('touchcancel', onTE, { capture: true });
+    wrap.addEventListener('wheel', onWheel, { capture: true, passive: false });
+    canvas.nbSetView = setView;
+
     /* ---- Resize handling (keep sharp on DPR + container changes) ---- */
     const ro = new ResizeObserver(() => {
       const w = wrapRef.current;
@@ -4531,6 +4667,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       const W = w.clientWidth, H = w.clientHeight;
       if (W <= 0 || H <= 0) return;
       canvas.setDimensions({ width: W, height: H });
+      canvas.setViewportTransform([1, 0, 0, 1, 0, 0]); setViewZoom(1);
       // PDF slide: recompute the contain/letterbox frame for the new stage size,
       // re-place the page, and carry every annotation across with it.
       const page = pageRef.current;
@@ -4547,6 +4684,11 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
 
     return () => {
       stopGlowPulse();
+      wrap.removeEventListener('touchstart', onTS, true);
+      wrap.removeEventListener('touchmove', onTM, true);
+      wrap.removeEventListener('touchend', onTE, true);
+      wrap.removeEventListener('touchcancel', onTE, true);
+      wrap.removeEventListener('wheel', onWheel, true);
       ro.disconnect();
       canvas.dispose();
       fabricRef.current = null;
@@ -4581,7 +4723,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
     if (!c) { setRotateHandle(null); return; }
     const active = c.getActiveObject();
     if (!active || !active.nb3D || c.getActiveObjects().length !== 1) { setRotateHandle(null); return; }
-    const br = active.getBoundingRect(true, true);
+    const br = nbScreenRect(c, active);
     setRotateHandle({
       objId: active,
       x: br.left + br.width / 2,
@@ -4634,14 +4776,14 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
         setSelChip((prev) => (prev ? null : prev));
         return;
       }
-      const br = a.getBoundingRect(true, true);
+      const br = nbScreenRect(c, a);
       const n = c.getActiveObjects().length;
       const x = Math.round(br.left + br.width / 2);
       const y = Math.round(Math.max(8, br.top - 40));
       setSelChip((prev) => (prev && prev.x === x && prev.y === y && prev.n === n ? prev : { x, y, n }));
     };
     const evs = ['selection:created', 'selection:updated', 'selection:cleared', 'object:moving', 'object:scaling',
-      'object:rotating', 'object:modified', 'text:editing:entered', 'text:editing:exited'];
+      'object:rotating', 'object:modified', 'text:editing:entered', 'text:editing:exited', 'after:render'];
     evs.forEach((e) => c.on(e, update));
     update();
     return () => evs.forEach((e) => c.off(e, update));
@@ -4840,6 +4982,8 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       bgImageObjRef.current = null;
       pageRef.current = null;
       frameRef.current = { ...PAGE_SPACE };
+      c.setViewportTransform([1, 0, 0, 1, 0, 0]);
+      setViewZoom(1); setIsPdfView(false);
       c.backgroundColor = slide.bg;
       setBgColorState(slide.bg);
 
@@ -4892,6 +5036,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
           c.add(img);
           c.sendToBack(img);
           bgImageObjRef.current = img;
+          setIsPdfView(true);
           if (slide.json) addVectors(img);
           else finishLoad();
         });
@@ -4912,7 +5057,11 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
     getThumbnail() {
       const c = fabricRef.current;
       if (!c) return null;
-      return c.toDataURL({ format: 'jpeg', quality: 0.55, multiplier: 0.22 });
+      const vpt = c.viewportTransform.slice();
+      c.setViewportTransform([1, 0, 0, 1, 0, 0]);
+      const url = c.toDataURL({ format: 'jpeg', quality: 0.55, multiplier: 0.22 });
+      c.setViewportTransform(vpt);
+      return url;
     },
     getBackgroundColor() { return bgColor; },
     /* Current page as a PNG data URL (temporary laser strokes are hidden). */
@@ -4922,7 +5071,10 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       c.discardActiveObject();
       const lasers = c.getObjects().filter(NB_EPHEMERAL);
       lasers.forEach((o) => { o.visible = false; });
+      const vpt = c.viewportTransform.slice();
+      c.setViewportTransform([1, 0, 0, 1, 0, 0]);
       const url = c.toDataURL({ format: 'png', multiplier: 2 });
+      c.setViewportTransform(vpt);
       lasers.forEach((o) => { o.visible = true; });
       c.requestRenderAll();
       return url;
@@ -5058,13 +5210,18 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       </div>
       {gridMode !== 'off' && (() => {
         const ink = isLightColor(bgColor) ? '0,0,0' : '255,255,255';
-        const g = (a) => `rgba(${ink},${a})`;
-        const bgImg = gridMode === 'grid'
-          ? `linear-gradient(${g(0.12)} 1px, transparent 1px), linear-gradient(90deg, ${g(0.12)} 1px, transparent 1px)`
-          : gridMode === 'dots' ? `radial-gradient(${g(0.3)} 1.4px, transparent 1.6px)`
-          : `linear-gradient(${g(0.14)} 1px, transparent 1px)`;
-        return <div className="pointer-events-none absolute inset-0" style={{ backgroundImage: bgImg, backgroundSize: gridMode === 'lines' ? '100% 36px' : '32px 32px' }} />;
+        return <><div className="pointer-events-none absolute inset-0" style={nbGridStyle(gridMode, gridSize, ink)} />{gridMode === 'graph' && <GridAxes ink={ink} />}</>;
       })()}
+      {isPdfView && (
+        <div className="glass-strong absolute z-30 right-3 bottom-3 flex items-center gap-0.5 rounded-xl px-1 py-1 text-xs text-slate-200 select-none shadow-xl" style={{ touchAction: 'none' }}>
+          <button title="Zoom out" aria-label="Zoom out" className="w-8 h-8 rounded-lg hover:bg-white/10 focus-ring text-base leading-none"
+            onClick={() => { const c = fabricRef.current; if (!c) return; const v = c.viewportTransform, cx = c.getWidth() / 2, cy = c.getHeight() / 2, z = v[0] / 1.25; c.nbSetView(z, cx - (cx - v[4]) / v[0] * z, cy - (cy - v[5]) / v[3] * z); }}>−</button>
+          <button title="Fit page" aria-label="Reset zoom" className="min-w-[3rem] h-8 rounded-lg hover:bg-white/10 focus-ring mono"
+            onClick={() => { const c = fabricRef.current; if (c) c.nbSetView(1, 0, 0); }}>{Math.round(viewZoom * 100)}%</button>
+          <button title="Zoom in" aria-label="Zoom in" className="w-8 h-8 rounded-lg hover:bg-white/10 focus-ring text-base leading-none"
+            onClick={() => { const c = fabricRef.current; if (!c) return; const v = c.viewportTransform, cx = c.getWidth() / 2, cy = c.getHeight() / 2, z = v[0] * 1.25; c.nbSetView(z, cx - (cx - v[4]) / v[0] * z, cy - (cy - v[5]) / v[3] * z); }}>+</button>
+        </div>
+      )}
       {selChip && (
         <button
           onClick={eraseSelection}
@@ -5096,7 +5253,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
         onCopy={copySelection} onPaste={pasteClipboard}
         canCopy={hasSelection} canPaste={hasClipboard}
         emoji={emoji} setEmoji={setEmoji}
-        gridMode={gridMode} onCycleGrid={() => setGridMode((g) => ({ off: 'grid', grid: 'dots', dots: 'lines', lines: 'off' }[g]))}
+        gridSize={gridSize} onGridMode={setGridMode} onGridSize={setGridSize} gridMode={gridMode} onCycleGrid={() => setGridMode((g) => ({ off: 'grid', grid: 'dots', dots: 'lines', lines: 'off' }[g]))}
       />
       {rotateHandle && (
         <RotateHandle
@@ -5191,7 +5348,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
   const toggleMinimize = useCallback((id, val) => {
     setWidgets((prev) => ({ ...prev, [id]: { ...prev[id], minimized: val } }));
   }, []);
-  const activeWidgetFlags = { timer: !!widgets.timer, calculator: !!widgets.calculator, laser: !!widgets.laser, dice: !!widgets.dice, ruler: !!widgets.ruler, spotlight: !!widgets.spotlight };
+  const activeWidgetFlags = { timer: !!widgets.timer, calculator: !!widgets.calculator, laser: !!widgets.laser, dice: !!widgets.dice, ruler: !!widgets.ruler, spotlight: !!widgets.spotlight, ...Object.fromEntries(NB_NEW_TOOLS.map((x) => [x.id, !!widgets[x.id]])) };
 
   const slidesRef = useRef(slides);
   const activeIndexRef = useRef(activeIndex);
@@ -5798,6 +5955,8 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
           </div>
           <CanvasViewport ref={viewportRef} initialBg={activeSlide?.bg} onContentChange={handleContentChange} />
 
+          <NovaTools3 widgets={widgets} closeWidget={closeWidget} toggleMinimize={toggleMinimize} boundsRef={canvasStageRef} />
+
           {widgets.laser && (
             <LaserPointerOverlay containerRef={canvasStageRef} color="#38bdf8" />
           )}
@@ -5898,7 +6057,17 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
 /* ============================== APP ROOT ============================== */
 const VIEWS = { SPLASH: 'VIEW_SPLASH', HOME: 'VIEW_HOME', CANVAS: 'VIEW_CANVAS' };
 function App() {
-  const [view, setView] = useState(VIEWS.SPLASH);
+  const [settings, setSettingsState] = useState(nbLoadSettings);
+  const [panel, setPanel] = useState(null); // null | tab id
+  const setSettings = useCallback((patch) => setSettingsState((p) => ({ ...p, ...patch })), []);
+  useEffect(() => { nbApplyTheme(settings); nbSaveSettings(settings); }, [settings]);
+  useEffect(() => {
+    if (settings.mode !== 'auto' || !window.matchMedia) return;
+    const mq = matchMedia('(prefers-color-scheme: light)'); const h = () => nbApplyTheme(settings);
+    mq.addEventListener('change', h); return () => mq.removeEventListener('change', h);
+  }, [settings]);
+  const ctxVal = useMemo(() => ({ s: settings, set: setSettings, open: (tab) => setPanel(tab || 'appearance') }), [settings, setSettings]);
+  const [view, setView] = useState(() => (nbLoadSettings().splash === false ? VIEWS.HOME : VIEWS.SPLASH));
   const [activeSession, setActiveSession] = useState(null);
   const [sessions, setSessions] = useState(() => loadSessions());
   // Set when the PREVIOUS page session did not close cleanly (power loss, crash, killed tab).
@@ -5933,7 +6102,10 @@ function App() {
   }, [enterCanvas]);
 
   return (
+    <SettingsCtx.Provider value={ctxVal}>
     <div className="h-full w-full relative">
+      {settings.aurora && view === VIEWS.HOME && <div className="nb-aurora" aria-hidden="true"><i /><i /><i /></div>}
+      {panel && <SettingsPanel tab={panel} onClose={() => setPanel(null)} />}
       {view === VIEWS.SPLASH && (
         <SplashScreen onDone={handleSplashDone} />
       )}
@@ -5957,8 +6129,760 @@ function App() {
         />
       )}
     </div>
+    </SettingsCtx.Provider>
   );
 }
+
+/* ============================== NOVABOARD 3.0 : SETTINGS + THEMES ============================== */
+
+const NB_SET_KEY = 'nb3_settings';
+const NB_THEMES = [
+  { id: 'nova',   label: 'Nova',   a: '#38bdf8', b: '#818cf8' },
+  { id: 'aurora', label: 'Aurora', a: '#34d399', b: '#22d3ee' },
+  { id: 'sunset', label: 'Sunset', a: '#fb923c', b: '#f43f5e' },
+  { id: 'orchid', label: 'Orchid', a: '#c084fc', b: '#ec4899' },
+  { id: 'ocean',  label: 'Ocean',  a: '#3b82f6', b: '#06b6d4' },
+  { id: 'forest', label: 'Forest', a: '#84cc16', b: '#10b981' },
+  { id: 'gold',   label: 'Gold',   a: '#fbbf24', b: '#f97316' },
+  { id: 'steel',  label: 'Steel',  a: '#94a3b8', b: '#cbd5e1' },
+];
+const NB_DEFAULTS = {
+  org: '', tagline: '', userName: '', avatar: null,
+  mode: 'dark', theme: 'nova', accent: null,
+  blur: 14, radius: 1, fontScale: 1, motion: true, aurora: true, sound: true,
+  splash: true, font: 'default', glow: true, penColor: '#ffffff', penWidth: 6, defGrid: 'off', gridSize: 32,
+};
+function nbLoadSettings() {
+  try { return { ...NB_DEFAULTS, ...(JSON.parse(localStorage.getItem(NB_SET_KEY)) || {}) }; } catch (e) { return { ...NB_DEFAULTS }; }
+}
+function nbSaveSettings(s) { try { localStorage.setItem(NB_SET_KEY, JSON.stringify(s)); } catch (e) { /* quota: ignore */ } }
+
+const nbHex2rgb = (h) => { const n = parseInt(h.replace('#', ''), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+const nbMix = (rgb, t, k) => rgb.map((v, i) => Math.round(v + (t[i] - v) * k));
+function nbShades(hex, prefix, root) {
+  const c = nbHex2rgb(hex), W = [255, 255, 255], K = [0, 0, 0];
+  const set = (n, v) => root.style.setProperty(`--${prefix}-${n}`, v.join(' '));
+  set(50, nbMix(c, W, .9)); set(100, nbMix(c, W, .8)); set(200, nbMix(c, W, .6)); set(300, nbMix(c, W, .4)); set(400, nbMix(c, W, .15));
+  set(500, c); set(600, nbMix(c, K, .15)); set(700, nbMix(c, K, .3)); set(800, nbMix(c, K, .5)); set(900, nbMix(c, K, .65));
+}
+const NB_SLATE_DARK = { 50: '248 250 252', 100: '241 245 249', 200: '226 232 240', 300: '203 213 225', 400: '148 163 184', 500: '100 116 139', 600: '71 85 105', 700: '51 65 85', 800: '30 41 59', 900: '15 23 42', 950: '2 6 23' };
+const NB_SLATE_LIGHT = { 50: '2 6 23', 100: '15 23 42', 200: '30 41 59', 300: '51 65 85', 400: '71 85 105', 500: '100 116 139', 600: '148 163 184', 700: '203 213 225', 800: '226 232 240', 900: '241 245 249', 950: '248 250 252' };
+
+function nbApplyTheme(s) {
+  const root = document.documentElement;
+  const dark = s.mode === 'auto' ? !(window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) : s.mode !== 'light';
+  root.dataset.mode = dark ? 'dark' : 'light';
+  root.dataset.motion = s.motion ? 'on' : 'off';
+  root.dataset.font = s.font || 'default'; root.dataset.glow = s.glow === false ? 'off' : 'on';
+  const th = NB_THEMES.find((t) => t.id === s.theme) || NB_THEMES[0];
+  const a = s.accent || th.a;
+  const b = s.accent ? '#' + nbMix(nbHex2rgb(a), nbHex2rgb('#818cf8'), .45).map((v) => v.toString(16).padStart(2, '0')).join('') : th.b;
+  nbShades(a, 'a', root); nbShades(b, 'b', root);
+  const sl = dark ? NB_SLATE_DARK : NB_SLATE_LIGHT;
+  Object.keys(sl).forEach((k) => root.style.setProperty(`--s-${k}`, sl[k]));
+  root.style.setProperty('--blur', s.blur + 'px');
+  root.style.setProperty('--rk', s.radius);
+  root.style.setProperty('--fs', s.fontScale);
+  root.style.setProperty('--on-accent', '#04101c');
+  const meta = document.querySelector('meta[name=theme-color]');
+  if (meta) meta.content = dark ? '#090d16' : '#eef2f9';
+}
+nbApplyTheme(nbLoadSettings());
+
+const SettingsCtx = React.createContext({ s: NB_DEFAULTS, set: () => {}, open: () => {} });
+const useSettings = () => React.useContext(SettingsCtx);
+
+function nbResizeAvatar(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image(); const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const S = 256, c = document.createElement('canvas'); c.width = c.height = S;
+      const m = Math.min(img.width, img.height), sx = (img.width - m) / 2, sy = (img.height - m) / 2;
+      c.getContext('2d').drawImage(img, sx, sy, m, m, 0, 0, S, S);
+      URL.revokeObjectURL(url); resolve(c.toDataURL('image/jpeg', 0.86));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Not an image')); };
+    img.src = url;
+  });
+}
+
+function Avatar({ size = 40 }) {
+  const { s } = useSettings();
+  const ini = (s.org || s.userName || 'N').trim().charAt(0).toUpperCase();
+  return s.avatar
+    ? <img src={s.avatar} alt="" className="nb-avatar" style={{ width: size, height: size }} />
+    : <div className="nb-avatar" style={{ width: size, height: size, fontSize: size * 0.42 }}>{ini}</div>;
+}
+
+function ModeToggle({ className = '' }) {
+  const { s, set } = useSettings();
+  const isDark = document.documentElement.dataset.mode !== 'light';
+  return (
+    <button
+      onClick={() => set({ mode: isDark ? 'light' : 'dark' })}
+      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-label="Toggle light / dark mode"
+      className={`navdock-btn focus-ring ${className}`}
+    >
+      {isDark
+        ? <Svg size={16}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></Svg>
+        : <Svg size={16}><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></Svg>}
+    </button>
+  );
+}
+const IGear = (p) => <Svg {...p}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></Svg>;
+
+function HomeBar() {
+  const { open } = useSettings();
+  return (
+    <div className="flex items-center gap-1.5 glass rounded-2xl p-1.5 flex-shrink-0">
+      <ModeToggle />
+      <button onClick={() => open()} title="Settings" aria-label="Settings" className="navdock-btn focus-ring"><IGear size={16} /></button>
+      <button onClick={() => open('profile')} title="Profile" aria-label="Profile" className="focus-ring rounded-full"><Avatar size={32} /></button>
+    </div>
+  );
+}
+
+function OrgBadge() {
+  const { s, open } = useSettings();
+  return (
+    <div className="flex items-center gap-1.5">
+      <button onClick={() => open('profile')} title={s.org || 'Profile & settings'} className="flex items-center gap-2 rounded-full pl-1 pr-2.5 py-0.5 hover:bg-slate-800/50 focus-ring">
+        <Avatar size={24} />
+        {s.org && <span className="hidden lg:inline text-xs text-slate-300 max-w-[140px] truncate">{s.org}</span>}
+      </button>
+      <ModeToggle />
+      <button onClick={() => open()} title="Settings" aria-label="Settings" className="navdock-btn focus-ring"><IGear size={15} /></button>
+    </div>
+  );
+}
+
+function SRow({ label, hint, children }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-2.5">
+      <div className="min-w-0"><div className="text-sm text-slate-100">{label}</div>{hint && <div className="text-[11px] text-slate-500">{hint}</div>}</div>
+      {children}
+    </div>
+  );
+}
+function STog({ k }) {
+  const { s, set } = useSettings();
+  return <button role="switch" aria-checked={!!s[k]} onClick={() => set({ [k]: !s[k] })} className={`nb-toggle ${s[k] ? 'on' : ''}`} />;
+}
+
+function SettingsPanel({ tab: startTab, onClose }) {
+  const { s, set } = useSettings();
+  const [tab, setTab] = useState(startTab || 'appearance');
+  const [err, setErr] = useState('');
+  const fileRef = useRef(null);
+  const importRef = useRef(null);
+  const tabs = [['profile', 'Profile'], ['appearance', 'Look'], ['interface', 'Interface'], ['board', 'Board'], ['data', 'Data']];
+  const pickAvatar = async (f) => {
+    if (!f) return; setErr('');
+    try { set({ avatar: await nbResizeAvatar(f) }); } catch (e) { setErr('Could not read that image.'); }
+  };
+  const exportSettings = () => {
+    const blob = new Blob([JSON.stringify(s, null, 1)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'novaboard-settings.json'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+  const importSettings = (f) => {
+    if (!f) return; const r = new FileReader();
+    r.onload = () => { try { set({ ...NB_DEFAULTS, ...JSON.parse(r.result) }); setErr(''); } catch (e) { setErr('Invalid settings file.'); } };
+    r.readAsText(f);
+  };
+  return (
+    <div className="fixed inset-0 z-[80] flex justify-end bg-black/50" onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="nb-drawer glass-strong h-full w-full max-w-md flex flex-col rounded-none sm:rounded-l-3xl">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-700/40">
+          <IGear size={18} className="text-cyan-300" />
+          <div className="flex-1"><div className="text-base font-semibold text-slate-100">Settings</div><div className="mono text-[10px] text-slate-500">NOVABOARD 3.0</div></div>
+          <button onClick={onClose} aria-label="Close settings" className="navdock-btn focus-ring"><IX size={16} /></button>
+        </div>
+        <div className="flex gap-1.5 px-5 pt-3">
+          {tabs.map(([id, l]) => <button key={id} onClick={() => setTab(id)} className={`nb-chip ${tab === id ? 'on' : 'text-slate-400'}`}>{l}</button>)}
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-1">
+          {err && <div className="text-xs text-rose-400 mb-2">{err}</div>}
+
+          {tab === 'profile' && (<>
+            <div className="flex items-center gap-4 pb-3">
+              <Avatar size={72} />
+              <div className="flex flex-col gap-2">
+                <button className="nb-btn pri" onClick={() => fileRef.current?.click()}>Upload picture</button>
+                {s.avatar && <button className="nb-btn sec" onClick={() => set({ avatar: null })}>Remove</button>}
+              </div>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; pickAvatar(f); }} />
+            </div>
+            <label className="block text-xs text-slate-400 mb-1">Organiser / school name</label>
+            <input className="nb-in" maxLength={60} value={s.org} placeholder="e.g. Greenwood High School" onChange={(e) => set({ org: e.target.value })} />
+            <label className="block text-xs text-slate-400 mt-3 mb-1">Your name (greeting)</label>
+            <input className="nb-in" maxLength={40} value={s.userName} placeholder="e.g. Ms. Rao" onChange={(e) => set({ userName: e.target.value })} />
+            <label className="block text-xs text-slate-400 mt-3 mb-1">Tagline (optional)</label>
+            <input className="nb-in" maxLength={80} value={s.tagline} placeholder="e.g. Grade 8 · Mathematics" onChange={(e) => set({ tagline: e.target.value })} />
+            <p className="text-[11px] text-slate-500 pt-2">Stored only on this device.</p>
+          </>)}
+
+          {tab === 'appearance' && (<>
+            <div className="text-xs text-slate-400 mb-1">Mode</div>
+            <div className="flex gap-2 mb-3">
+              {[['dark', 'Dark'], ['light', 'Light'], ['auto', 'System']].map(([id, l]) => <button key={id} onClick={() => set({ mode: id })} className={`nb-chip flex-1 text-center ${s.mode === id ? 'on' : 'text-slate-400'}`}>{l}</button>)}
+            </div>
+            <div className="text-xs text-slate-400 mb-2">Theme</div>
+            <div className="grid grid-cols-4 gap-3 mb-3">
+              {NB_THEMES.map((t) => (
+                <button key={t.id} onClick={() => set({ theme: t.id, accent: null })} title={t.label} className="flex flex-col items-center gap-1">
+                  <span className={`nb-swatch ${!s.accent && s.theme === t.id ? 'on' : ''}`} style={{ background: `linear-gradient(135deg, ${t.a}, ${t.b})` }} />
+                  <span className="text-[10px] text-slate-400">{t.label}</span>
+                </button>
+              ))}
+            </div>
+            <SRow label="Custom accent colour" hint="Overrides the theme">
+              <div className="flex items-center gap-2">
+                {s.accent && <button className="nb-btn sec" onClick={() => set({ accent: null })}>Reset</button>}
+                <input type="color" value={s.accent || (NB_THEMES.find((t) => t.id === s.theme) || NB_THEMES[0]).a} onChange={(e) => set({ accent: e.target.value })} className="w-10 h-8 rounded-md bg-transparent border-0 cursor-pointer" aria-label="Custom accent colour" />
+              </div>
+            </SRow>
+            <SRow label="Aurora background" hint="Animated glow on the home screen"><STog k="aurora" /></SRow>
+            <SRow label="Glow effects" hint="Soft glow on cards and avatar"><STog k="glow" /></SRow>
+            <div className="text-xs text-slate-400 mt-2 mb-2">Font style</div>
+            <div className="flex flex-wrap gap-2">
+              {[['default', 'Default'], ['system', 'System'], ['rounded', 'Rounded'], ['serif', 'Serif'], ['mono', 'Mono']].map(([id, l]) => <button key={id} onClick={() => set({ font: id })} className={`nb-chip ${s.font === id ? 'on' : 'text-slate-400'}`}>{l}</button>)}
+            </div>
+          </>)}
+
+          {tab === 'interface' && (<>
+            <div className="py-2"><div className="flex justify-between text-sm text-slate-100"><span>Glass blur</span><span className="mono text-xs text-slate-500">{s.blur}px</span></div><input type="range" min="0" max="32" value={s.blur} onChange={(e) => set({ blur: +e.target.value })} className="nb-range" /></div>
+            <div className="py-2"><div className="flex justify-between text-sm text-slate-100"><span>Corner roundness</span><span className="mono text-xs text-slate-500">{Math.round(s.radius * 100)}%</span></div><input type="range" min="0" max="2" step="0.1" value={s.radius} onChange={(e) => set({ radius: +e.target.value })} className="nb-range" /></div>
+            <div className="py-2"><div className="flex justify-between text-sm text-slate-100"><span>Interface size</span><span className="mono text-xs text-slate-500">{Math.round(s.fontScale * 100)}%</span></div><input type="range" min="0.85" max="1.3" step="0.05" value={s.fontScale} onChange={(e) => set({ fontScale: +e.target.value })} className="nb-range" /></div>
+            <SRow label="Animations" hint="Turn off for low-power boards"><STog k="motion" /></SRow>
+            <SRow label="Launch animation" hint="Droplet intro when NovaBoard opens"><STog k="splash" /></SRow>
+            <SRow label="Startup sound" hint="Plop and chime during the intro"><STog k="sound" /></SRow>
+          </>)}
+
+          {tab === 'board' && (<>
+            <p className="text-[11px] text-slate-500 pb-1">Defaults used when a board opens. You can still change them on the board.</p>
+            <SRow label="Default pen colour">
+              <input type="color" value={s.penColor} onChange={(e) => set({ penColor: e.target.value })} className="w-10 h-8 rounded-md bg-transparent border-0 cursor-pointer" aria-label="Default pen colour" />
+            </SRow>
+            <div className="py-2"><div className="flex justify-between text-sm text-slate-100"><span>Default pen width</span><span className="mono text-xs text-slate-500">{s.penWidth}px</span></div><input type="range" min="2" max="24" value={s.penWidth} onChange={(e) => set({ penWidth: +e.target.value })} className="nb-range" /></div>
+            <div className="text-xs text-slate-400 mt-2 mb-2">Default background guide</div>
+            <div className="flex flex-wrap gap-2">
+              {NB_GRID_OPTS.map(([id, l]) => <button key={id} onClick={() => set({ defGrid: id })} className={`nb-chip ${s.defGrid === id ? 'on' : 'text-slate-400'}`}>{l}</button>)}
+            </div>
+            <div className="py-3"><div className="flex justify-between text-sm text-slate-100"><span>Guide spacing</span><span className="mono text-xs text-slate-500">{s.gridSize}px</span></div><input type="range" min="16" max="80" step="4" value={s.gridSize} onChange={(e) => set({ gridSize: +e.target.value })} className="nb-range" /></div>
+          </>)}
+
+          {tab === 'data' && (<>
+            <SRow label="Export settings" hint="Move your setup to another device"><button className="nb-btn" onClick={exportSettings}>Export</button></SRow>
+            <SRow label="Import settings"><button className="nb-btn" onClick={() => importRef.current?.click()}>Import</button></SRow>
+            <input ref={importRef} type="file" accept=".json,application/json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; importSettings(f); }} />
+            <SRow label="Reset all settings" hint="Profile, theme and interface"><button className="nb-btn sec" onClick={() => set({ ...NB_DEFAULTS })}>Reset</button></SRow>
+            <p className="text-[11px] text-slate-500 pt-2">Boards live in your browser's storage. Use Save (.novaboard) in the board for backups.</p>
+          </>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HeroGreeting() {
+  const now = useClock();
+  const { s, open } = useSettings();
+  return (
+    <div className="flex items-center gap-4 min-w-0">
+      <button onClick={() => open('profile')} className="focus-ring rounded-full flex-shrink-0" title="Edit profile"><Avatar size={64} /></button>
+      <div className="min-w-0">
+        <div className="mono text-xs text-cyan-400/80 tracking-wider mb-1">{formatDateLong(now).toUpperCase()}</div>
+        <h1 className="text-3xl sm:text-5xl font-semibold text-slate-100 leading-tight">
+          {greetingFor(now)}{s.userName ? `, ${s.userName}` : ''}.
+        </h1>
+        <p className="text-slate-400 mt-1.5 max-w-md truncate">
+          {s.org ? <span className="text-slate-200 font-medium">{s.org}</span> : 'Pick up where you left off, or start a fresh board.'}
+          {s.org && s.tagline ? <span> · {s.tagline}</span> : null}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+
+/* ============================== NOVABOARD 3.0 : NEW SMART TOOLS ============================== */
+
+const nbLS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* ignore */ } },
+};
+function useStored(key, init) {
+  const [v, setV] = useState(() => nbLS.get(key, init));
+  useEffect(() => { nbLS.set(key, v); }, [key, v]);
+  return [v, setV];
+}
+const nbShuffle = (arr) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const nbParseNames = (txt) => txt.split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
+
+const IPoll = (p) => <Svg {...p}><path d="M4 20V10M10 20V4M16 20v-8M22 20H2" /></Svg>;
+const ITrophy = (p) => <Svg {...p}><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z" /><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" /></Svg>;
+const IUsers = (p) => <Svg {...p}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><circle cx="17" cy="9" r="2.5" /><path d="M17.5 14.5A5 5 0 0 1 21.5 19" /></Svg>;
+const IShuffle = (p) => <Svg {...p}><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" /></Svg>;
+const IMic = (p) => <Svg {...p}><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v4" /></Svg>;
+const IQr = (p) => <Svg {...p}><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><path d="M14 14h3v3h-3zM20 14v0M17 20h4M20 17v0" /></Svg>;
+const IChecklist = (p) => <Svg {...p}><path d="m3 6 2 2 3-3M3 13l2 2 3-3M11 7h10M11 14h10M3 20h2M11 20h10" /></Svg>;
+const IConvert = (p) => <Svg {...p}><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" /></Svg>;
+const IProtractor = (p) => <Svg {...p}><path d="M3 18a9 9 0 0 1 18 0zM12 18v-4M6.3 13.5l1.5 1.3M17.7 13.5l-1.5 1.3" /></Svg>;
+const IShade = (p) => <Svg {...p}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 12h18" fill="none" /><rect x="3" y="4" width="18" height="8" fill="currentColor" stroke="none" opacity=".35" /></Svg>;
+const IClockFace = (p) => <Svg {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></Svg>;
+
+/* ---- shared mini-wrapper so every new tool looks the same ---- */
+function Tool({ id, title, icon, width = 260, pos, w, boundsRef, close, mini, children }) {
+  return (
+    <WidgetWindow
+      title={title} icon={icon} width={width} initialPos={pos} boundsRef={boundsRef}
+      minimized={w.minimized} onMinimize={() => mini(id, true)} onRestore={() => mini(id, false)} onClose={() => close(id)}
+    >
+      <div className="p-3 space-y-2.5 text-slate-200">{children}</div>
+    </WidgetWindow>
+  );
+}
+
+/* ---- Live Poll ---- */
+function PollTool() {
+  const [q, setQ] = useStored('nb3_pollq', 'Quick poll');
+  const [opts, setOpts] = useStored('nb3_poll', ['A', 'B', 'C', 'D'].map((l) => ({ l, n: 0 })));
+  const total = opts.reduce((a, o) => a + o.n, 0);
+  const bump = (i, d) => setOpts((p) => p.map((o, j) => (j === i ? { ...o, n: Math.max(0, o.n + d) } : o)));
+  return (<>
+    <input className="nb-in" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Poll question" />
+    {opts.map((o, i) => (
+      <div key={i} className="space-y-1">
+        <div className="flex items-center gap-1.5">
+          <input className="nb-in !w-24" value={o.l} onChange={(e) => setOpts((p) => p.map((x, j) => (j === i ? { ...x, l: e.target.value } : x)))} />
+          <div className="flex-1" />
+          <button className="nb-btn sec" onClick={() => bump(i, -1)}>−</button>
+          <span className="mono text-sm w-6 text-center tabular-nums">{o.n}</span>
+          <button className="nb-btn" onClick={() => bump(i, 1)}>+</button>
+        </div>
+        <div className="h-1.5 rounded-full bg-slate-700/40 overflow-hidden"><div className="h-full rounded-full" style={{ width: total ? `${(o.n / total) * 100}%` : 0, background: 'linear-gradient(90deg, rgb(var(--a-400)), rgb(var(--b-400)))', transition: 'width .3s ease' }} /></div>
+      </div>
+    ))}
+    <div className="flex items-center gap-2">
+      <span className="mono text-[11px] text-slate-500 flex-1">{total} vote{total === 1 ? '' : 's'}</span>
+      <button className="nb-btn sec" onClick={() => setOpts((p) => [...p, { l: String.fromCharCode(65 + p.length), n: 0 }].slice(0, 8))}>+ Option</button>
+      <button className="nb-btn sec" onClick={() => setOpts((p) => p.map((o) => ({ ...o, n: 0 })))}>Reset</button>
+    </div>
+  </>);
+}
+
+/* ---- Scoreboard ---- */
+function ScoreTool() {
+  const [teams, setTeams] = useStored('nb3_teams', [{ n: 'Team 1', s: 0 }, { n: 'Team 2', s: 0 }]);
+  const top = Math.max(...teams.map((t) => t.s));
+  const up = (i, d) => setTeams((p) => p.map((t, j) => (j === i ? { ...t, s: t.s + d } : t)));
+  return (<>
+    {teams.map((t, i) => (
+      <div key={i} className={`flex items-center gap-1.5 rounded-xl p-1.5 ${t.s === top && top > 0 ? 'bg-cyan-500/10 ring-1 ring-cyan-400/40' : ''}`}>
+        <input className="nb-in" value={t.n} onChange={(e) => setTeams((p) => p.map((x, j) => (j === i ? { ...x, n: e.target.value } : x)))} />
+        <button className="nb-btn sec" onClick={() => up(i, -1)}>−</button>
+        <span className="mono text-xl w-10 text-center tabular-nums nb-pop" key={t.s}>{t.s}</span>
+        <button className="nb-btn" onClick={() => up(i, 1)}>+</button>
+        <button className="nb-btn" onClick={() => up(i, 5)}>+5</button>
+      </div>
+    ))}
+    <div className="flex gap-2">
+      <button className="nb-btn sec" onClick={() => setTeams((p) => [...p, { n: `Team ${p.length + 1}`, s: 0 }].slice(0, 8))}>+ Team</button>
+      {teams.length > 1 && <button className="nb-btn sec" onClick={() => setTeams((p) => p.slice(0, -1))}>− Team</button>}
+      <button className="nb-btn sec" onClick={() => setTeams((p) => p.map((t) => ({ ...t, s: 0 })))}>Reset</button>
+    </div>
+  </>);
+}
+
+/* ---- Name picker (shares the class list with Group maker) ---- */
+function NamesBox() {
+  const [txt, setTxt] = useStored('nb3_names', '');
+  return [txt, setTxt, (
+    <textarea className="nb-in" rows={4} value={txt} onChange={(e) => setTxt(e.target.value)} placeholder="One name per line (or comma separated)" aria-label="Class list" />
+  )];
+}
+function PickerTool() {
+  const [txt, setTxt, box] = NamesBox();
+  const [shown, setShown] = useState('—');
+  const [done, setDone] = useState([]);
+  const [skip, setSkip] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const pick = () => {
+    const all = nbParseNames(txt); const pool = skip ? all.filter((n) => !done.includes(n)) : all;
+    if (!pool.length) { setShown(all.length ? 'All picked!' : 'Add names'); return; }
+    const win = pool[Math.floor(Math.random() * pool.length)];
+    setBusy(true); let i = 0;
+    const iv = setInterval(() => {
+      setShown(pool[Math.floor(Math.random() * pool.length)]);
+      if (++i > 14) { clearInterval(iv); setShown(win); setDone((d) => [...d, win]); setBusy(false); }
+    }, 70);
+  };
+  return (<>
+    {box}
+    <div className="rounded-xl py-4 text-center text-2xl font-semibold truncate px-2" style={{ background: 'linear-gradient(135deg, rgb(var(--a-400) / .18), rgb(var(--b-400) / .18))' }}>{shown}</div>
+    <div className="flex items-center gap-2">
+      <button className="nb-btn pri flex-1" disabled={busy} onClick={pick}>Pick random</button>
+      <button className="nb-btn sec" onClick={() => { setDone([]); setShown('—'); }}>Reset</button>
+    </div>
+    <label className="flex items-center gap-2 text-[11px] text-slate-400"><input type="checkbox" checked={skip} onChange={(e) => setSkip(e.target.checked)} /> Don't repeat names ({done.length} picked)</label>
+  </>);
+}
+
+/* ---- Group maker ---- */
+function GroupTool() {
+  const [txt, setTxt, box] = NamesBox();
+  const [n, setN] = useState(3);
+  const [groups, setGroups] = useState([]);
+  const make = () => {
+    const names = nbShuffle(nbParseNames(txt)); const k = Math.max(1, Math.min(n, names.length || 1));
+    const g = Array.from({ length: k }, () => []); names.forEach((x, i) => g[i % k].push(x)); setGroups(g);
+  };
+  return (<>
+    {box}
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-slate-400">Groups</span>
+      <button className="nb-btn sec" onClick={() => setN((v) => Math.max(2, v - 1))}>−</button>
+      <span className="mono w-5 text-center">{n}</span>
+      <button className="nb-btn sec" onClick={() => setN((v) => Math.min(10, v + 1))}>+</button>
+      <button className="nb-btn pri flex-1" onClick={make}><span className="inline-flex items-center gap-1"><IShuffle size={12} /> Shuffle</span></button>
+    </div>
+    <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto">
+      {groups.map((g, i) => (
+        <div key={i} className="rounded-xl p-2 bg-slate-800/50 border border-slate-700/50 nb-pop">
+          <div className="mono text-[10px] text-cyan-300 mb-1">GROUP {i + 1}</div>
+          {g.map((x, j) => <div key={j} className="text-xs truncate">{x}</div>)}
+        </div>
+      ))}
+    </div>
+  </>);
+}
+
+/* ---- Noise meter (microphone level, nothing recorded or stored) ---- */
+function NoiseTool() {
+  const [lvl, setLvl] = useState(0);
+  const [limit, setLimit] = useState(60);
+  const [state, setState] = useState('idle'); // idle | on | denied
+  const stopRef = useRef(null);
+  const start = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const AC = window.AudioContext || window.webkitAudioContext; const ctx = new AC();
+      const an = ctx.createAnalyser(); an.fftSize = 512; ctx.createMediaStreamSource(stream).connect(an);
+      const buf = new Uint8Array(an.fftSize); let raf = 0, sm = 0;
+      const loop = () => {
+        an.getByteTimeDomainData(buf); let sum = 0;
+        for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v; }
+        const rms = Math.sqrt(sum / buf.length); const target = Math.min(100, Math.round(Math.pow(rms * 6, 0.8) * 100));
+        sm = sm * 0.8 + target * 0.2; setLvl(Math.round(sm)); raf = requestAnimationFrame(loop);
+      };
+      loop(); setState('on');
+      stopRef.current = () => { cancelAnimationFrame(raf); stream.getTracks().forEach((t) => t.stop()); ctx.close(); };
+    } catch (e) { setState('denied'); }
+  };
+  const stop = () => { stopRef.current && stopRef.current(); stopRef.current = null; setState('idle'); setLvl(0); };
+  useEffect(() => () => { stopRef.current && stopRef.current(); }, []);
+  const over = lvl > limit; const col = over ? '#f43f5e' : lvl > limit * 0.7 ? '#fbbf24' : '#34d399';
+  return (<>
+    <div className="rounded-xl py-3 text-center" style={{ background: `${col}22` }}>
+      <div className="text-3xl font-semibold mono tabular-nums" style={{ color: col }}>{lvl}</div>
+      <div className="text-xs" style={{ color: col }}>{state !== 'on' ? 'Microphone off' : over ? 'Too loud — quiet please!' : lvl > limit * 0.7 ? 'Getting noisy' : 'Nice and quiet'}</div>
+    </div>
+    <div className="h-2 rounded-full bg-slate-700/40 overflow-hidden relative"><div className="h-full rounded-full" style={{ width: `${lvl}%`, background: col, transition: 'width .1s linear' }} /><div className="absolute top-0 bottom-0 w-0.5 bg-slate-200/70" style={{ left: `${limit}%` }} /></div>
+    <div className="flex items-center gap-2 text-xs text-slate-400">Limit <input type="range" min="20" max="95" value={limit} onChange={(e) => setLimit(+e.target.value)} className="nb-range" /></div>
+    <button className={`nb-btn w-full ${state === 'on' ? 'sec' : 'pri'}`} onClick={state === 'on' ? stop : start}>{state === 'on' ? 'Stop' : 'Start listening'}</button>
+    {state === 'denied' && <div className="text-[11px] text-rose-400">Microphone blocked. Allow access in your browser. Audio is never recorded.</div>}
+  </>);
+}
+
+/* ---- QR code ---- */
+function QrTool() {
+  const [txt, setTxt] = useState('https://');
+  const ref = useRef(null);
+  const [ok, setOk] = useState(true);
+  useEffect(() => {
+    const el = ref.current; if (!el) return; el.innerHTML = '';
+    if (!window.QRCode) { setOk(false); return; }
+    if (txt.trim().length < 2) return;
+    try { new window.QRCode(el, { text: txt, width: 200, height: 200, colorDark: '#000000', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.M }); } catch (e) { /* too long */ }
+  }, [txt]);
+  return (<>
+    <input className="nb-in" value={txt} onChange={(e) => setTxt(e.target.value)} placeholder="Link or text" aria-label="QR content" />
+    <div className="flex justify-center"><div ref={ref} className="p-2 bg-white rounded-xl" style={{ minHeight: 216, minWidth: 216 }} /></div>
+    {!ok && <div className="text-[11px] text-rose-400">QR library not loaded — check your internet connection.</div>}
+  </>);
+}
+
+/* ---- Agenda / checklist ---- */
+function AgendaTool() {
+  const [items, setItems] = useStored('nb3_agenda', []);
+  const [t, setT] = useState('');
+  const add = () => { if (t.trim()) { setItems((p) => [...p, { t: t.trim(), d: false }]); setT(''); } };
+  const done = items.filter((i) => i.d).length;
+  return (<>
+    <div className="flex gap-1.5"><input className="nb-in" value={t} placeholder="Add a lesson step…" onChange={(e) => setT(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} /><button className="nb-btn" onClick={add}>Add</button></div>
+    <div className="max-h-52 overflow-y-auto space-y-1">
+      {items.map((it, i) => (
+        <div key={i} className="flex items-center gap-2 group rounded-lg px-1.5 py-1 hover:bg-slate-800/40">
+          <input type="checkbox" checked={it.d} onChange={() => setItems((p) => p.map((x, j) => (j === i ? { ...x, d: !x.d } : x)))} />
+          <span className={`text-sm flex-1 ${it.d ? 'line-through text-slate-500' : ''}`}>{it.t}</span>
+          <button className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400" onClick={() => setItems((p) => p.filter((_, j) => j !== i))} aria-label="Delete"><IX size={12} /></button>
+        </div>
+      ))}
+      {!items.length && <div className="text-xs text-slate-500 text-center py-3">Plan your lesson steps and tick them off.</div>}
+    </div>
+    <div className="flex items-center gap-2"><div className="h-1.5 flex-1 rounded-full bg-slate-700/40 overflow-hidden"><div className="h-full" style={{ width: items.length ? `${(done / items.length) * 100}%` : 0, background: 'linear-gradient(90deg, rgb(var(--a-400)), rgb(var(--b-400)))' }} /></div><span className="mono text-[11px] text-slate-500">{done}/{items.length}</span>{done > 0 && <button className="nb-btn sec" onClick={() => setItems((p) => p.filter((i) => !i.d))}>Clear done</button>}</div>
+  </>);
+}
+
+/* ---- Unit converter ---- */
+const NB_UNITS = {
+  Length: { mm: .001, cm: .01, m: 1, km: 1000, in: .0254, ft: .3048, yd: .9144, mi: 1609.344 },
+  Mass: { g: .001, kg: 1, t: 1000, oz: .0283495, lb: .453592 },
+  Volume: { ml: .001, l: 1, 'fl oz': .0295735, gal: 3.78541 },
+  Speed: { 'm/s': 1, 'km/h': .277778, mph: .44704, kn: .514444 },
+  Time: { s: 1, min: 60, h: 3600, day: 86400, week: 604800 },
+  Temp: { '°C': 1, '°F': 1, K: 1 },
+};
+function nbConvert(cat, v, from, to) {
+  if (cat === 'Temp') {
+    const c = from === '°C' ? v : from === '°F' ? (v - 32) * 5 / 9 : v - 273.15;
+    return to === '°C' ? c : to === '°F' ? c * 9 / 5 + 32 : c + 273.15;
+  }
+  return v * NB_UNITS[cat][from] / NB_UNITS[cat][to];
+}
+function ConvertTool() {
+  const [cat, setCat] = useState('Length');
+  const keys = Object.keys(NB_UNITS[cat]);
+  const [from, setFrom] = useState('m'); const [to, setTo] = useState('ft'); const [val, setVal] = useState('1');
+  const setCategory = (c) => { setCat(c); const k = Object.keys(NB_UNITS[c]); setFrom(k[0]); setTo(k[1] || k[0]); };
+  const r = nbConvert(cat, parseFloat(val) || 0, from, to);
+  return (<>
+    <div className="flex flex-wrap gap-1">{Object.keys(NB_UNITS).map((c) => <button key={c} className={`nb-chip ${cat === c ? 'on' : 'text-slate-400'}`} onClick={() => setCategory(c)}>{c}</button>)}</div>
+    <div className="flex gap-1.5"><input className="nb-in" type="number" value={val} onChange={(e) => setVal(e.target.value)} /><select className="nb-in !w-24" value={from} onChange={(e) => setFrom(e.target.value)}>{keys.map((k) => <option key={k}>{k}</option>)}</select></div>
+    <div className="flex gap-1.5 items-center"><div className="nb-in mono truncate flex-1">{+r.toPrecision(7)}</div><select className="nb-in !w-24" value={to} onChange={(e) => setTo(e.target.value)}>{keys.map((k) => <option key={k}>{k}</option>)}</select></div>
+  </>);
+}
+
+/* ---- Analog + digital clock ---- */
+function ClockTool() {
+  const now = useClock();
+  const h = now.getHours() % 12, m = now.getMinutes(), s = now.getSeconds();
+  const ang = { h: (h + m / 60) * 30, m: (m + s / 60) * 6, s: s * 6 };
+  const hand = (a, len, w, col) => <line x1="100" y1="100" x2={100 + len * Math.sin(a * Math.PI / 180)} y2={100 - len * Math.cos(a * Math.PI / 180)} stroke={col} strokeWidth={w} strokeLinecap="round" />;
+  return (<>
+    <svg viewBox="0 0 200 200" className="w-full">
+      <circle cx="100" cy="100" r="94" fill="none" stroke="rgb(var(--a-400))" strokeOpacity=".5" strokeWidth="2" />
+      {Array.from({ length: 60 }, (_, i) => { const a = i * 6 * Math.PI / 180, big = i % 5 === 0; return <line key={i} x1={100 + (big ? 80 : 86) * Math.sin(a)} y1={100 - (big ? 80 : 86) * Math.cos(a)} x2={100 + 92 * Math.sin(a)} y2={100 - 92 * Math.cos(a)} stroke="currentColor" strokeOpacity={big ? .8 : .3} strokeWidth={big ? 2.5 : 1} />; })}
+      {[12, 3, 6, 9].map((n) => <text key={n} x={100 + 68 * Math.sin(n * 30 * Math.PI / 180)} y={100 - 68 * Math.cos(n * 30 * Math.PI / 180) + 6} textAnchor="middle" fontSize="18" fill="currentColor" fontFamily="JetBrains Mono, monospace">{n}</text>)}
+      {hand(ang.h, 50, 6, 'currentColor')}{hand(ang.m, 72, 4, 'currentColor')}{hand(ang.s, 80, 2, 'rgb(var(--a-400))')}
+      <circle cx="100" cy="100" r="5" fill="rgb(var(--a-400))" />
+    </svg>
+    <div className="text-center mono text-lg tabular-nums">{now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
+  </>);
+}
+
+/* ---- Protractor overlay (drag to move, buttons to rotate) ---- */
+function ProtractorOverlay({ boundsRef, onClose }) {
+  const R = 150, W = R * 2 + 24, H = R + 56;
+  const [st, setSt] = useState({ x: 140, y: 120, angle: 0 });
+  const ref = useRef(st); ref.current = st;
+  const down = (e) => {
+    if (e.button !== undefined && e.button !== 0) return; e.preventDefault();
+    const o = { px: e.clientX, py: e.clientY, x: ref.current.x, y: ref.current.y };
+    const mv = (ev) => {
+      let x = o.x + ev.clientX - o.px, y = o.y + ev.clientY - o.py; const el = boundsRef && boundsRef.current;
+      if (el) { const r = el.getBoundingClientRect(); x = Math.max(-W + 80, Math.min(x, r.width - 80)); y = Math.max(-H + 60, Math.min(y, r.height - 40)); }
+      setSt((p) => ({ ...p, x, y }));
+    };
+    const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); };
+    window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+  };
+  const rot = (d) => setSt((p) => ({ ...p, angle: (((p.angle + d) % 360) + 360) % 360 }));
+  const cx = W / 2, cy = R + 12, stop = (e) => e.stopPropagation();
+  const ticks = [];
+  for (let d = 0; d <= 180; d += 2) {
+    const a = d * Math.PI / 180, big = d % 10 === 0, mid = d % 5 === 0, l = big ? 16 : mid ? 11 : 6;
+    ticks.push(<line key={d} x1={cx + (R - l) * Math.cos(a)} y1={cy - (R - l) * Math.sin(a)} x2={cx + R * Math.cos(a)} y2={cy - R * Math.sin(a)} stroke="#0c4a6e" strokeWidth={big ? 1.4 : 0.8} />);
+    if (big && d > 0 && d < 180) {
+      ticks.push(<text key={'o' + d} x={cx + (R - 28) * Math.cos(a)} y={cy - (R - 28) * Math.sin(a) + 3} fontSize="9" textAnchor="middle" fill="#0c4a6e" fontFamily="JetBrains Mono, monospace">{d}</text>);
+      ticks.push(<text key={'i' + d} x={cx + (R - 44) * Math.cos(a)} y={cy - (R - 44) * Math.sin(a) + 3} fontSize="8" textAnchor="middle" fill="#0369a1" opacity=".7" fontFamily="JetBrains Mono, monospace">{180 - d}</text>);
+    }
+  }
+  const rb = 'w-7 h-6 rounded-md bg-sky-900/15 hover:bg-sky-900/30 text-sky-950 flex items-center justify-center focus-ring';
+  return (
+    <div className="absolute z-[26] select-none" style={{ left: st.x, top: st.y, width: W, height: H, transform: `rotate(${st.angle}deg)`, transformOrigin: '50% 80%', touchAction: 'none', cursor: 'grab' }} onPointerDown={down}>
+      <svg width={W} height={H} className="absolute inset-0 pointer-events-none">
+        <path d={`M ${cx - R} ${cy} A ${R} ${R} 0 0 1 ${cx + R} ${cy} Z`} fill="rgba(125,211,252,0.38)" stroke="#0369a1" strokeWidth="1.5" />
+        <path d={`M ${cx - 38} ${cy} A 38 38 0 0 1 ${cx + 38} ${cy} Z`} fill="rgba(255,255,255,0.35)" stroke="#0369a1" strokeWidth=".8" />
+        {ticks}<line x1={cx - R} y1={cy} x2={cx + R} y2={cy} stroke="#0c4a6e" strokeWidth="1.2" /><circle cx={cx} cy={cy} r="3" fill="#0c4a6e" />
+      </svg>
+      <div className="absolute left-0 right-0 flex items-center justify-center gap-1.5" style={{ top: cy + 8 }} onPointerDown={stop}>
+        <button className={rb} onClick={() => rot(-5)} title="Rotate left 5°"><IRotateCcw size={13} /></button>
+        <span className="mono text-[10px] text-sky-950 w-9 text-center">{st.angle}°</span>
+        <button className={rb} onClick={() => rot(5)} title="Rotate right 5°"><IRotate size={13} /></button>
+        <button className={rb} onClick={() => rot(90)} title="Rotate 90°">90°</button>
+        <button className={rb} onClick={onClose} title="Close protractor"><IX size={13} /></button>
+      </div>
+    </div>
+  );
+}
+
+/* ---- Screen shade: hide the board and reveal it step by step ---- */
+function ShadeOverlay({ boundsRef, onClose }) {
+  const [side, setSide] = useState('top'); const [size, setSize] = useState(0.5);
+  const horiz = side === 'top' || side === 'bottom';
+  const drag = (e) => {
+    e.preventDefault(); const el = boundsRef && boundsRef.current; if (!el) return; const r = el.getBoundingClientRect();
+    const mv = (ev) => {
+      let f = side === 'top' ? (ev.clientY - r.top) / r.height : side === 'bottom' ? (r.bottom - ev.clientY) / r.height : side === 'left' ? (ev.clientX - r.left) / r.width : (r.right - ev.clientX) / r.width;
+      setSize(Math.max(0.04, Math.min(1, f)));
+    };
+    const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); };
+    window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up);
+  };
+  const box = { position: 'absolute', zIndex: 27, background: 'linear-gradient(145deg, #1e293b, #0f172a)', boxShadow: '0 0 40px rgba(0,0,0,.5)' };
+  if (horiz) Object.assign(box, { left: 0, right: 0, height: `${size * 100}%`, [side]: 0 }); else Object.assign(box, { top: 0, bottom: 0, width: `${size * 100}%`, [side]: 0 });
+  const handlePos = { [side === 'top' ? 'bottom' : side === 'bottom' ? 'top' : side === 'left' ? 'right' : 'left']: 0 };
+  const sides = ['top', 'right', 'bottom', 'left'];
+  return (
+    <div style={box} onPointerDown={(e) => e.stopPropagation()}>
+      <div className="absolute flex items-center justify-center gap-2 bg-slate-950/70 text-slate-200" onPointerDown={drag}
+        style={{ ...handlePos, ...(horiz ? { left: 0, right: 0, height: 26, cursor: 'ns-resize' } : { top: 0, bottom: 0, width: 26, cursor: 'ew-resize', flexDirection: 'column' }), touchAction: 'none' }}>
+        <IGrip size={14} />
+        <button className="mono text-[10px] px-1.5 rounded bg-slate-700/70" onPointerDown={(e) => e.stopPropagation()} onClick={() => setSide(sides[(sides.indexOf(side) + 1) % 4])} title="Change side">⟳</button>
+        <button className="px-1" onPointerDown={(e) => e.stopPropagation()} onClick={onClose} title="Remove shade" aria-label="Remove shade"><IX size={12} /></button>
+      </div>
+    </div>
+  );
+}
+
+/* ---- Renders all 3.0 tools; mounted inside the board stage ---- */
+function NovaTools3({ widgets, closeWidget, toggleMinimize, boundsRef }) {
+  const base = { boundsRef, close: closeWidget, mini: toggleMinimize };
+  return (<>
+    {widgets.protractor && <ProtractorOverlay boundsRef={boundsRef} onClose={() => closeWidget('protractor')} />}
+    {widgets.shade && <ShadeOverlay boundsRef={boundsRef} onClose={() => closeWidget('shade')} />}
+    {widgets.poll && <Tool id="poll" title="Live Poll" icon={IPoll} pos={{ x: 300, y: 80 }} w={widgets.poll} {...base}><PollTool /></Tool>}
+    {widgets.score && <Tool id="score" title="Scoreboard" icon={ITrophy} width={300} pos={{ x: 340, y: 120 }} w={widgets.score} {...base}><ScoreTool /></Tool>}
+    {widgets.picker && <Tool id="picker" title="Name Picker" icon={IShuffle} pos={{ x: 380, y: 90 }} w={widgets.picker} {...base}><PickerTool /></Tool>}
+    {widgets.groups && <Tool id="groups" title="Group Maker" icon={IUsers} width={300} pos={{ x: 420, y: 100 }} w={widgets.groups} {...base}><GroupTool /></Tool>}
+    {widgets.noise && <Tool id="noise" title="Noise Meter" icon={IMic} pos={{ x: 460, y: 80 }} w={widgets.noise} {...base}><NoiseTool /></Tool>}
+    {widgets.qr && <Tool id="qr" title="QR Code" icon={IQr} width={260} pos={{ x: 500, y: 70 }} w={widgets.qr} {...base}><QrTool /></Tool>}
+    {widgets.agenda && <Tool id="agenda" title="Lesson Agenda" icon={IChecklist} width={280} pos={{ x: 540, y: 90 }} w={widgets.agenda} {...base}><AgendaTool /></Tool>}
+    {widgets.convert && <Tool id="convert" title="Unit Converter" icon={IConvert} width={280} pos={{ x: 580, y: 110 }} w={widgets.convert} {...base}><ConvertTool /></Tool>}
+    {widgets.clock && <Tool id="clock" title="Clock" icon={IClockFace} width={220} pos={{ x: 620, y: 70 }} w={widgets.clock} {...base}><ClockTool /></Tool>}
+  </>);
+}
+const NB_NEW_TOOLS = [
+  { id: 'poll', label: 'Live Poll', icon: IPoll }, { id: 'score', label: 'Scoreboard', icon: ITrophy },
+  { id: 'picker', label: 'Name Picker', icon: IShuffle }, { id: 'groups', label: 'Group Maker', icon: IUsers },
+  { id: 'noise', label: 'Noise Meter', icon: IMic }, { id: 'agenda', label: 'Lesson Agenda', icon: IChecklist },
+  { id: 'qr', label: 'QR Code', icon: IQr }, { id: 'convert', label: 'Unit Converter', icon: IConvert },
+  { id: 'clock', label: 'Clock', icon: IClockFace }, { id: 'protractor', label: 'Protractor', icon: IProtractor },
+  { id: 'shade', label: 'Screen Shade', icon: IShade },
+];
+
+
+/* ============================== 3.0 : COLOUR CANVAS + GRID MENU ============================== */
+function nbHexToHsv(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); const n = parseInt(m ? m[1] : 'ffffff', 16);
+  const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = 0;
+  if (d) h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return { h: (h * 60 + 360) % 360, s: mx ? d / mx : 0, v: mx };
+}
+function nbHsvToHex(h, s, v) {
+  const f = (n) => { const k = (n + h / 60) % 6; const x = v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); return Math.round(x * 255).toString(16).padStart(2, '0'); };
+  return '#' + f(5) + f(3) + f(1);
+}
+function ColorCanvas({ value, onChange }) {
+  const [hsv, setHsv] = useState(() => nbHexToHsv(value));
+  const cv = useRef(null);
+  useEffect(() => {
+    if (nbHsvToHex(hsv.h, hsv.s, hsv.v) === (value || '').toLowerCase()) return;
+    const n = nbHexToHsv(value); setHsv((p) => ({ h: n.s === 0 || n.v === 0 ? p.h : n.h, s: n.s, v: n.v }));
+  }, [value]);
+  useEffect(() => {
+    const c = cv.current; if (!c) return; const x = c.getContext('2d'); const W = c.width, H = c.height;
+    x.fillStyle = `hsl(${hsv.h}, 100%, 50%)`; x.fillRect(0, 0, W, H);
+    let g = x.createLinearGradient(0, 0, W, 0); g.addColorStop(0, '#fff'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+    g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, '#000'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  }, [hsv.h]);
+  const emit = (n) => { setHsv(n); onChange(nbHsvToHex(n.h, n.s, n.v)); };
+  const drag = (e) => {
+    e.preventDefault(); e.stopPropagation(); const el = e.currentTarget; el.setPointerCapture && el.setPointerCapture(e.pointerId);
+    const at = (ev) => { const r = el.getBoundingClientRect(); emit({ h: hsv.h, s: Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)), v: 1 - Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height)) }); };
+    at(e);
+    const mv = (ev) => at(ev); const up = () => { el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); };
+    el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  };
+  return (
+    <div className="space-y-2.5 mb-3">
+      <div className="relative rounded-xl overflow-hidden touch-none cursor-crosshair" style={{ boxShadow: 'inset 0 0 0 1px rgba(148,163,184,.35)' }} onPointerDown={drag}>
+        <canvas ref={cv} width="240" height="130" className="block w-full" style={{ height: 130 }} />
+        <span className="absolute w-4 h-4 rounded-full pointer-events-none" style={{ left: `calc(${hsv.s * 100}% - 8px)`, top: `calc(${(1 - hsv.v) * 100}% - 8px)`, border: '2px solid #fff', boxShadow: '0 0 0 1.5px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.5)', background: value }} />
+      </div>
+      <input type="range" min="0" max="360" value={Math.round(hsv.h)} onChange={(e) => emit({ ...hsv, h: +e.target.value })} className="nb-hue" aria-label="Hue" />
+    </div>
+  );
+}
+
+const NB_GRID_OPTS = [['off', 'Off'], ['grid', 'Grid'], ['dots', 'Dots'], ['lines', 'Lines'], ['graph', 'Graph'], ['iso', 'Isometric']];
+function nbGridStyle(mode, z, ink) {
+  const g = (a) => `rgba(${ink},${a})`;
+  const ln = (c, dir) => `linear-gradient(${dir}, transparent calc(50% - .5px), ${c} calc(50% - .5px), ${c} calc(50% + .5px), transparent calc(50% + .5px))`;
+  if (mode === 'grid') return { backgroundImage: `linear-gradient(${g(0.12)} 1px, transparent 1px), linear-gradient(90deg, ${g(0.12)} 1px, transparent 1px)`, backgroundSize: `${z}px ${z}px` };
+  if (mode === 'dots') return { backgroundImage: `radial-gradient(${g(0.3)} 1.4px, transparent 1.6px)`, backgroundSize: `${z}px ${z}px` };
+  if (mode === 'lines') return { backgroundImage: `linear-gradient(${g(0.14)} 1px, transparent 1px)`, backgroundSize: `100% ${Math.round(z * 1.125)}px` };
+  if (mode === 'graph') return {
+    backgroundImage: `${ln(g(0.34), '180deg')}, ${ln(g(0.34), '90deg')}, ${ln(g(0.13), '180deg')}, ${ln(g(0.13), '90deg')}`,
+    backgroundSize: `${z * 5}px ${z * 5}px, ${z * 5}px ${z * 5}px, ${z}px ${z}px, ${z}px ${z}px`, backgroundPosition: 'center',
+  };
+  if (mode === 'iso') return { backgroundImage: `radial-gradient(${g(0.32)} 1.4px, transparent 1.6px), radial-gradient(${g(0.32)} 1.4px, transparent 1.6px)`, backgroundSize: `${z}px ${z * 1.732}px`, backgroundPosition: `0 0, ${z / 2}px ${z * 0.866}px` };
+  return {};
+}
+function GridAxes({ ink }) {
+  const c = `rgba(${ink},0.75)`;
+  return (<>
+    <div className="pointer-events-none absolute left-0 right-0" style={{ top: '50%', height: 2, marginTop: -1, background: c }} />
+    <div className="pointer-events-none absolute top-0 bottom-0" style={{ left: '50%', width: 2, marginLeft: -1, background: c }} />
+    <span className="pointer-events-none absolute mono text-[11px]" style={{ left: 'calc(50% + 6px)', top: 6, color: c }}>y</span>
+    <span className="pointer-events-none absolute mono text-[11px]" style={{ right: 8, top: 'calc(50% + 6px)', color: c }}>x</span>
+    <span className="pointer-events-none absolute mono text-[10px]" style={{ left: 'calc(50% + 5px)', top: 'calc(50% + 4px)', color: c }}>0</span>
+  </>);
+}
+function GridMenu({ anchorRef, mode, size, onMode, onSize, onClose, down }) {
+  const wrap = useRef(null);
+  useKeepInView(wrap);
+  useEffect(() => {
+    const onDown = (e) => { if (anchorRef.current && !anchorRef.current.contains(e.target)) onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('pointerdown', onDown); window.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('pointerdown', onDown); window.removeEventListener('keydown', onKey); };
+  }, [anchorRef, onClose]);
+  return (
+    <div ref={wrap} className={`absolute ${down ? 'top-full mt-3' : 'bottom-full mb-3'} left-0 z-40`}>
+      <div className="glass-strong modal-in rounded-2xl p-3 w-64 shadow-2xl" role="dialog" aria-label="Background guide">
+        <div className="mono text-[10px] tracking-wider text-slate-500 mb-2">BACKGROUND GUIDE</div>
+        <div className="grid grid-cols-3 gap-2">
+          {NB_GRID_OPTS.map(([id, label]) => (
+            <button key={id} onClick={() => onMode(id)} className={`rounded-xl p-1.5 border text-center focus-ring ${mode === id ? 'border-cyan-400/70 bg-cyan-500/10' : 'border-slate-700/60 hover:border-slate-500/70'}`}>
+              <div className="rounded-md mb-1 relative overflow-hidden" style={{ height: 34, background: '#1e293b', ...(id === 'off' ? {} : nbGridStyle(id, 10, '255,255,255')) }}>
+                {id === 'graph' && <div className="absolute inset-0" style={{ background: 'linear-gradient(rgba(255,255,255,.8),rgba(255,255,255,.8)) center/100% 1px no-repeat, linear-gradient(rgba(255,255,255,.8),rgba(255,255,255,.8)) center/1px 100% no-repeat' }} />}
+              </div>
+              <div className="text-[11px] text-slate-300">{label}</div>
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center justify-between mt-3 mb-1"><span className="mono text-[10px] tracking-wider text-slate-500">SPACING</span><span className="mono text-xs text-slate-300">{size}px</span></div>
+        <input type="range" min="16" max="80" step="4" value={size} onChange={(e) => onSize(+e.target.value)} className="nb-slider w-full" aria-label="Guide spacing" />
+      </div>
+    </div>
+  );
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
 </script>
