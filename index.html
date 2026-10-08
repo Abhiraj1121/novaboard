@@ -5253,11 +5253,11 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
         const ink = isLightColor(bgColor) ? '0,0,0' : '255,255,255';
         return <><div className="pointer-events-none absolute inset-0" style={nbGridStyle(gridMode, gridSize, ink)} />{gridMode === 'graph' && <GridAxes ink={ink} />}</>;
       })()}
-      {isPdfView && (
-        <div className="glass-strong absolute z-30 right-3 bottom-3 flex items-center gap-0.5 rounded-xl px-1 py-1 text-xs text-slate-200 select-none shadow-xl" style={{ touchAction: 'none' }}>
+      {isPdfView && !viewLocked && (
+        <div className="glass-strong absolute z-30 right-3 top-1/2 -translate-y-1/2 flex flex-col-reverse items-center gap-0.5 rounded-xl px-1 py-1 text-xs text-slate-200 select-none shadow-xl" style={{ touchAction: 'none', animation: 'nb-pop .28s var(--ease-out)' }}>
           <button disabled={!!viewLocked} title="Zoom out" aria-label="Zoom out" className="w-8 h-8 disabled:opacity-30 disabled:pointer-events-none rounded-lg hover:bg-white/10 focus-ring text-base leading-none"
             onClick={() => { const c = fabricRef.current; if (!c) return; const v = c.viewportTransform, cx = c.getWidth() / 2, cy = c.getHeight() / 2, z = v[0] / 1.25; c.nbSetView(z, cx - (cx - v[4]) / v[0] * z, cy - (cy - v[5]) / v[3] * z); }}>−</button>
-          <button disabled={!!viewLocked} title="Fit page" aria-label="Reset zoom" className="min-w-[3rem] h-8 disabled:opacity-30 disabled:pointer-events-none rounded-lg hover:bg-white/10 focus-ring mono"
+          <button disabled={!!viewLocked} title="Fit page" aria-label="Reset zoom" className="w-11 h-8 disabled:opacity-30 disabled:pointer-events-none rounded-lg hover:bg-white/10 focus-ring mono"
             onClick={() => { const c = fabricRef.current; if (c) c.nbSetView(1, 0, 0); }}>{Math.round(viewZoom * 100)}%</button>
           <button disabled={!!viewLocked} title="Zoom in" aria-label="Zoom in" className="w-8 h-8 disabled:opacity-30 disabled:pointer-events-none rounded-lg hover:bg-white/10 focus-ring text-base leading-none"
             onClick={() => { const c = fabricRef.current; if (!c) return; const v = c.viewportTransform, cx = c.getWidth() / 2, cy = c.getHeight() / 2, z = v[0] * 1.25; c.nbSetView(z, cx - (cx - v[4]) / v[0] * z, cy - (cy - v[5]) / v[3] * z); }}>+</button>
