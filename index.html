@@ -939,6 +939,8 @@ const Svg = ({ children, size = 18, className = "" }) => (
 );
 const IPlus = (p) => <Svg {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Svg>;
 const IUpload = (p) => <Svg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></Svg>;
+const ILock = (p) => <Svg {...p}><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></Svg>;
+const IUnlock = (p) => <Svg {...p}><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></Svg>;
 const IClock = (p) => <Svg {...p}><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></Svg>;
 const IChevronRight = (p) => <Svg {...p}><polyline points="9 18 15 12 9 6"/></Svg>;
 const IChevronLeft = (p) => <Svg {...p}><polyline points="15 18 9 12 15 6"/></Svg>;
@@ -1656,7 +1658,7 @@ function PdfImportOverlay({ state }) {
   );
 }
 
-function CanvasTopBar({ session, onBackHome, onNewBoard, isFullscreen, onToggleFullscreen, saveState, onSaveFile, onOpenFile }) {
+function CanvasTopBar({ session, onBackHome, onNewBoard, isFullscreen, onToggleFullscreen, saveState, onSaveFile, onOpenFile, showPdfLock, pdfLocked, onTogglePdfLock }) {
   return (
     <div className="glass border-b border-slate-700/40 rounded-none flex items-center gap-3 px-4 py-2.5 flex-shrink-0 relative z-30">
       <button
@@ -1686,6 +1688,16 @@ function CanvasTopBar({ session, onBackHome, onNewBoard, isFullscreen, onToggleF
       <OrgBadge />
       <SaveStatus state={saveState} />
 
+      {showPdfLock && (
+        <button
+          onClick={onTogglePdfLock}
+          aria-pressed={!!pdfLocked}
+          title={pdfLocked ? 'PDF is locked. Click to unlock so you can move and zoom it' : 'Lock the PDF so it cannot be moved or zoomed'}
+          className={`flex items-center gap-1.5 text-xs mono transition-colors focus-ring rounded-md px-2.5 py-1.5 border ${pdfLocked ? 'text-cyan-300 border-cyan-500/60 bg-cyan-500/10' : 'text-slate-400 hover:text-cyan-300 border-slate-700/60 hover:border-cyan-500/40'}`}
+        >
+          {pdfLocked ? <ILock size={13} /> : <IUnlock size={13} />} <span className="hidden md:inline">{pdfLocked ? 'Unlock PDF' : 'Lock PDF'}</span>
+        </button>
+      )}
       <button
         onClick={onOpenFile}
         title="Open a .novaboard file"
@@ -3981,9 +3993,11 @@ function TopBarCollapseTab({ hidden, onToggle }) {
   );
 }
 
-const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onContentChange }, ref) {
+const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onContentChange, viewLocked }, ref) {
   const onChangeRef = useRef(onContentChange);
   onChangeRef.current = onContentChange;
+  const lockedRef = useRef(!!viewLocked);   // PDF lock: blocks pan / pinch / zoom
+  lockedRef.current = !!viewLocked;
   const suppressNotifyRef = useRef(false);   // true while a page is being (re)loaded
   const gestureBusyRef = useRef(null);       // () => is a shape/erase/text gesture in flight?
   const wrapRef = useRef(null);
@@ -4606,7 +4620,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
     });
 
     /* ---- PDF view: drag empty space to pan, two-finger pinch / Ctrl+wheel to zoom (Select tool, PDF pages only) ---- */
-    const canView = () => !!pageRef.current && toolRef.current === 'select';
+    const canView = () => !!pageRef.current && !lockedRef.current && toolRef.current === 'select';
     const setView = (z, tx, ty) => { const nz = nbApplyView(canvas, pageRef.current, frameRef.current, z, tx, ty); setViewZoom(nz); };
     let panFrom = null;
     canvas.on('mouse:down', (opt) => {
@@ -5214,11 +5228,11 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       })()}
       {isPdfView && (
         <div className="glass-strong absolute z-30 right-3 bottom-3 flex items-center gap-0.5 rounded-xl px-1 py-1 text-xs text-slate-200 select-none shadow-xl" style={{ touchAction: 'none' }}>
-          <button title="Zoom out" aria-label="Zoom out" className="w-8 h-8 rounded-lg hover:bg-white/10 focus-ring text-base leading-none"
+          <button disabled={!!viewLocked} title="Zoom out" aria-label="Zoom out" className="w-8 h-8 disabled:opacity-30 disabled:pointer-events-none rounded-lg hover:bg-white/10 focus-ring text-base leading-none"
             onClick={() => { const c = fabricRef.current; if (!c) return; const v = c.viewportTransform, cx = c.getWidth() / 2, cy = c.getHeight() / 2, z = v[0] / 1.25; c.nbSetView(z, cx - (cx - v[4]) / v[0] * z, cy - (cy - v[5]) / v[3] * z); }}>−</button>
-          <button title="Fit page" aria-label="Reset zoom" className="min-w-[3rem] h-8 rounded-lg hover:bg-white/10 focus-ring mono"
+          <button disabled={!!viewLocked} title="Fit page" aria-label="Reset zoom" className="min-w-[3rem] h-8 disabled:opacity-30 disabled:pointer-events-none rounded-lg hover:bg-white/10 focus-ring mono"
             onClick={() => { const c = fabricRef.current; if (c) c.nbSetView(1, 0, 0); }}>{Math.round(viewZoom * 100)}%</button>
-          <button title="Zoom in" aria-label="Zoom in" className="w-8 h-8 rounded-lg hover:bg-white/10 focus-ring text-base leading-none"
+          <button disabled={!!viewLocked} title="Zoom in" aria-label="Zoom in" className="w-8 h-8 disabled:opacity-30 disabled:pointer-events-none rounded-lg hover:bg-white/10 focus-ring text-base leading-none"
             onClick={() => { const c = fabricRef.current; if (!c) return; const v = c.viewportTransform, cx = c.getWidth() / 2, cy = c.getHeight() / 2, z = v[0] * 1.25; c.nbSetView(z, cx - (cx - v[4]) / v[0] * z, cy - (cy - v[5]) / v[3] * z); }}>+</button>
         </div>
       )}
@@ -5312,6 +5326,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
   const canvasStageRef = useRef(null);
 
   const [topBarHidden, setTopBarHidden] = useState(false);
+  const [pdfLocked, setPdfLocked] = useState(true);  // PDF lock: blocks pan / pinch / zoom of the PDF page
   const [dockSide, setDockSide] = useState('default'); // 'default' | 'swapped'
   const [isFullscreen, setIsFullscreen] = useState(false);
   const rootRef = useRef(null);
@@ -5864,6 +5879,9 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
           saveState={saveState}
           onSaveFile={handleSaveFile}
           onOpenFile={() => { if (boardInputRef.current) boardInputRef.current.click(); }}
+          showPdfLock={!!activeSlide?.bgImage}
+          pdfLocked={pdfLocked}
+          onTogglePdfLock={() => setPdfLocked((v) => !v)}
         />
       )}
       <TopBarCollapseTab hidden={topBarHidden} onToggle={() => setTopBarHidden((v) => !v)} />
@@ -5953,7 +5971,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
               side={actionSide}
             />
           </div>
-          <CanvasViewport ref={viewportRef} initialBg={activeSlide?.bg} onContentChange={handleContentChange} />
+          <CanvasViewport ref={viewportRef} initialBg={activeSlide?.bg} onContentChange={handleContentChange} viewLocked={pdfLocked} />
 
           <NovaTools3 widgets={widgets} closeWidget={closeWidget} toggleMinimize={toggleMinimize} boundsRef={canvasStageRef} />
 
@@ -6168,9 +6186,13 @@ function nbShades(hex, prefix, root) {
 const NB_SLATE_DARK = { 50: '248 250 252', 100: '241 245 249', 200: '226 232 240', 300: '203 213 225', 400: '148 163 184', 500: '100 116 139', 600: '71 85 105', 700: '51 65 85', 800: '30 41 59', 900: '15 23 42', 950: '2 6 23' };
 const NB_SLATE_LIGHT = { 50: '2 6 23', 100: '15 23 42', 200: '30 41 59', 300: '51 65 85', 400: '71 85 105', 500: '100 116 139', 600: '148 163 184', 700: '203 213 225', 800: '226 232 240', 900: '241 245 249', 950: '248 250 252' };
 
+/* Single source of truth for "is the UI dark?", derived from settings (never from the DOM, which updates a frame later). */
+function nbIsDark(s) {
+  return s.mode === 'auto' ? !(window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) : s.mode !== 'light';
+}
 function nbApplyTheme(s) {
   const root = document.documentElement;
-  const dark = s.mode === 'auto' ? !(window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) : s.mode !== 'light';
+  const dark = nbIsDark(s);
   root.dataset.mode = dark ? 'dark' : 'light';
   root.dataset.motion = s.motion ? 'on' : 'off';
   root.dataset.font = s.font || 'default'; root.dataset.glow = s.glow === false ? 'off' : 'on';
@@ -6216,7 +6238,7 @@ function Avatar({ size = 40 }) {
 
 function ModeToggle({ className = '' }) {
   const { s, set } = useSettings();
-  const isDark = document.documentElement.dataset.mode !== 'light';
+  const isDark = nbIsDark(s);   // from settings, so the icon and the next tap are always in sync
   return (
     <button
       onClick={() => set({ mode: isDark ? 'light' : 'dark' })}
