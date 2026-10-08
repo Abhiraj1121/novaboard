@@ -4,12 +4,16 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>NovaBoard OS 3.0</title>
+<link rel="icon" href="icon/novaboard-icon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="512x512" href="icon/novaboard-icon-512.png">
+<link rel="apple-touch-icon" href="icon/novaboard-icon-512.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{slate:{50:'rgb(var(--s-50) / <alpha-value>)',100:'rgb(var(--s-100) / <alpha-value>)',200:'rgb(var(--s-200) / <alpha-value>)',300:'rgb(var(--s-300) / <alpha-value>)',400:'rgb(var(--s-400) / <alpha-value>)',500:'rgb(var(--s-500) / <alpha-value>)',600:'rgb(var(--s-600) / <alpha-value>)',700:'rgb(var(--s-700) / <alpha-value>)',800:'rgb(var(--s-800) / <alpha-value>)',900:'rgb(var(--s-900) / <alpha-value>)',950:'rgb(var(--s-950) / <alpha-value>)'},cyan:{50:'rgb(var(--a-50) / <alpha-value>)',100:'rgb(var(--a-100) / <alpha-value>)',200:'rgb(var(--a-200) / <alpha-value>)',300:'rgb(var(--a-300) / <alpha-value>)',400:'rgb(var(--a-400) / <alpha-value>)',500:'rgb(var(--a-500) / <alpha-value>)',600:'rgb(var(--a-600) / <alpha-value>)',700:'rgb(var(--a-700) / <alpha-value>)',800:'rgb(var(--a-800) / <alpha-value>)',900:'rgb(var(--a-900) / <alpha-value>)'},indigo:{50:'rgb(var(--b-50) / <alpha-value>)',100:'rgb(var(--b-100) / <alpha-value>)',200:'rgb(var(--b-200) / <alpha-value>)',300:'rgb(var(--b-300) / <alpha-value>)',400:'rgb(var(--b-400) / <alpha-value>)',500:'rgb(var(--b-500) / <alpha-value>)',600:'rgb(var(--b-600) / <alpha-value>)',700:'rgb(var(--b-700) / <alpha-value>)',800:'rgb(var(--b-800) / <alpha-value>)',900:'rgb(var(--b-900) / <alpha-value>)'}}}}};</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <meta name="theme-color" content="#090d16">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -1223,7 +1227,8 @@ function RecentSessions({ sessions, onOpen, onClear, onDelete }) {
 }
 
 function HomeScreen({ onEnterCanvas, sessions, setSessions, onOpenFile, recovery, onDismissRecovery }) {
-  const [modal, setModal] = useState(null); // null | 'new' | 'upload'
+  const [modal, setModal] = useState(null);
+  const [liveOpen, setLiveOpen] = useState(false); // null | 'new' | 'upload'
   const [confirm, setConfirm] = useState(null); // {type:'delete', session} | {type:'clear'}
   const [fileError, setFileError] = useState(null);
   const [openingFile, setOpeningFile] = useState(false);
@@ -1339,7 +1344,7 @@ function HomeScreen({ onEnterCanvas, sessions, setSessions, onOpenFile, recovery
           </div>
         )}
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-10">
           <ActionCard
             icon={IPlus}
             title="New blank board"
@@ -1371,7 +1376,15 @@ function HomeScreen({ onEnterCanvas, sessions, setSessions, onOpenFile, recovery
             }}
             accent="indigo"
           />
+          <ActionCard
+            icon={ILive}
+            title="Join live board"
+            desc="Watch a teacher's board with a passcode."
+            onClick={() => setLiveOpen(true)}
+            accent="cyan"
+          />
         </div>
+        {liveOpen && <LiveViewer onClose={() => setLiveOpen(false)} />}
 
         <input
           ref={fileInputRef}
@@ -5237,6 +5250,50 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       note.setSelectionEnd(1 + body.length);
       c.requestRenderAll();
     },
+    /* Live Share: true when the canvas has re-rendered since the last call. */
+    liveDirty() {
+      const c = fabricRef.current;
+      if (!c) return false;
+      if (!c.__nbLive) { c.__nbLive = { d: true }; c.on('after:render', () => { c.__nbLive.d = true; }); }
+      const d = c.__nbLive.d; c.__nbLive.d = false; return d;
+    },
+    /* Live Share: what the host sees right now, as a JPEG ArrayBuffer no wider than maxW. */
+    getLiveFrame(maxW) {
+      const c = fabricRef.current;
+      if (!c) return Promise.resolve(null);
+      const src = c.lowerCanvasEl;
+      const k = Math.min(1, maxW / Math.max(1, src.width));
+      const off = document.createElement('canvas');
+      off.width = Math.max(1, Math.round(src.width * k)); off.height = Math.max(1, Math.round(src.height * k));
+      const g = off.getContext('2d');
+      g.fillStyle = c.backgroundColor && typeof c.backgroundColor === 'string' ? c.backgroundColor : '#ffffff';
+      g.fillRect(0, 0, off.width, off.height);
+      g.drawImage(src, 0, 0, off.width, off.height);
+      return new Promise((resolve) => off.toBlob((b) => (b ? b.arrayBuffer().then(resolve, () => resolve(null)) : resolve(null)), 'image/jpeg', 0.72));
+    },
+
+    /* AI assistant: drop several generated notes on the board in a tidy grid. */
+    addAiNotes(texts) {
+      const c = fabricRef.current;
+      if (!c || !texts || !texts.length) return;
+      const W = c.getWidth(), H = c.getHeight();
+      const cols = Math.min(3, texts.length), cw = Math.max(150, Math.min(230, W * 0.28));
+      const objs = texts.map((t, i) => {
+        const n = stickyCounterRef.current++;
+        const col = i % cols, row = Math.floor(i / cols);
+        return new fabric.Textbox('\n' + String(t).slice(0, 400) + '\n', {
+          left: W / 2 + (col - (cols - 1) / 2) * (cw + 16), top: 70 + row * 190,
+          originX: 'center', originY: 'top', width: cw,
+          fontSize: 17, lineHeight: 1.3, textAlign: 'center',
+          fontFamily: TEXT_FONT, fill: '#1f2937', backgroundColor: STICKY_COLORS[n % STICKY_COLORS.length],
+          shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.35)', blur: 14, offsetX: 3, offsetY: 6 }),
+          nbKind: 'sticky', selectable: true, evented: true,
+        });
+      });
+      objs.forEach((o) => c.add(o));
+      pushHistory();
+      c.requestRenderAll();
+    },
   }), [bgColor, pushHistory, syncHistoryUI]);
 
   return (
@@ -6001,7 +6058,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
           </div>
           <CanvasViewport ref={viewportRef} initialBg={activeSlide?.bg} onContentChange={handleContentChange} viewLocked={pdfLocked} />
 
-          <NovaTools3 widgets={widgets} closeWidget={closeWidget} toggleMinimize={toggleMinimize} boundsRef={canvasStageRef} />
+          <NovaTools3 widgets={widgets} closeWidget={closeWidget} toggleMinimize={toggleMinimize} boundsRef={canvasStageRef} viewportRef={viewportRef} />
 
           {widgets.laser && (
             <LaserPointerOverlay containerRef={canvasStageRef} color="#38bdf8" />
@@ -6197,10 +6254,15 @@ const NB_DEFAULTS = {
   mode: 'dark', theme: 'nova', accent: null,
   blur: 14, radius: 1, fontScale: 1, motion: true, aurora: true, sound: true,
   splash: true, font: 'default', glow: true, penColor: '#ffffff', penWidth: 6, defGrid: 'off', gridSize: 32,
+  aiProvider: 'gemini', aiKeyGemini: '', aiKeyGroq: '', aiKeyOpenrouter: '', aiModel: '',
 };
 function nbLoadSettings() {
   try { return { ...NB_DEFAULTS, ...(JSON.parse(localStorage.getItem(NB_SET_KEY)) || {}) }; } catch (e) { return { ...NB_DEFAULTS }; }
 }
+const NB_AI_PROVIDERS = ['gemini', 'groq', 'openrouter'];
+const nbAiProv = (s) => (NB_AI_PROVIDERS.includes(s.aiProvider) ? s.aiProvider : 'gemini');
+const nbAiKeyField = (s) => ({ groq: 'aiKeyGroq', openrouter: 'aiKeyOpenrouter' }[nbAiProv(s)] || 'aiKeyGemini');
+const nbAiKey = (s) => s[nbAiKeyField(s)] || '';
 function nbSaveSettings(s) { try { localStorage.setItem(NB_SET_KEY, JSON.stringify(s)); } catch (e) { /* quota: ignore */ } }
 
 const nbHex2rgb = (h) => { const n = parseInt(h.replace('#', ''), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
@@ -6326,19 +6388,20 @@ function SettingsPanel({ tab: startTab, onClose }) {
   const [err, setErr] = useState('');
   const fileRef = useRef(null);
   const importRef = useRef(null);
-  const tabs = [['profile', 'Profile'], ['appearance', 'Look'], ['interface', 'Interface'], ['board', 'Board'], ['data', 'Data']];
+  const tabs = [['profile', 'Profile'], ['appearance', 'Look'], ['interface', 'Interface'], ['board', 'Board'], ['ai', 'AI'], ['data', 'Data']];
   const pickAvatar = async (f) => {
     if (!f) return; setErr('');
     try { set({ avatar: await nbResizeAvatar(f) }); } catch (e) { setErr('Could not read that image.'); }
   };
   const exportSettings = () => {
-    const blob = new Blob([JSON.stringify(s, null, 1)], { type: 'application/json' });
+    const { aiKeyGemini, aiKeyGroq, aiKeyOpenrouter, ...safe } = s; // API keys never leave this browser
+    const blob = new Blob([JSON.stringify(safe, null, 1)], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'novaboard-settings.json'; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   };
   const importSettings = (f) => {
     if (!f) return; const r = new FileReader();
-    r.onload = () => { try { set({ ...NB_DEFAULTS, ...JSON.parse(r.result) }); setErr(''); } catch (e) { setErr('Invalid settings file.'); } };
+    r.onload = () => { try { const { aiKeyGemini, aiKeyGroq, aiKeyOpenrouter, ...inc } = JSON.parse(r.result); set({ ...NB_DEFAULTS, aiKeyGemini: s.aiKeyGemini, aiKeyGroq: s.aiKeyGroq, aiKeyOpenrouter: s.aiKeyOpenrouter, ...inc }); setErr(''); } catch (e) { setErr('Invalid settings file.'); } };
     r.readAsText(f);
   };
   return (
@@ -6421,6 +6484,22 @@ function SettingsPanel({ tab: startTab, onClose }) {
               {NB_GRID_OPTS.map(([id, l]) => <button key={id} onClick={() => set({ defGrid: id })} className={`nb-chip ${s.defGrid === id ? 'on' : 'text-slate-400'}`}>{l}</button>)}
             </div>
             <div className="py-3"><div className="flex justify-between text-sm text-slate-100"><span>Guide spacing</span><span className="mono text-xs text-slate-500">{s.gridSize}px</span></div><input type="range" min="16" max="80" step="4" value={s.gridSize} onChange={(e) => set({ gridSize: +e.target.value })} className="nb-range" /></div>
+          </>)}
+
+          {tab === 'ai' && (<>
+            <p className="text-[11px] text-slate-500 pb-1">Optional. The AI Assistant (Tools menu) needs a free API key from one of these providers. Free tiers are rate-limited and the provider may keep or learn from requests, so avoid private student data. Keys are stored only in this browser. When you use an AI feature, your prompt (and an image of the page for page tools) is sent to the provider you pick.</p>
+            <div className="text-xs text-slate-400 mt-1 mb-2">Provider</div>
+            <div className="flex flex-wrap gap-2 pb-2">
+              {[['gemini', 'Google Gemini'], ['groq', 'Groq'], ['openrouter', 'OpenRouter']].map(([id, l]) => <button key={id} onClick={() => set({ aiProvider: id, aiModel: '' })} className={`nb-chip ${nbAiProv(s) === id ? 'on' : 'text-slate-400'}`}>{l}</button>)}
+            </div>
+            <p className="text-[11px] text-slate-500 pb-1">{({ groq: 'Get a free key at console.groq.com/keys (no card).', openrouter: 'Get a free key at openrouter.ai/keys. Free models are rate-limited to about 20 requests a minute.' }[nbAiProv(s)]) || 'Get a free key at aistudio.google.com/apikey (no card).'}</p>
+            <SRow label="API key" hint={({ groq: 'Starts with gsk_', openrouter: 'Starts with sk-or-' }[nbAiProv(s)]) || 'Starts with AIza'}>
+              <input type="password" autoComplete="off" value={nbAiKey(s)} onChange={(e) => set({ [nbAiKeyField(s)]: e.target.value.trim() })} placeholder={({ groq: 'gsk_...', openrouter: 'sk-or-...' }[nbAiProv(s)]) || 'AIza...'} className="w-44 px-2 py-1 rounded-md bg-slate-900/60 border border-slate-600/50 text-xs text-slate-100" aria-label="API key" />
+            </SRow>
+            <SRow label="Model" hint="Leave empty for the default">
+              <input type="text" value={s.aiModel} onChange={(e) => set({ aiModel: e.target.value.trim() })} placeholder={NB_AI_MODELS[nbAiProv(s)].text} className="w-44 px-2 py-1 rounded-md bg-slate-900/60 border border-slate-600/50 text-xs text-slate-100 mono" aria-label="Model name" />
+            </SRow>
+            {nbAiKey(s) && <SRow label="Remove key"><button className="nb-btn sec" onClick={() => set({ [nbAiKeyField(s)]: '' })}>Clear</button></SRow>}
           </>)}
 
           {tab === 'data' && (<>
@@ -6808,8 +6887,348 @@ function ShadeOverlay({ boundsRef, onClose }) {
   );
 }
 
+/* ---- AI Assistant: chat, generate board content, explain / solve the current page ---- */
+const ISparkle = (p) => <Svg {...p}><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /><path d="M19 3v4M17 5h4M5 17v4M3 19h4" /></Svg>;
+
+const NB_AI_MODELS = {
+  gemini: { text: 'gemini-2.5-flash', vision: 'gemini-2.5-flash' },
+  groq: { text: 'llama-3.3-70b-versatile', vision: 'meta-llama/llama-4-scout-17b-16e-instruct' },
+  openrouter: { text: 'openrouter/free', vision: 'openrouter/free' }, // router that picks a free model that fits the request
+};
+/* Shrink a page snapshot so it stays under provider image-size limits. */
+function nbShrinkImage(dataUrl, max = 1280) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+      resolve(c.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => reject(new Error('Could not read the page image.'));
+    img.src = dataUrl;
+  });
+}
+async function nbAiCall({ provider = 'gemini', key, model, system, messages, maxTokens = 1200 }) {
+  if (!key) throw new Error('Add your free API key in Settings > AI first.');
+  const hasImage = messages.some((x) => Array.isArray(x.content) && x.content.some((b) => b.type === 'image'));
+  const defs = NB_AI_MODELS[provider] || NB_AI_MODELS.gemini;
+  const m = model || (hasImage ? defs.vision : defs.text);
+  let url, headers, body;
+  if (provider === 'groq' || provider === 'openrouter') {
+    /* Groq and OpenRouter both speak the OpenAI-compatible chat completions format. */
+    url = provider === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
+    headers = { 'content-type': 'application/json', authorization: `Bearer ${key}` };
+    if (provider === 'openrouter') headers['X-Title'] = 'NovaBoard';
+    const content = (c) => (typeof c === 'string' ? c : c.map((b) => (b.type === 'image' ? { type: 'image_url', image_url: { url: `data:${b.source.media_type};base64,${b.source.data}` } } : { type: 'text', text: b.text })));
+    body = { model: m, max_tokens: maxTokens, messages: [{ role: 'system', content: system }, ...messages.map((x) => ({ role: x.role, content: content(x.content) }))] };
+  } else {
+    /* Google Gemini (free tier via AI Studio). */
+    url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`;
+    headers = { 'content-type': 'application/json', 'x-goog-api-key': key };
+    const parts = (c) => (typeof c === 'string' ? [{ text: c }] : c.map((b) => (b.type === 'image' ? { inlineData: { mimeType: b.source.media_type, data: b.source.data } } : { text: b.text })));
+    body = {
+      systemInstruction: { parts: [{ text: system }] },
+      contents: messages.map((x) => ({ role: x.role === 'assistant' ? 'model' : 'user', parts: parts(x.content) })),
+      generationConfig: { maxOutputTokens: maxTokens * 4 }, // headroom: thinking tokens count against this
+    };
+  }
+  let res;
+  try { res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) }); }
+  catch (e) { throw new Error('Could not reach the AI service. Check your internet connection.'); }
+  let data = null;
+  try { data = await res.json(); } catch (e) { /* non-JSON error body */ }
+  if (!res.ok) {
+    if (res.status === 429) throw new Error('Free limit reached for now. Wait a minute and try again.');
+    if (res.status === 401 || res.status === 403) throw new Error('The API key was rejected. Check it in Settings > AI.');
+    throw new Error((data && data.error && data.error.message) || `AI request failed (${res.status}).`);
+  }
+  let text = '';
+  if (provider !== 'gemini') text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+  else { const cand = data.candidates && data.candidates[0]; text = cand && cand.content && cand.content.parts ? cand.content.parts.map((x) => x.text || '').join('') : ''; }
+  text = text.trim();
+  if (!text) throw new Error('The AI returned no answer (it may have been blocked). Try rephrasing.');
+  return text;
+}
+
+const NB_AI_SYSTEM = 'You are a concise, friendly teaching assistant inside NovaBoard, a classroom whiteboard app. Keep answers short and clear, suitable for projecting on a board. Use plain text (no markdown tables).';
+const NB_AI_KINDS = [
+  ['quiz', 'Quiz questions', 'Write 5 short quiz questions about'],
+  ['outline', 'Lesson outline', 'Write a 5-step lesson outline for'],
+  ['terms', 'Key terms', 'List 6 key terms with one-line definitions for'],
+  ['discuss', 'Discussion prompts', 'Write 5 open discussion prompts about'],
+];
+const NB_AI_PAGE = [
+  ['explain', 'Explain page', 'Look at this whiteboard page and explain what is on it in a few short sentences.'],
+  ['summarize', 'Summarize', 'Summarize the content of this whiteboard page as 3 to 5 short bullet points.'],
+  ['solve', 'Solve math', 'Read any handwritten or printed math on this whiteboard page and solve it step by step, briefly.'],
+  ['recognize', 'Read handwriting', 'Transcribe any handwriting or text on this page, and name any shapes or diagrams you see.'],
+];
+
+function AiTool({ viewportRef }) {
+  const { s, open } = useSettings();
+  const [tab, setTab] = useState('chat');
+  const [msgs, setMsgs] = useState([]);
+  const [input, setInput] = useState('');
+  const [topic, setTopic] = useState('');
+  const [kind, setKind] = useState('quiz');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [pageOut, setPageOut] = useState('');
+  const endRef = useRef(null);
+  useEffect(() => { if (endRef.current) endRef.current.scrollTop = endRef.current.scrollHeight; }, [msgs, busy]);
+  const stop = (e) => e.stopPropagation();
+  const call = (args) => nbAiCall({ provider: nbAiProv(s), key: nbAiKey(s), model: s.aiModel, system: NB_AI_SYSTEM, ...args });
+  const run = async (fn) => { setBusy(true); setErr(''); try { await fn(); } catch (e) { setErr(e.message || 'Something went wrong.'); } finally { setBusy(false); } };
+
+  if (!nbAiKey(s)) {
+    return (
+      <div className="space-y-2 text-xs text-slate-300" onPointerDown={stop}>
+        <p>Add a free Gemini, Groq or OpenRouter API key to turn on the assistant. It stays in this browser.</p>
+        <button className="nb-btn" onClick={() => open && open('ai')}>Open AI settings</button>
+      </div>
+    );
+  }
+
+  const send = () => {
+    const text = input.trim(); if (!text || busy) return;
+    const next = [...msgs, { role: 'user', content: text }];
+    setMsgs(next); setInput('');
+    run(async () => { const out = await call({ messages: next.slice(-12) }); setMsgs((m) => [...m, { role: 'assistant', content: out }]); });
+  };
+  const generate = () => {
+    if (!topic.trim() || busy) return;
+    const lead = NB_AI_KINDS.find((k) => k[0] === kind)[2];
+    run(async () => {
+      const out = await call({ maxTokens: 900, messages: [{ role: 'user', content: `${lead}: ${topic.trim()}.\nReturn ONLY a JSON array of strings, one string per item, each under 200 characters. No markdown, no extra text.` }] });
+      let arr; try { arr = JSON.parse(out.replace(/```json|```/g, '').trim()); } catch (e) { arr = null; }
+      if (!Array.isArray(arr) || !arr.length) throw new Error('The AI reply could not be read. Try again.');
+      const vp = viewportRef && viewportRef.current;
+      if (!vp) throw new Error('Open a board first.');
+      vp.addAiNotes(arr.slice(0, 9).map(String));
+    });
+  };
+  const askPage = (prompt) => run(async () => {
+    const vp = viewportRef && viewportRef.current; const url = vp && vp.getPagePng();
+    if (!url) throw new Error('Could not capture the page.');
+    const small = await nbShrinkImage(url);
+    const data = small.split(',')[1];
+    const out = await call({ messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } }, { type: 'text', text: prompt }] }] });
+    setPageOut(out);
+  });
+  const addPageNote = () => { const vp = viewportRef && viewportRef.current; if (vp && pageOut) vp.addAiNotes([pageOut]); };
+
+  const box = 'w-full px-2 py-1.5 rounded-md bg-slate-900/60 border border-slate-600/50 text-xs text-slate-100';
+  return (
+    <div className="space-y-2" onPointerDown={stop}>
+      <div className="flex gap-1.5">
+        {[['chat', 'Chat'], ['make', 'Create'], ['page', 'Page']].map(([id, l]) => <button key={id} onClick={() => setTab(id)} className={`nb-chip ${tab === id ? 'on' : 'text-slate-400'}`}>{l}</button>)}
+      </div>
+      {tab === 'chat' && (<>
+        <div ref={endRef} className="h-48 overflow-y-auto space-y-1.5 text-xs">
+          {msgs.length === 0 && <p className="text-slate-500">Ask a question or request an explanation.</p>}
+          {msgs.map((m, i) => <div key={i} className={`rounded-lg px-2 py-1.5 whitespace-pre-wrap ${m.role === 'user' ? 'bg-cyan-500/15 text-cyan-100 ml-6' : 'bg-slate-700/40 text-slate-100 mr-6'}`}>{m.content}</div>)}
+          {busy && <div className="text-slate-500">Thinking…</div>}
+        </div>
+        <div className="flex gap-1.5">
+          <input className={box} value={input} placeholder="Ask anything…" onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') send(); }} />
+          <button className="nb-btn" disabled={busy} onClick={send}>Send</button>
+        </div>
+        {msgs.length > 0 && <div className="flex gap-1.5">
+          <button className="nb-btn sec" onClick={() => { const l = [...msgs].reverse().find((m) => m.role === 'assistant'); const vp = viewportRef.current; if (l && vp) vp.addAiNotes([l.content]); }}>Add last reply to board</button>
+          <button className="nb-btn sec" onClick={() => setMsgs([])}>Clear</button>
+        </div>}
+      </>)}
+      {tab === 'make' && (<>
+        <div className="flex flex-wrap gap-1.5">{NB_AI_KINDS.map(([id, l]) => <button key={id} onClick={() => setKind(id)} className={`nb-chip ${kind === id ? 'on' : 'text-slate-400'}`}>{l}</button>)}</div>
+        <input className={box} value={topic} placeholder="Topic, e.g. Photosynthesis, grade 6" onChange={(e) => setTopic(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') generate(); }} />
+        <button className="nb-btn" disabled={busy || !topic.trim()} onClick={generate}>{busy ? 'Generating…' : 'Add to board as sticky notes'}</button>
+      </>)}
+      {tab === 'page' && (<>
+        <p className="text-[11px] text-slate-500">Sends an image of the current page to the AI.</p>
+        <div className="flex flex-wrap gap-1.5">{NB_AI_PAGE.map(([id, l, pr]) => <button key={id} className="nb-btn" disabled={busy} onClick={() => askPage(pr)}>{l}</button>)}</div>
+        {busy && <div className="text-xs text-slate-500">Looking at the page…</div>}
+        {pageOut && !busy && (<>
+          <div className="max-h-44 overflow-y-auto rounded-lg bg-slate-700/40 text-slate-100 text-xs px-2 py-1.5 whitespace-pre-wrap">{pageOut}</div>
+          <button className="nb-btn sec" onClick={addPageNote}>Add answer to board</button>
+        </>)}
+      </>)}
+      {err && <div className="text-xs text-red-300" role="alert">{err}</div>}
+    </div>
+  );
+}
+
+/* ---- Live Share (one-way, peer-to-peer): host broadcasts the board as frames; viewers join with a passcode ---- */
+const ILive = (p) => <Svg {...p}><circle cx="12" cy="12" r="2.5" /><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2" /></Svg>;
+const NB_LIVE_PREFIX = 'novaboard-live-';
+const NB_LIVE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function nbLiveCode() {
+  const a = new Uint32Array(6); (window.crypto || window.msCrypto).getRandomValues(a);
+  return Array.from(a, (n) => NB_LIVE_ALPHABET[n % NB_LIVE_ALPHABET.length]).join('');
+}
+const nbLiveFmt = (c) => (c ? `${c.slice(0, 3)}-${c.slice(3)}` : '');
+const nbLiveClean = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+
+function LiveShareTool({ viewportRef }) {
+  const [status, setStatus] = useState('idle'); // idle | starting | live | error
+  const [code, setCode] = useState('');
+  const [viewers, setViewers] = useState(0);
+  const [err, setErr] = useState('');
+  const st = useRef({ peer: null, conns: new Set(), timer: null, busy: false, last: null, lastSent: 0 });
+  const stop = (e) => e.stopPropagation();
+
+  const teardown = useCallback(() => {
+    const r = st.current;
+    if (r.timer) { clearInterval(r.timer); r.timer = null; }
+    try { r.conns.forEach((c) => c.close()); } catch (e) { /* ignore */ }
+    r.conns.clear(); r.last = null;
+    try { if (r.peer) r.peer.destroy(); } catch (e) { /* ignore */ }
+    r.peer = null;
+  }, []);
+  useEffect(() => teardown, [teardown]);
+
+  const sendFrame = useCallback(async (force) => {
+    const r = st.current; const vp = viewportRef && viewportRef.current;
+    if (!vp || r.busy || r.conns.size === 0) return;
+    const dirty = vp.liveDirty();
+    if (!dirty && !force) return;
+    r.busy = true;
+    try {
+      const buf = await vp.getLiveFrame(1280);
+      if (!buf) return;
+      r.last = buf; r.lastSent = Date.now();
+      r.conns.forEach((c) => { try { if (c.open && !(c.dataChannel && c.dataChannel.bufferedAmount > 1.5e6)) c.send(buf); } catch (e) { /* skip */ } });
+    } finally { r.busy = false; }
+  }, [viewportRef]);
+
+  const start = useCallback((attempt = 0) => {
+    if (!window.Peer) { setStatus('error'); setErr('The sharing library did not load. Check your internet connection and reload.'); return; }
+    teardown(); setErr(''); setViewers(0); setStatus('starting');
+    const c = nbLiveCode(); setCode(c);
+    const peer = new window.Peer(NB_LIVE_PREFIX + c);
+    const r = st.current; r.peer = peer;
+    peer.on('open', () => {
+      setStatus('live');
+      r.timer = setInterval(() => sendFrame(Date.now() - r.lastSent > 3000), 300);
+    });
+    peer.on('connection', (conn) => {
+      conn.on('open', () => {
+        r.conns.add(conn); setViewers(r.conns.size);
+        if (r.last) { try { conn.send(r.last); } catch (e) { /* ignore */ } } else sendFrame(true);
+      });
+      const gone = () => { r.conns.delete(conn); setViewers(r.conns.size); };
+      conn.on('close', gone); conn.on('error', gone);
+    });
+    peer.on('error', (e) => {
+      if (e && e.type === 'unavailable-id' && attempt < 3) { start(attempt + 1); return; }
+      if (e && e.type === 'peer-unavailable') return;
+      setStatus('error'); setErr('Could not start sharing (' + ((e && e.type) || 'network') + '). Try again.');
+    });
+    peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) { /* ignore */ } });
+  }, [teardown, sendFrame]);
+
+  const end = () => { teardown(); setStatus('idle'); setCode(''); setViewers(0); };
+
+  return (
+    <div className="space-y-2 text-xs text-slate-300" onPointerDown={stop}>
+      {status === 'idle' && (<>
+        <p>Share this board live. Viewers open NovaBoard, choose <b>Join live board</b> and type your passcode. They can watch but not draw.</p>
+        <button className="nb-btn" onClick={() => start(0)}>Start sharing</button>
+      </>)}
+      {status === 'starting' && <p>Starting…</p>}
+      {status === 'live' && (<>
+        <div className="text-center rounded-xl bg-slate-900/60 border border-slate-600/50 py-3">
+          <div className="text-[10px] uppercase tracking-widest text-slate-500">Passcode</div>
+          <div className="mono text-3xl font-bold text-cyan-300 tracking-widest select-all">{nbLiveFmt(code)}</div>
+        </div>
+        <p className="text-center"><span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1.5" />Live · {viewers} {viewers === 1 ? 'viewer' : 'viewers'}</p>
+        <p className="text-[11px] text-slate-500">Anyone with this code can watch. End the session when you are done.</p>
+        <button className="nb-btn sec" onClick={end}>End session</button>
+      </>)}
+      {status === 'error' && (<>
+        <p className="text-red-300" role="alert">{err}</p>
+        <button className="nb-btn" onClick={() => start(0)}>Try again</button>
+      </>)}
+    </div>
+  );
+}
+
+function LiveViewer({ onClose }) {
+  const [input, setInput] = useState('');
+  const [status, setStatus] = useState('idle'); // idle | connecting | watching | ended | error
+  const [err, setErr] = useState('');
+  const [src, setSrc] = useState(null);
+  const ref = useRef({ peer: null, url: null, timer: null });
+  const cleanup = useCallback(() => {
+    const r = ref.current;
+    if (r.timer) { clearTimeout(r.timer); r.timer = null; }
+    try { if (r.peer) r.peer.destroy(); } catch (e) { /* ignore */ }
+    r.peer = null;
+    if (r.url) { URL.revokeObjectURL(r.url); r.url = null; }
+  }, []);
+  useEffect(() => cleanup, [cleanup]);
+  useEffect(() => { const k = (e) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k); }, [onClose]);
+
+  const join = () => {
+    const c = nbLiveClean(input);
+    if (c.length !== 6) { setErr('Enter the 6-character passcode.'); return; }
+    if (!window.Peer) { setErr('The sharing library did not load. Check your internet connection and reload.'); return; }
+    cleanup(); setErr(''); setStatus('connecting');
+    const r = ref.current;
+    const fail = (m) => { cleanup(); setStatus('error'); setErr(m); };
+    const peer = new window.Peer(); r.peer = peer;
+    r.timer = setTimeout(() => fail('Could not connect. Check the passcode and that the host is sharing.'), 15000);
+    peer.on('open', () => {
+      const conn = peer.connect(NB_LIVE_PREFIX + c, { reliable: true });
+      conn.on('open', () => { if (r.timer) { clearTimeout(r.timer); r.timer = null; } setStatus('watching'); });
+      conn.on('data', (d) => {
+        try {
+          const url = URL.createObjectURL(new Blob([d], { type: 'image/jpeg' }));
+          if (r.url) URL.revokeObjectURL(r.url);
+          r.url = url; setSrc(url);
+        } catch (e) { /* ignore a bad frame */ }
+      });
+      conn.on('close', () => { setStatus('ended'); });
+    });
+    peer.on('error', (e) => {
+      if (e && e.type === 'peer-unavailable') fail('No live board found for that passcode.');
+      else fail('Connection problem (' + ((e && e.type) || 'network') + ').');
+    });
+  };
+  const leave = () => { cleanup(); onClose(); };
+
+  if (status === 'watching' || status === 'ended') {
+    return (
+      <div className="fixed inset-0 z-[90] bg-black flex items-center justify-center" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+        {src ? <img src={src} alt="Live board" className="max-w-full max-h-full object-contain" /> : <p className="text-slate-400 text-sm">Waiting for the board…</p>}
+        <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+          <span className="px-2.5 py-1 rounded-full text-xs bg-black/60 text-slate-100 pointer-events-auto">
+            <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${status === 'ended' ? 'bg-slate-400' : 'bg-emerald-400'}`} />{status === 'ended' ? 'Host ended the session' : 'Live'}
+          </span>
+          <button className="nb-btn pointer-events-auto" onClick={leave}>Leave</button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 px-4" onPointerDown={(e) => { if (e.target === e.currentTarget) leave(); }}>
+      <div className="glass-strong rounded-2xl p-5 w-full max-w-sm space-y-3">
+        <div className="flex items-center gap-2 text-slate-100 font-semibold"><ILive size={18} /> Join live board</div>
+        <p className="text-xs text-slate-400">Type the passcode shown on the host's board. You will watch in read-only mode.</p>
+        <input autoFocus value={nbLiveFmt(nbLiveClean(input))} onChange={(e) => setInput(nbLiveClean(e.target.value))} onKeyDown={(e) => { if (e.key === 'Enter') join(); }}
+          placeholder="ABC-DEF" aria-label="Passcode" className="w-full text-center mono text-2xl tracking-widest px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-600/50 text-cyan-200" />
+        {err && <div className="text-xs text-red-300" role="alert">{err}</div>}
+        <div className="flex gap-2 justify-end">
+          <button className="nb-btn sec" onClick={leave}>Cancel</button>
+          <button className="nb-btn" disabled={status === 'connecting'} onClick={join}>{status === 'connecting' ? 'Connecting…' : 'Join'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ---- Renders all 3.0 tools; mounted inside the board stage ---- */
-function NovaTools3({ widgets, closeWidget, toggleMinimize, boundsRef }) {
+function NovaTools3({ widgets, closeWidget, toggleMinimize, boundsRef, viewportRef }) {
   const base = { boundsRef, close: closeWidget, mini: toggleMinimize };
   return (<>
     {widgets.protractor && <ProtractorOverlay boundsRef={boundsRef} onClose={() => closeWidget('protractor')} />}
@@ -6822,6 +7241,8 @@ function NovaTools3({ widgets, closeWidget, toggleMinimize, boundsRef }) {
     {widgets.qr && <Tool id="qr" title="QR Code" icon={IQr} width={260} pos={{ x: 500, y: 70 }} w={widgets.qr} {...base}><QrTool /></Tool>}
     {widgets.agenda && <Tool id="agenda" title="Lesson Agenda" icon={IChecklist} width={280} pos={{ x: 540, y: 90 }} w={widgets.agenda} {...base}><AgendaTool /></Tool>}
     {widgets.convert && <Tool id="convert" title="Unit Converter" icon={IConvert} width={280} pos={{ x: 580, y: 110 }} w={widgets.convert} {...base}><ConvertTool /></Tool>}
+    {widgets.live && <Tool id="live" title="Live Share" icon={ILive} width={280} pos={{ x: 160, y: 90 }} w={widgets.live} {...base}><LiveShareTool viewportRef={viewportRef} /></Tool>}
+    {widgets.ai && <Tool id="ai" title="AI Assistant" icon={ISparkle} width={340} pos={{ x: 120, y: 70 }} w={widgets.ai} {...base}><AiTool viewportRef={viewportRef} /></Tool>}
     {widgets.clock && <Tool id="clock" title="Clock" icon={IClockFace} width={220} pos={{ x: 620, y: 70 }} w={widgets.clock} {...base}><ClockTool /></Tool>}
   </>);
 }
@@ -6832,6 +7253,8 @@ const NB_NEW_TOOLS = [
   { id: 'qr', label: 'QR Code', icon: IQr }, { id: 'convert', label: 'Unit Converter', icon: IConvert },
   { id: 'clock', label: 'Clock', icon: IClockFace }, { id: 'protractor', label: 'Protractor', icon: IProtractor },
   { id: 'shade', label: 'Screen Shade', icon: IShade },
+  { id: 'ai', label: 'AI Assistant', icon: ISparkle },
+  { id: 'live', label: 'Live Share', icon: ILive },
 ];
 
 

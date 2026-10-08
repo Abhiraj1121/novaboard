@@ -25,6 +25,20 @@ An interactive smartboard-style whiteboard and presentation workspace that runs 
 - **PDF import progress overlay** and clearer save-status and error messages
 - Boot sound and polish throughout
 
+## AI Assistant (optional, free)
+
+Open **Tools → AI Assistant** after adding a free API key in **Settings → AI**. Pick a provider:
+
+- **Google Gemini:** create a key at <https://aistudio.google.com/apikey> (Google account, no card).
+- **Groq:** create a key at <https://console.groq.com/keys> (no card).
+- **OpenRouter:** create a key at <https://openrouter.ai/keys>. NovaBoard uses its `openrouter/free` router, which picks a free model that fits the request (about 20 requests a minute).
+
+Free tiers are rate-limited, and the provider may keep or learn from requests, so avoid private student data. The assistant offers a chat, one-click quiz / lesson outline / key terms / discussion prompts added to the board as sticky notes, and page tools that send an image of the current page to explain it, summarize it, solve the math on it or read the handwriting. Keys are stored only in your browser and are never included in settings exports. Nothing is sent unless you use an AI feature.
+
+## Live Share (one-way, no server)
+
+Open **Tools → Live Share → Start sharing** to get a 6-character passcode. On any other device, open NovaBoard, choose **Join live board** on the home screen and type the code. The viewer sees the host's board update live and cannot draw. Boards travel directly between the two browsers (WebRTC via PeerJS); only the initial handshake uses PeerJS's free public broker, so both devices need internet. Some strict school or office networks block peer-to-peer connections. Anyone with the code can watch, so end the session when you are done.
+
 ## Features
 
 - **Drawing tools:** ball pen, highlighter, calligraphy pen and neon pen, plus eraser, undo / redo and erase-all
