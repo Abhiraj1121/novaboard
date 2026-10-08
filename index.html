@@ -7069,71 +7069,73 @@ function nbLiveCode() {
 const nbLiveFmt = (c) => (c ? `${c.slice(0, 3)}-${c.slice(3)}` : '');
 const nbLiveClean = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
 
-function LiveShareTool({ viewportRef }) {
-  const [status, setStatus] = useState('idle'); // idle | starting | live | error
-  const [code, setCode] = useState('');
-  const [viewers, setViewers] = useState(0);
-  const [err, setErr] = useState('');
-  const st = useRef({ peer: null, conns: new Set(), timer: null, busy: false, last: null, lastSent: 0 });
-  const stop = (e) => e.stopPropagation();
-
-  const teardown = useCallback(() => {
-    const r = st.current;
-    if (r.timer) { clearInterval(r.timer); r.timer = null; }
-    try { r.conns.forEach((c) => c.close()); } catch (e) { /* ignore */ }
-    r.conns.clear(); r.last = null;
-    try { if (r.peer) r.peer.destroy(); } catch (e) { /* ignore */ }
-    r.peer = null;
-  }, []);
-  useEffect(() => teardown, [teardown]);
-
-  const sendFrame = useCallback(async (force) => {
-    const r = st.current; const vp = viewportRef && viewportRef.current;
-    if (!vp || r.busy || r.conns.size === 0) return;
-    const dirty = vp.liveDirty();
-    if (!dirty && !force) return;
-    r.busy = true;
+/* The host session lives outside React so minimizing or re-opening the Live Share window never drops viewers. */
+const nbLive = {
+  status: 'idle', code: '', viewers: 0, err: '', v: 0,
+  peer: null, conns: new Set(), timer: null, busy: false, last: null, lastSent: 0, vpRef: null, missing: 0,
+  subs: new Set(),
+  set(patch) { Object.assign(this, patch); this.v++; this.subs.forEach((f) => f()); },
+  teardown() {
+    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+    try { this.conns.forEach((c) => c.close()); } catch (e) { /* ignore */ }
+    this.conns.clear(); this.last = null; this.busy = false;
+    try { if (this.peer) this.peer.destroy(); } catch (e) { /* ignore */ }
+    this.peer = null;
+  },
+  end() { this.teardown(); this.set({ status: 'idle', code: '', viewers: 0, err: '' }); },
+  async sendFrame(force) {
+    const vp = this.vpRef && this.vpRef.current;
+    if (!vp) { if (++this.missing > 10) this.end(); return; } // the board was closed: stop sharing
+    this.missing = 0;
+    if (this.busy || this.conns.size === 0) return;
+    if (!vp.liveDirty() && !force) return;
+    this.busy = true;
     try {
       const buf = await vp.getLiveFrame(1280);
       if (!buf) return;
-      r.last = buf; r.lastSent = Date.now();
-      r.conns.forEach((c) => { try { if (c.open && !(c.dataChannel && c.dataChannel.bufferedAmount > 1.5e6)) c.send(buf); } catch (e) { /* skip */ } });
-    } finally { r.busy = false; }
-  }, [viewportRef]);
-
-  const start = useCallback((attempt = 0) => {
-    if (!window.Peer) { setStatus('error'); setErr('The sharing library did not load. Check your internet connection and reload.'); return; }
-    teardown(); setErr(''); setViewers(0); setStatus('starting');
-    const c = nbLiveCode(); setCode(c);
-    const peer = new window.Peer(NB_LIVE_PREFIX + c);
-    const r = st.current; r.peer = peer;
+      this.last = buf; this.lastSent = Date.now();
+      this.conns.forEach((c) => { try { if (c.open && !(c.dataChannel && c.dataChannel.bufferedAmount > 1.5e6)) c.send(buf); } catch (e) { /* skip */ } });
+    } finally { this.busy = false; }
+  },
+  start(viewportRef, attempt = 0) {
+    if (!window.Peer) { this.set({ status: 'error', err: 'The sharing library did not load. Check your internet connection and reload.' }); return; }
+    this.teardown(); this.vpRef = viewportRef; this.missing = 0;
+    const code = nbLiveCode();
+    this.set({ status: 'starting', code, viewers: 0, err: '' });
+    const peer = new window.Peer(NB_LIVE_PREFIX + code);
+    this.peer = peer;
     peer.on('open', () => {
-      setStatus('live');
-      r.timer = setInterval(() => sendFrame(Date.now() - r.lastSent > 3000), 300);
+      this.set({ status: 'live' });
+      this.timer = setInterval(() => this.sendFrame(Date.now() - this.lastSent > 3000), 300);
     });
     peer.on('connection', (conn) => {
       conn.on('open', () => {
-        r.conns.add(conn); setViewers(r.conns.size);
-        if (r.last) { try { conn.send(r.last); } catch (e) { /* ignore */ } } else sendFrame(true);
+        this.conns.add(conn); this.set({ viewers: this.conns.size });
+        if (this.last) { try { conn.send(this.last); } catch (e) { /* ignore */ } } else this.sendFrame(true);
       });
-      const gone = () => { r.conns.delete(conn); setViewers(r.conns.size); };
+      const gone = () => { this.conns.delete(conn); this.set({ viewers: this.conns.size }); };
       conn.on('close', gone); conn.on('error', gone);
     });
     peer.on('error', (e) => {
-      if (e && e.type === 'unavailable-id' && attempt < 3) { start(attempt + 1); return; }
+      if (e && e.type === 'unavailable-id' && attempt < 3) { this.start(viewportRef, attempt + 1); return; }
       if (e && e.type === 'peer-unavailable') return;
-      setStatus('error'); setErr('Could not start sharing (' + ((e && e.type) || 'network') + '). Try again.');
+      this.teardown();
+      this.set({ status: 'error', err: 'Could not start sharing (' + ((e && e.type) || 'network') + '). Try again.' });
     });
     peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) { /* ignore */ } });
-  }, [teardown, sendFrame]);
+  },
+};
 
-  const end = () => { teardown(); setStatus('idle'); setCode(''); setViewers(0); };
-
+function LiveShareTool({ viewportRef }) {
+  const [, force] = useState(0);
+  useEffect(() => { const f = () => force((n) => n + 1); nbLive.subs.add(f); f(); return () => { nbLive.subs.delete(f); }; }, []);
+  const { status, code, viewers, err } = nbLive;
+  const stop = (e) => e.stopPropagation();
   return (
     <div className="space-y-2 text-xs text-slate-300" onPointerDown={stop}>
       {status === 'idle' && (<>
         <p>Share this board live. Viewers open NovaBoard, choose <b>Join live board</b> and type your passcode. They can watch but not draw.</p>
-        <button className="nb-btn" onClick={() => start(0)}>Start sharing</button>
+        <button className="nb-btn" onClick={() => nbLive.start(viewportRef)}>Start sharing</button>
       </>)}
       {status === 'starting' && <p>Starting…</p>}
       {status === 'live' && (<>
@@ -7142,12 +7144,12 @@ function LiveShareTool({ viewportRef }) {
           <div className="mono text-3xl font-bold text-cyan-300 tracking-widest select-all">{nbLiveFmt(code)}</div>
         </div>
         <p className="text-center"><span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1.5" />Live · {viewers} {viewers === 1 ? 'viewer' : 'viewers'}</p>
-        <p className="text-[11px] text-slate-500">Anyone with this code can watch. End the session when you are done.</p>
-        <button className="nb-btn sec" onClick={end}>End session</button>
+        <p className="text-[11px] text-slate-500">You can minimize this window and keep sharing. Closing it ends the session.</p>
+        <button className="nb-btn sec" onClick={() => nbLive.end()}>End session</button>
       </>)}
       {status === 'error' && (<>
         <p className="text-red-300" role="alert">{err}</p>
-        <button className="nb-btn" onClick={() => start(0)}>Try again</button>
+        <button className="nb-btn" onClick={() => nbLive.start(viewportRef)}>Try again</button>
       </>)}
     </div>
   );
@@ -7241,7 +7243,7 @@ function NovaTools3({ widgets, closeWidget, toggleMinimize, boundsRef, viewportR
     {widgets.qr && <Tool id="qr" title="QR Code" icon={IQr} width={260} pos={{ x: 500, y: 70 }} w={widgets.qr} {...base}><QrTool /></Tool>}
     {widgets.agenda && <Tool id="agenda" title="Lesson Agenda" icon={IChecklist} width={280} pos={{ x: 540, y: 90 }} w={widgets.agenda} {...base}><AgendaTool /></Tool>}
     {widgets.convert && <Tool id="convert" title="Unit Converter" icon={IConvert} width={280} pos={{ x: 580, y: 110 }} w={widgets.convert} {...base}><ConvertTool /></Tool>}
-    {widgets.live && <Tool id="live" title="Live Share" icon={ILive} width={280} pos={{ x: 160, y: 90 }} w={widgets.live} {...base}><LiveShareTool viewportRef={viewportRef} /></Tool>}
+    {widgets.live && <Tool id="live" title="Live Share" icon={ILive} width={280} pos={{ x: 160, y: 90 }} w={widgets.live} {...base} close={(id) => { nbLive.end(); closeWidget(id); }}><LiveShareTool viewportRef={viewportRef} /></Tool>}
     {widgets.ai && <Tool id="ai" title="AI Assistant" icon={ISparkle} width={340} pos={{ x: 120, y: 70 }} w={widgets.ai} {...base}><AiTool viewportRef={viewportRef} /></Tool>}
     {widgets.clock && <Tool id="clock" title="Clock" icon={IClockFace} width={220} pos={{ x: 620, y: 70 }} w={widgets.clock} {...base}><ClockTool /></Tool>}
   </>);
