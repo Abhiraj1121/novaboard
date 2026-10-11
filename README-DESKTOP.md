@@ -95,5 +95,5 @@ Released under the [MIT License](LICENSE).
 
 ## Contact
 
-**Cognix Studio**: contactcognixstudio@outlook.com
+**Cognix Studio**: studiocognix@outlook.com
 Website: https://abhiraj1121.github.io/novaboard/
