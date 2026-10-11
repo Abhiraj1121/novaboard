@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Download NovaBoard OS for Windows, Linux and Android</title>
+<meta name="description" content="Download NovaBoard OS 3.0.1 for Windows (.exe), Debian and Ubuntu (.deb), any Linux (AppImage) and Android (.apk). Or try it free in your browser.">
+<meta name="author" content="Abhi Raj, Cognix Studio">
+<meta name="theme-color" content="#06080d">
+<meta property="og:title" content="Download NovaBoard OS">
+<meta property="og:description" content="Installers for Windows, Linux and Android. Free, from Cognix Studio.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://abhiraj1121.github.io/novaboard/icon/novaboard-icon-1024.png">
+<link rel="icon" href="icon/novaboard-icon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="512x512" href="icon/novaboard-icon-512.png">
+<link rel="apple-touch-icon" href="icon/novaboard-icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* NovaBoard OS marketing pages: shared styles (landing.html, download.html) */
+:root{
+  --ink-0:#06080d; --ink-1:#0b0f17; --ink-2:#121826; --ink-3:#1b2333;
+  --line:rgba(190,205,230,.10); --line-2:rgba(190,205,230,.20);
+  --chalk:#eef3fb; --soft:#c3cde0; --muted:#8c98ae;
+  --cyan:#33d1ff; --pink:#ff3d8b; --violet:#a45cff;
+  --wrap:1160px;
+  --display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --body:'Hanken Grotesk','Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{
+  margin:0;background:var(--ink-0);color:var(--chalk);
+  font-family:var(--body);font-size:17px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  background-image:
+    linear-gradient(rgba(190,205,230,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(190,205,230,.035) 1px,transparent 1px);
+  background-size:56px 56px;
+}
+img{max-width:100%;display:block}
+a{color:inherit}
+h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.02em;line-height:1.08}
+p{margin:0}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:6px}
+.wrap{width:min(var(--wrap),100% - 40px);margin-inline:auto}
+.skip{position:absolute;left:-999px;top:8px;background:var(--cyan);color:#03121c;padding:8px 14px;border-radius:8px;z-index:100}
+.skip:focus{left:12px}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  padding:13px 22px;border-radius:12px;font:600 16px/1 var(--body);
+  text-decoration:none;border:1px solid transparent;cursor:pointer;
+  transition:transform .15s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease;
+}
+.btn svg{width:18px;height:18px;flex:none}
+.btn-primary{background:var(--cyan);color:#03121c;box-shadow:0 0 0 1px rgba(51,209,255,.55),0 10px 34px -8px rgba(51,209,255,.6)}
+.btn-primary:hover{transform:translateY(-1px);background:#5fdcff;box-shadow:0 0 0 1px rgba(95,220,255,.8),0 14px 40px -8px rgba(51,209,255,.75)}
+.btn-ghost{border-color:var(--line-2);color:var(--chalk);background:rgba(18,24,38,.6)}
+.btn-ghost:hover{border-color:var(--cyan);background:var(--ink-2)}
+.btn-sm{padding:10px 16px;font-size:15px;border-radius:10px}
+.btn-lg{padding:17px 28px;font-size:18px;border-radius:14px}
+
+/* Nav */
+.nav{position:sticky;top:0;z-index:50;background:rgba(6,8,13,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:28px;height:68px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none}
+.brand img{width:38px;height:38px;border-radius:10px}
+.brand b{display:block;font:700 19px/1.05 var(--display);letter-spacing:-.01em}
+.brand small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.nav ul{display:flex;gap:26px;list-style:none;margin:0 0 0 auto;padding:0}
+.nav ul a{text-decoration:none;color:var(--soft);font-weight:500;font-size:15.5px;transition:color .15s}
+.nav ul a:hover,.nav ul a[aria-current]{color:var(--chalk)}
+.nav .actions{display:flex;gap:10px}
+@media (max-width:860px){.nav ul{display:none}.nav .actions{margin-left:auto}}
+@media (max-width:420px){.brand small{display:none}.nav .btn-ghost{display:none}}
+
+/* Media frames and placeholders */
+.media{
+  position:relative;border-radius:18px;border:1px solid var(--line-2);background:var(--ink-1);
+  overflow:hidden;aspect-ratio:16/10;
+  box-shadow:0 34px 80px -30px rgba(0,0,0,.85),0 0 90px -34px var(--glow,rgba(51,209,255,.5));
+}
+.media img{width:100%;height:100%;object-fit:cover;object-position:top left}
+.media svg.ph{width:100%;height:100%;display:block}
+
+/* Chips and lists */
+ul.ink{list-style:none;margin:22px 0 0;padding:0;display:grid;gap:10px}
+ul.ink li{position:relative;padding-left:28px;color:var(--soft);font-size:16.5px}
+ul.ink li::before{content:"";position:absolute;left:0;top:.8em;width:16px;height:2px;border-radius:2px;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+ul.ink li:nth-child(3n+2)::before{background:var(--pink);box-shadow:0 0 8px var(--pink)}
+ul.ink li:nth-child(3n)::before{background:var(--violet);box-shadow:0 0 8px var(--violet)}
+.chips{list-style:none;margin:24px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.chips li{padding:7px 14px;border-radius:999px;border:1px solid var(--line-2);background:var(--ink-2);font-size:14.5px;color:var(--soft)}
+
+/* Builder / branding */
+.avatar{position:relative;width:116px;height:116px;border-radius:24px;overflow:hidden;flex:none;border:1px solid var(--line-2);background:var(--ink-3);display:grid;place-items:center;font:700 34px var(--display);color:var(--cyan)}
+.avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.studio-logo{width:44px;height:44px;border-radius:12px;object-fit:contain;background:var(--ink-2);border:1px solid var(--line-2);padding:4px}
+
+/* Footer */
+.foot{border-top:1px solid var(--line);margin-top:40px;padding:48px 0 40px;background:rgba(6,8,13,.7)}
+.foot .wrap{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:36px}
+.foot h4{margin:0 0 12px;font:600 15px var(--body);color:var(--chalk)}
+.foot p,.foot a{color:var(--muted);font-size:15px}
+.foot ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.foot a{text-decoration:none}.foot a:hover{color:var(--cyan)}
+.foot .studio{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+.foot .studio b{font:700 18px var(--display);color:var(--chalk);display:block;line-height:1.1}
+.foot .studio span{font-size:14px;color:var(--muted)}
+.foot .legal{grid-column:1/-1;border-top:1px solid var(--line);padding-top:22px;font-size:14px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between}
+@media (max-width:760px){.foot .wrap{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
+
+/* "Download the app" popup */
+dialog.nb-pop{
+  width:min(480px,calc(100% - 32px));padding:34px 32px 28px;border:1px solid var(--line-2);border-radius:24px;
+  background:linear-gradient(145deg,#141b2a,#0b0f17);color:var(--chalk);
+  box-shadow:0 40px 120px -20px rgba(0,0,0,.95),0 0 100px -30px rgba(51,209,255,.55),0 0 80px -50px rgba(255,61,139,.7);
+}
+dialog.nb-pop::backdrop{background:rgba(3,5,9,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+dialog.nb-pop[open]{animation:nbPop .22s ease-out}
+@keyframes nbPop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.nb-pop img{width:64px;height:64px;border-radius:17px;margin-bottom:18px}
+.nb-pop h2{font-size:27px;font-weight:700;letter-spacing:-.02em;line-height:1.12}
+.nb-pop p{margin-top:12px;color:var(--soft);font-size:16.5px}
+.nb-pop .nb-actions{margin-top:26px;display:flex;flex-wrap:wrap;gap:10px}
+.nb-pop .nb-actions .btn{flex:1 1 170px}
+@media (prefers-reduced-motion:reduce){dialog.nb-pop[open]{animation:none}}
+
+</style>
+<style>
+  .top{padding:64px 0 36px}
+  .top .wrap{display:grid;grid-template-columns:1.1fr 1fr;gap:56px;align-items:center}
+  .top h1{font-size:clamp(38px,5vw,64px);font-weight:800;letter-spacing:-.035em;line-height:1.03}
+  .top .lede{margin-top:20px;color:var(--soft);font-size:19px;max-width:32em}
+  .top .alt{margin-top:26px;color:var(--muted);font-size:15.5px}
+  .top .alt a{color:var(--cyan);text-underline-offset:3px}
+
+  /* Recommended panel */
+  .rec-panel{position:relative;border:1px solid var(--line-2);border-radius:24px;padding:34px;background:linear-gradient(145deg,rgba(18,24,38,.95),rgba(11,15,23,.95));
+    box-shadow:0 40px 90px -34px rgba(0,0,0,.9),0 0 110px -40px rgba(51,209,255,.5),0 0 90px -60px rgba(255,61,139,.6)}
+  .rec-panel .head{display:flex;align-items:center;gap:16px}
+  .rec-panel .head img{width:68px;height:68px;border-radius:18px}
+  .rec-panel .kicker{color:var(--muted);font-size:15px}
+  .rec-panel h2{font-size:26px;font-weight:700;margin-top:2px}
+  .rec-panel .file{margin-top:22px;font:500 14.5px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--soft);word-break:break-all}
+  .rec-panel .btn{margin-top:20px;width:100%}
+  .rec-panel .meta{margin-top:14px;font-size:14.5px;color:var(--muted)}
+
+  /* Download list */
+  .all{padding:40px 0 20px}
+  .all h2{font-size:clamp(28px,3.2vw,40px);font-weight:700}
+  .all .sub{margin-top:10px;color:var(--soft)}
+  .list{margin-top:30px;border-top:1px solid var(--line-2)}
+  .item{border-bottom:1px solid var(--line-2);position:relative}
+  .item .main{display:grid;grid-template-columns:56px 1fr auto;gap:22px;align-items:center;padding:26px 0 18px}
+  .glyph{width:56px;height:56px;border-radius:16px;background:var(--ink-2);border:1px solid var(--line-2);display:grid;place-items:center;color:var(--cyan)}
+  .glyph svg{width:28px;height:28px}
+  .item:nth-child(2) .glyph{color:var(--pink)}
+  .item:nth-child(3) .glyph{color:var(--violet)}
+  .item:nth-child(4) .glyph{color:#7dffb0}
+  .item h3{font-size:22px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .tag{display:none;font:600 12.5px var(--body);padding:4px 10px;border-radius:999px;background:rgba(51,209,255,.14);color:var(--cyan);border:1px solid rgba(51,209,255,.4)}
+  .item.is-rec .tag{display:inline-block}
+  .item.is-rec::before{content:"";position:absolute;left:-18px;top:18px;bottom:18px;width:3px;border-radius:3px;background:var(--cyan);box-shadow:0 0 14px var(--cyan)}
+  .item .what{margin-top:4px;color:var(--soft);font-size:16px}
+  .item .fname{margin-top:6px;font:500 13.5px ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--muted);word-break:break-all}
+  details{padding:0 0 22px 78px}
+  summary{cursor:pointer;color:var(--muted);font-weight:500;font-size:15.5px;list-style:none;display:inline-flex;align-items:center;gap:8px}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"";width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .2s}
+  details[open] summary::before{transform:rotate(45deg)}
+  summary:hover{color:var(--chalk)}
+  details ol{margin:16px 0 0;padding-left:22px;color:var(--soft);display:grid;gap:10px;max-width:46em;font-size:16px}
+  .cmd{display:flex;align-items:center;gap:10px;margin:6px 0 0;background:#04060a;border:1px solid var(--line-2);border-radius:10px;padding:10px 10px 10px 14px;max-width:46em}
+  .cmd code{flex:1;font:500 14px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#c8f3ff;overflow-x:auto;white-space:nowrap}
+  .cmd button{flex:none;font:500 13px var(--body);color:var(--soft);background:var(--ink-3);border:1px solid var(--line-2);border-radius:8px;padding:6px 12px;cursor:pointer}
+  .cmd button:hover{border-color:var(--cyan);color:var(--chalk)}
+
+  /* Good to know */
+  .know{padding:56px 0 24px}
+  .know h2{font-size:clamp(26px,3vw,36px);font-weight:700}
+  .know .cols{margin-top:30px;display:grid;grid-template-columns:repeat(3,1fr)}
+  .know .cols>div{padding:4px 28px 4px 24px;border-left:1px solid var(--line-2)}
+  .know h3{font-size:19px;font-weight:700;letter-spacing:-.01em}
+  .know p{margin-top:8px;color:var(--soft);font-size:16px}
+  .know code{font:500 14px ui-monospace,SFMono-Regular,Consolas,monospace;background:var(--ink-2);border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:#c8f3ff}
+
+  .browser{padding:48px 0 16px}
+  .browser .box{border:1px solid var(--line-2);border-radius:22px;padding:30px 34px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px;background:rgba(18,24,38,.7)}
+  .browser h2{font-size:26px;font-weight:700}
+  .browser p{margin-top:6px;color:var(--soft)}
+
+  @media (max-width:900px){
+    .top .wrap{grid-template-columns:1fr;gap:36px}
+    .know .cols{grid-template-columns:1fr;gap:26px}
+  }
+  @media (max-width:640px){
+    .item .main{grid-template-columns:48px 1fr;gap:16px}
+    .item .main .btn{grid-column:1/-1}
+    .glyph{width:48px;height:48px}
+    details{padding-left:0}
+    .item.is-rec::before{left:-12px}
+    .rec-panel{padding:26px}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="index.html" aria-label="NovaBoard OS home">
+      <img src="icon/novaboard-icon-512.png" alt="" width="38" height="38">
+      <span><b>NovaBoard OS</b><small>by Cognix Studio</small></span>
+    </a>
+    <ul>
+      <li><a href="index.html">Overview</a></li>
+      <li><a href="index.html#features">Features</a></li>
+      <li><a href="download.html" aria-current="page">Download</a></li>
+      <li><a href="index.html#about">About</a></li>
+    </ul>
+    <div class="actions">
+      <a class="btn btn-primary btn-sm" href="app.html" data-try>Try now</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="top">
+  <div class="wrap">
+    <div>
+      <h1>Download NovaBoard OS</h1>
+      <p class="lede">Version 3.0.1 for Windows, Linux and Android. It is free, and your boards stay on your device.</p>
+      <p class="alt">On macOS, iPhone or iPad? There is no installer for those yet. <a href="app.html" data-try>Open NovaBoard in your browser</a> instead.</p>
+    </div>
+
+    <div class="rec-panel" aria-live="polite">
+      <div class="head">
+        <img src="icon/novaboard-icon-512.png" alt="" width="68" height="68">
+        <div>
+          <div class="kicker" id="rec-kicker">Latest version, 3.0.1</div>
+          <h2 id="rec-title">NovaBoard OS for Windows</h2>
+        </div>
+      </div>
+      <div class="file" id="rec-file">NovaBoard-OS-Setup-v3.0.1.exe</div>
+      <a class="btn btn-primary btn-lg" id="rec-btn" href="https://github.com/Abhiraj1121/novaboard/releases/download/Novaboard/NovaBoard-OS-Setup-v3.0.1.exe" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>
+        <span id="rec-label">Download for Windows</span>
+      </a>
+      <p class="meta" id="rec-meta">Windows 10 or 11, 64-bit.</p>
+    </div>
+  </div>
+</section>
+
+<section class="all" id="all">
+  <div class="wrap">
+    <h2>All downloads</h2>
+    <p class="sub">Every file is hosted on GitHub Releases.</p>
+
+    <div class="list">
+
+      <article class="item" data-os="windows">
+        <div class="main">
+          <div class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
+          <div>
+            <h3>Windows <span class="tag">Recommended</span></h3>
+            <p class="what">Setup installer for Windows 10 and 11, 64-bit. Adds Desktop and Start Menu shortcuts.</p>
+            <p class="fname">NovaBoard-OS-Setup-v3.0.1.exe</p>
+          </div>
+          <a class="btn btn-primary" href="https://github.com/Abhiraj1121/novaboard/releases/download/Novaboard/NovaBoard-OS-Setup-v3.0.1.exe" rel="noopener">Download .exe</a>
+        </div>
+        <details>
+          <summary>How to install</summary>
+          <ol>
+            <li>Run <b>NovaBoard-OS-Setup-v3.0.1.exe</b>.</li>
+            <li>If Windows shows <b>Windows protected your PC</b>, select <b>More info</b>, then <b>Run anyway</b>. The installer is not code-signed yet, so Windows lists the publisher as unknown.</li>
+            <li>Follow the wizard: accept the license, choose a folder and finish.</li>
+            <li>Tick <b>Launch NovaBoard OS</b> on the last page to start the app.</li>
+          </ol>
+        </details>
+      </article>
+
+      <article class="item" data-os="deb">
+        <div class="main">
+          <div class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg></div>
+          <div>
+            <h3>Debian, Ubuntu and Mint <span class="tag">Recommended</span></h3>
+            <p class="what">Package for 64-bit Debian-based systems. Installs to the app menu.</p>
+            <p class="fname">NovaBoard-OS-v3.0.1-amd64.deb</p>
+          </div>
+          <a class="btn btn-primary" href="https://github.com/Abhiraj1121/novaboard/releases/download/Novaboard/NovaBoard-OS-v3.0.1-amd64.deb" rel="noopener">Download .deb</a>
+        </div>
+        <details>
+          <summary>How to install</summary>
+          <ol>
+            <li>Open a terminal in the folder with the file and run:
+              <div class="cmd"><code>sudo apt install ./NovaBoard-OS-v3.0.1-amd64.deb</code><button type="button" data-copy="sudo apt install ./NovaBoard-OS-v3.0.1-amd64.deb">Copy</button></div></li>
+            <li>Launch <b>NovaBoard OS</b> from your app menu.</li>
+            <li>To remove it later:
+              <div class="cmd"><code>sudo apt remove novaboard-os</code><button type="button" data-copy="sudo apt remove novaboard-os">Copy</button></div></li>
+          </ol>
+        </details>
+      </article>
+
+      <article class="item" data-os="linux">
+        <div class="main">
+          <div class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/></svg></div>
+          <div>
+            <h3>Any Linux <span class="tag">Recommended</span></h3>
+            <p class="what">Portable AppImage for 64-bit distributions. No install needed.</p>
+            <p class="fname">NovaBoard-OS-3.0.1-x86_64.AppImage</p>
+          </div>
+          <a class="btn btn-primary" href="https://github.com/Abhiraj1121/novaboard/releases/download/Novaboard/NovaBoard-OS-3.0.1-x86_64.AppImage" rel="noopener">Download AppImage</a>
+        </div>
+        <details>
+          <summary>How to run</summary>
+          <ol>
+            <li>Make the file executable and start it:
+              <div class="cmd"><code>chmod +x NovaBoard-OS-3.0.1-x86_64.AppImage &amp;&amp; ./NovaBoard-OS-3.0.1-x86_64.AppImage</code><button type="button" data-copy="chmod +x NovaBoard-OS-3.0.1-x86_64.AppImage && ./NovaBoard-OS-3.0.1-x86_64.AppImage">Copy</button></div></li>
+            <li>On Ubuntu 22.04 and newer you may also need FUSE:
+              <div class="cmd"><code>sudo apt install libfuse2</code><button type="button" data-copy="sudo apt install libfuse2">Copy</button></div></li>
+            <li>If it will not start because of sandbox restrictions, run it with <b>--no-sandbox</b>.</li>
+          </ol>
+        </details>
+      </article>
+
+      <article class="item" data-os="android">
+        <div class="main">
+          <div class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></div>
+          <div>
+            <h3>Android <span class="tag">Recommended</span></h3>
+            <p class="what">APK for Android phones and tablets.</p>
+            <p class="fname">NovaBoard-OS-v3.0.1.apk</p>
+          </div>
+          <a class="btn btn-primary" href="https://github.com/Abhiraj1121/novaboard/releases/download/Novaboard/NovaBoard-OS-v3.0.1.apk" rel="noopener">Download .apk</a>
+        </div>
+        <details>
+          <summary>How to install</summary>
+          <ol>
+            <li>Download the file on your Android device and open it.</li>
+            <li>If Android asks, allow installing apps from your browser or file manager, then continue.</li>
+            <li>Open <b>NovaBoard OS</b> from your app drawer.</li>
+          </ol>
+        </details>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section class="know">
+  <div class="wrap">
+    <h2>Good to know</h2>
+    <div class="cols">
+      <div>
+        <h3>Smartboard mode</h3>
+        <p>On Linux, start fullscreen with <code>novaboard-os --fullscreen</code>. On Windows, add <code>--fullscreen</code> to the shortcut's target.</p>
+      </div>
+      <div>
+        <h3>Offline, with two exceptions</h3>
+        <p>Drawing, pages, PDFs and tools work without a connection. The AI Assistant and Live Share need internet.</p>
+      </div>
+      <div>
+        <h3>Updates keep your boards</h3>
+        <p>Boards are auto-saved inside the app's own data folder, so updating or reinstalling does not remove them. Save a <code>.novaboard</code> file for a backup.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="browser">
+  <div class="wrap">
+    <div class="box">
+      <div>
+        <h2>Prefer not to install anything?</h2>
+        <p>NovaBoard OS runs in any modern browser with no account.</p>
+      </div>
+      <a class="btn btn-primary btn-lg" href="app.html" data-try>Try now</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div>
+      <div class="studio">
+        <img class="studio-logo" data-guard src="icon/cognix-logo.png" data-fallback="https://cognixstudio.github.io/assets/cognix_logo.png" alt="Cognix Studio logo" width="44" height="44">
+        <div><b>Cognix Studio</b><span>Created by Abhi Raj</span></div>
+      </div>
+      <p>NovaBoard OS is free software released under the MIT License.</p>
+    </div>
+    <div>
+      <h4>NovaBoard OS</h4>
+      <ul>
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="app.html" data-try>Try now</a></li>
+        <li><a href="https://github.com/Abhiraj1121/novaboard/releases" target="_blank" rel="noopener">All releases</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Cognix Studio</h4>
+      <ul>
+        <li><a href="https://cognixstudio.github.io/" target="_blank" rel="noopener">Studio website</a></li>
+        <li><a href="https://abhiraj1121.github.io/" target="_blank" rel="noopener">Abhi Raj</a></li>
+        <li><a href="mailto:contactcognixstudio@outlook.com">contactcognixstudio@outlook.com</a></li>
+      </ul>
+    </div>
+    <div class="legal"><span>&copy; 2026 Cognix Studio. Built with precision by Abhi Raj.</span><span>NovaBoard OS 3.0.1</span></div>
+  </div>
+</footer>
+
+<script>
+/* NovaBoard OS marketing pages: shared behaviour */
+(function () {
+  'use strict';
+
+  /* Illustrative stand-in drawn in the app's neon-ink style.
+     Shown automatically whenever a screenshot file is missing. */
+  function placeholder(i) {
+    var c = [['#33d1ff', '#ff3d8b'], ['#ff3d8b', '#a45cff'], ['#a45cff', '#33d1ff']][i % 3];
+    var id = 'ph' + i + '_' + Math.floor(Math.random() * 1e5);
+    var rot = [0, -4, 3, -2, 5, -3][i % 6];
+    return '<svg class="ph" viewBox="0 0 640 400" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Screenshot placeholder">' +
+      '<defs><pattern id="' + id + 'g" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="rgba(190,205,230,.07)"/></pattern>' +
+      '<filter id="' + id + 'f" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5"/></filter></defs>' +
+      '<rect width="640" height="400" fill="#0b0f17"/><rect width="640" height="400" fill="url(#' + id + 'g)"/>' +
+      '<rect x="0" y="0" width="640" height="34" fill="#0f1420"/><circle cx="20" cy="17" r="4" fill="#243047"/><circle cx="36" cy="17" r="4" fill="#243047"/><circle cx="52" cy="17" r="4" fill="#243047"/>' +
+      '<g transform="rotate(' + rot + ' 320 210)" fill="none" stroke-linecap="round" stroke-linejoin="round">' +
+      '<g filter="url(#' + id + 'f)" stroke-width="14"><path d="M150 320V170q0-60 55-60t55 60v150" stroke="' + c[0] + '"/><path d="M300 150l110 130q50 50 100 10t-30-90" stroke="' + c[1] + '"/></g>' +
+      '<g stroke-width="5"><path d="M150 320V170q0-60 55-60t55 60v150" stroke="' + c[0] + '"/><path d="M300 150l110 130q50 50 100 10t-30-90" stroke="' + c[1] + '"/></g>' +
+      '<g stroke-width="1.8" stroke="#fff" opacity=".9"><path d="M150 320V170q0-60 55-60t55 60v150"/><path d="M300 150l110 130q50 50 100 10t-30-90"/></g></g></svg>';
+  }
+
+  var n = 0;
+  function fail(img) {
+    var fb = img.getAttribute('data-fallback');
+    if (fb && !img.dataset.triedFallback) { img.dataset.triedFallback = '1'; img.src = fb; return; }
+    var box = img.closest('.media');
+    if (box) { img.remove(); box.insertAdjacentHTML('beforeend', placeholder(n++)); }
+    else { img.remove(); }   /* e.g. avatar: initials underneath remain visible */
+  }
+  document.querySelectorAll('img[data-guard]').forEach(function (img) {
+    if (img.complete && img.naturalWidth === 0) fail(img);
+    else img.addEventListener('error', function () { fail(img); });
+  });
+
+  /* Copy buttons for terminal commands */
+  document.querySelectorAll('[data-copy]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var text = btn.getAttribute('data-copy');
+      var done = function () { var o = btn.textContent; btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = o; }, 1400); };
+      if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done); else done();
+    });
+  });
+})();
+
+/* Popup before opening the web app: suggest the installable app first */
+(function () {
+  'use strict';
+  var ua = navigator.userAgent || '';
+  var noInstaller = /iphone|ipad|ipod|macintosh|mac os/i.test(ua) && !/android/i.test(ua); /* no macOS or iOS build exists */
+  var onDownload = /download\.html$/i.test(location.pathname);
+  var dlg, target = 'app.html';
+
+  function build() {
+    dlg = document.createElement('dialog');
+    dlg.className = 'nb-pop';
+    dlg.setAttribute('aria-labelledby', 'nb-pop-title');
+    dlg.innerHTML =
+      '<img src="icon/novaboard-icon-512.png" alt="" width="64" height="64">' +
+      '<h2 id="nb-pop-title">For the best experience, download the app.</h2>' +
+      '<p>The Windows, Linux and Android apps run full screen and keep your core tools working offline. You can also continue in your browser.</p>' +
+      '<div class="nb-actions">' +
+        '<a class="btn btn-primary" id="nb-dl" href="download.html">Download page</a>' +
+        '<a class="btn btn-ghost" id="nb-go" href="app.html">Continue</a>' +
+      '</div>';
+    document.body.appendChild(dlg);
+    dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });   /* click outside closes */
+    dlg.querySelector('#nb-dl').addEventListener('click', function (e) {
+      if (onDownload) { e.preventDefault(); dlg.close(); var a = document.getElementById('all'); if (a) a.scrollIntoView({ behavior: 'smooth' }); }
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[data-try]');
+    if (!a || noInstaller || typeof HTMLDialogElement === 'undefined') return;   /* fall through to a normal link */
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+    e.preventDefault();
+    if (!dlg) build();
+    target = a.getAttribute('href');
+    dlg.querySelector('#nb-go').setAttribute('href', target);
+    dlg.showModal();
+  });
+})();
+
+</script>
+<script>
+/* Pick the most useful download for this device and highlight its row. */
+(function () {
+  'use strict';
+  var R = 'https://github.com/Abhiraj1121/novaboard/releases/download/Novaboard/';
+  var info = {
+    windows: { title: 'NovaBoard OS for Windows', label: 'Download for Windows', file: 'NovaBoard-OS-Setup-v3.0.1.exe', meta: 'Windows 10 or 11, 64-bit.' },
+    linux:   { title: 'NovaBoard OS for Linux', label: 'Download AppImage', file: 'NovaBoard-OS-3.0.1-x86_64.AppImage', meta: 'Runs on any 64-bit distribution. On Debian, Ubuntu or Mint, the .deb below installs to your app menu.' },
+    android: { title: 'NovaBoard OS for Android', label: 'Download for Android', file: 'NovaBoard-OS-v3.0.1.apk', meta: 'Open the file on your device to install it.' }
+  };
+  var ua = navigator.userAgent || '', os = null;
+  if (/android/i.test(ua)) os = 'android';
+  else if (/windows/i.test(ua)) os = 'windows';
+  else if (/linux|x11/i.test(ua) && !/iphone|ipad|mac os/i.test(ua)) os = 'linux';
+  if (!os) return;                        /* macOS, iOS and others keep the default panel text */
+  var d = info[os];
+  document.getElementById('rec-kicker').textContent = 'Best download for your device';
+  document.getElementById('rec-title').textContent = d.title;
+  document.getElementById('rec-label').textContent = d.label;
+  document.getElementById('rec-file').textContent = d.file;
+  document.getElementById('rec-meta').textContent = d.meta;
+  document.getElementById('rec-btn').href = R + d.file;
+  var rows = os === 'linux' ? ['linux', 'deb'] : [os];
+  document.querySelectorAll('.item').forEach(function (el) {
+    if (rows.indexOf(el.dataset.os) > -1) el.classList.add('is-rec');
+  });
+})();
+</script>
+</body>
+</html>
