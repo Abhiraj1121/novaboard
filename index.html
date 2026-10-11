@@ -163,6 +163,7 @@ dialog.nb-pop[open]{animation:nbPop .22s ease-out}
   section{padding:0}
   .preview{padding:12px 0 40px}
   .preview .media{aspect-ratio:16/9;--glow:rgba(164,92,255,.5)}
+  .media video{width:100%;height:100%;object-fit:cover;display:block;background:#06080d}
   .row{padding:72px 0}
   .row .wrap{display:grid;grid-template-columns:1fr 1.15fr;gap:72px;align-items:center}
   .row.flip .wrap{grid-template-columns:1.15fr 1fr}
@@ -295,7 +296,11 @@ dialog.nb-pop[open]{animation:nbPop .22s ease-out}
 <!-- Full app preview -->
 <section class="preview" aria-label="NovaBoard OS home screen">
   <div class="wrap">
-    <div class="media"><img data-guard src="icon/screenshot-home.png" alt="NovaBoard OS home screen with recent sessions and settings" loading="lazy"></div>
+    <div class="media" id="demo">
+      <video muted loop playsinline preload="metadata" poster="icon/screenshot-home.png" aria-label="NovaBoard OS demo video">
+        <source src="icon/novaboard.mp4" type="video/mp4">
+      </video>
+    </div>
   </div>
 </section>
 
@@ -522,6 +527,7 @@ dialog.nb-pop[open]{animation:nbPop .22s ease-out}
     if (box) { img.remove(); box.insertAdjacentHTML('beforeend', placeholder(n++)); }
     else { img.remove(); }   /* e.g. avatar: initials underneath remain visible */
   }
+  window.NBimgFail = fail;
   document.querySelectorAll('img[data-guard]').forEach(function (img) {
     if (img.complete && img.naturalWidth === 0) fail(img);
     else img.addEventListener('error', function () { fail(img); });
@@ -678,6 +684,31 @@ dialog.nb-pop[open]{animation:nbPop .22s ease-out}
 
   window.addEventListener('resize', size);
   size(); playIntro();
+})();
+</script>
+
+<script>
+/* Demo video: plays muted while on screen, pauses off screen, falls back to the screenshot. */
+(function () {
+  'use strict';
+  var box = document.getElementById('demo'); if (!box) return;
+  var v = box.querySelector('video'), src = v.querySelector('source');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function fallback() {
+    if (!v.parentNode) return;
+    var img = new Image(); img.alt = 'NovaBoard OS home screen'; img.src = v.getAttribute('poster');
+    img.addEventListener('error', function () { window.NBimgFail && window.NBimgFail(img); });
+    v.replaceWith(img);
+  }
+  src.addEventListener('error', fallback);
+  if (reduce) { v.controls = true; return; }          /* no autoplay for reduced motion */
+  if (!('IntersectionObserver' in window)) { v.controls = true; return; }
+  new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      if (e.isIntersecting) { var p = v.play(); if (p && p.catch) p.catch(function () { v.controls = true; }); }
+      else v.pause();
+    });
+  }, { threshold: .35 }).observe(v);
 })();
 </script>
 </body>
