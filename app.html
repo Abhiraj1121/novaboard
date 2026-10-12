@@ -1696,6 +1696,7 @@ function PdfImportOverlay({ state }) {
 }
 
 function CanvasTopBar({ session, onBackHome, onNewBoard, isFullscreen, onToggleFullscreen, saveState, onSaveFile, onOpenFile, showPdfLock, pdfLocked, onTogglePdfLock }) {
+  const { s } = useSettings();
   return (
     <div className="glass border-b border-slate-700/40 rounded-none flex items-center gap-3 px-4 py-2.5 flex-shrink-0 relative z-30">
       <button
@@ -1723,7 +1724,7 @@ function CanvasTopBar({ session, onBackHome, onNewBoard, isFullscreen, onToggleF
       <div className="flex-1" />
 
       <OrgBadge />
-      <SaveStatus state={saveState} />
+      {s.showSaveStatus !== false && <SaveStatus state={saveState} />}
 
       {showPdfLock && (
         <button
@@ -1742,13 +1743,13 @@ function CanvasTopBar({ session, onBackHome, onNewBoard, isFullscreen, onToggleF
       >
         <IFolderOpen size={13} /> <span className="hidden md:inline">Open</span>
       </button>
-      <button
+      {s.showSave !== false && <button
         onClick={onSaveFile}
         title="Save this workspace as a .novaboard file"
         className="flex items-center gap-1.5 text-xs mono text-slate-400 hover:text-cyan-300 transition-colors focus-ring rounded-md px-2.5 py-1.5 border border-slate-700/60 hover:border-cyan-500/40"
       >
         <ISave size={13} /> <span className="hidden md:inline">Save</span>
-      </button>
+      </button>}
 
       <button
         onClick={onToggleFullscreen}
@@ -1758,7 +1759,7 @@ function CanvasTopBar({ session, onBackHome, onNewBoard, isFullscreen, onToggleF
         <IMaximize size={13} /> <span className="hidden md:inline">{isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}</span>
       </button>
 
-      <LiveClock />
+      {s.showClock !== false && <LiveClock />}
     </div>
   );
 }
@@ -1794,6 +1795,10 @@ const IDashedPen = (p) => <Svg {...p}><line x1="3" y1="12" x2="6" y2="12"/><line
 const IGridIcon = (p) => <Svg {...p}><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></Svg>;
 const IImagePng = (p) => <Svg {...p}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></Svg>;
 const IEraser = (p) => <Svg {...p}><path d="M20 20H9l-5-5a2 2 0 0 1 0-2.8l9-9a2 2 0 0 1 2.8 0l5 5a2 2 0 0 1 0 2.8L13 20"/><path d="M7 11l6 6"/></Svg>;
+const IEraserArea = (p) => <Svg {...p}><circle cx="12" cy="12" r="8" strokeDasharray="3 2.4"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/></Svg>;
+const IEraserLasso = (p) => <Svg {...p}><path d="M7 16c-3-1-4-4-2-6.5C7 7 11 6 15 7c4 1 5 4 3 6.5-2 2.4-6 3.5-9 3"/><path d="M7 16c-.8 1.4-.4 3 1.4 4"/><circle cx="8.8" cy="20.4" r="1.1" fill="currentColor" stroke="none"/></Svg>;
+const IEraserPrecise = (p) => <Svg {...p}><path d="M16 3l5 5-10 10H6v-5z"/><path d="M13 6l5 5"/><path d="M4 21h9"/></Svg>;
+const IEraserBox = (p) => <Svg {...p}><rect x="4" y="5" width="16" height="14" rx="1.5" strokeDasharray="3 2.4"/><path d="M9 14l3-3 3 3"/></Svg>;
 const ICursor = (p) => <Svg {...p}><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></Svg>;
 const IUndo = (p) => <Svg {...p}><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></Svg>;
 const IRedo = (p) => <Svg {...p}><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></Svg>;
@@ -2100,7 +2105,7 @@ const BLACK_BG = '#000000';
 const WHITE_BG = '#ffffff';
 
 /* Custom props that must survive every fabric toJSON()/clone() round-trip. */
-const NB_PROPS = ['nbKind', 'nb3D', 'nbYaw', 'nbTilt'];
+const NB_PROPS = ['nbKind', 'nb3D', 'nbYaw', 'nbTilt', 'nbEraseD'];
 /* Emoji pen palette and the emoji font stack used for stamps. */
 const NB_EMOJIS = ['⭐', '❤️', '😀', '🔥', '🌸', '👍', '✨', '🎉', '🍎', '🦋'];
 const NB_EMOJI_FONT = "'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";
@@ -2262,6 +2267,17 @@ const NB_POLY_SHAPES = {
 };
 
 const SHAPE_3D_IDS = new Set(SHAPES_3D.map(s => s.id));
+const NB_SHAPE_KINDS = new Set([...SHAPES_2D, ...SHAPES_3D].map((x) => x.id));
+const nbIsShapeObj = (o) => !!o && NB_SHAPE_KINDS.has(o.nbKind);
+const nbShapeCanFill = (o) => nbIsShapeObj(o) && !o.nb3D && o.nbKind !== 'line' && o.nbKind !== 'arrow' && o.nbKind !== 'arrow2';
+const NB_SHAPE_COLORS = ['#ffffff', '#0a0a0a', '#94a3b8', '#ef4444', '#f97316', '#fbbf24', '#a3e635', '#22c55e', '#14b8a6', '#22d3ee', '#3b82f6', '#6366f1', '#a855f7', '#ec4899'];
+const NB_ERASERS = [
+  { id: 'precise', label: 'Precise', title: 'Precise eraser', hint: 'Rubs out only the part you touch' },
+  { id: 'stroke', label: 'Stroke', title: 'Stroke eraser', hint: 'Tap a stroke to remove it' },
+  { id: 'area', label: 'Area', title: 'Area eraser', hint: 'Round brush, size adjustable' },
+  { id: 'lasso', label: 'Lasso', title: 'Lasso eraser', hint: 'Circle things to erase them' },
+  { id: 'box', label: 'Box', title: 'Box eraser', hint: 'Drag a rectangle' },
+];
 
 /* ----- Isometric-style vector projection for 3D wireframes ----- */
 // Simple rotation about Y (yaw) then X (tilt), then orthographic projection
@@ -2579,12 +2595,124 @@ function StylePopover({ anchorRef, label, color, setColor, width, setWidth, onCl
   );
 }
 
+/* Eraser picker: Stroke / Area / Lasso / Box, brush size for Area, and the palm-erase switch. */
+function EraserFlyout({ active, onPick, size, setSize, pSize, setPSize, onClose, anchorRef, down = false }) {
+  const wrapRef = useRef(null);
+  useKeepInView(wrapRef);
+  useEffect(() => {
+    const onDoc = (e) => {
+      const a = anchorRef && anchorRef.current;
+      if (a && a.contains(e.target)) return;
+      onClose();
+    };
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('pointerdown', onDoc);
+    window.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('pointerdown', onDoc); window.removeEventListener('keydown', onKey); };
+  }, [anchorRef, onClose]);
+  const icons = { precise: IEraserPrecise, stroke: IEraser, area: IEraserArea, lasso: IEraserLasso, box: IEraserBox };
+  return (
+    <div ref={wrapRef} className={`absolute ${down ? 'top-full mt-3' : 'bottom-full mb-3'} left-1/2 -translate-x-1/2 z-40`}>
+      <div className="glass-strong modal-in rounded-2xl p-3 w-64 shadow-2xl flex flex-col gap-2.5" role="menu" aria-label="Erasers">
+        <div className="mono text-[10px] tracking-wider text-slate-500 px-0.5">ERASERS</div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {NB_ERASERS.map((er) => {
+            const Ic = icons[er.id];
+            return (
+              <button key={er.id} onClick={() => onPick(er.id)} title={er.hint}
+                className={`tool-btn focus-ring !w-full !h-14 flex-col gap-1 ${active === er.id ? 'active' : ''}`}>
+                <Ic size={17} />
+                <span className="text-[10px] leading-none">{er.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="text-[11px] text-slate-500 px-0.5">{(NB_ERASERS.find((x) => x.id === active) || NB_ERASERS[0]).hint}</div>
+        {(active === 'area' || active === 'precise') && (
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="mono text-[10px] tracking-wider text-slate-500">BRUSH SIZE</span>
+              <span className="mono text-xs text-slate-300 tabular-nums">{active === 'precise' ? pSize : size}px</span>
+            </div>
+            <input type="range" min={active === 'precise' ? 3 : 12} max={active === 'precise' ? 60 : 140} step={active === 'precise' ? 1 : 2} value={active === 'precise' ? pSize : size} onChange={(e) => (active === 'precise' ? setPSize : setSize)(parseInt(e.target.value, 10))} className="nb-slider w-full" aria-label="Eraser brush size" />
+          </div>
+        )}
+        <div className="h-px bg-slate-700/50" />
+        <div className="flex items-center justify-between gap-3 px-0.5">
+          <div className="min-w-0">
+            <div className="text-xs text-slate-200">Palm eraser</div>
+            <div className="text-[10px] text-slate-500">Wipe with your palm (touch screens)</div>
+          </div>
+          <STog k="palmErase" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* Colour control shown next to "Erase" when a shape is selected (a freshly drawn shape is selected automatically). */
+function ShapeColorPopover({ mode, setMode, stroke, fill, canFill, onApply }) {
+  const popRef = useRef(null);
+  useKeepInView(popRef);
+  const cur = mode === 'stroke' ? stroke : fill;
+  const hex = (c) => (typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c.toLowerCase() : '#ffffff');
+  return (
+    <div ref={popRef} className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-40">
+      <div className="glass-strong modal-in rounded-2xl p-3 w-56 shadow-2xl flex flex-col gap-2.5" role="dialog" aria-label="Shape colour">
+        {canFill && (
+          <div className="flex gap-1.5">
+            {[['stroke', 'Outline'], ['fill', 'Fill']].map(([id, l]) => (
+              <button key={id} onClick={() => setMode(id)} className={`nb-chip flex-1 text-center ${mode === id ? 'on' : 'text-slate-400'}`}>{l}</button>
+            ))}
+          </div>
+        )}
+        <div className="grid grid-cols-7 gap-1.5">
+          {NB_SHAPE_COLORS.map((c) => (
+            <button key={c} onClick={() => onApply(mode, c)} aria-label={c} title={c}
+              className={`preset-swatch focus-ring ${cur && String(cur).toLowerCase() === c ? 'active' : ''}`} style={{ background: c }} />
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <input type="color" value={hex(cur)} onChange={(e) => onApply(mode, e.target.value)} className="w-10 h-8 rounded-md bg-transparent border-0 cursor-pointer" aria-label="Custom colour" />
+          <span className="mono text-[11px] text-slate-400 flex-1 truncate">{cur ? String(cur).toUpperCase() : 'NO FILL'}</span>
+          {mode === 'fill' && <button className="nb-btn sec" onClick={() => onApply('fill', null)}>No fill</button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ShapeColorChip({ stroke, fill, canFill, onApply }) {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState('stroke');
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('pointerdown', onDoc);
+    window.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('pointerdown', onDoc); window.removeEventListener('keydown', onKey); };
+  }, [open]);
+  useEffect(() => { if (!canFill && mode === 'fill') setMode('stroke'); }, [canFill, mode]);
+  return (
+    <div ref={ref} className="relative">
+      <button onClick={() => setOpen((v) => !v)} aria-expanded={open} title="Change shape colour" aria-label="Change shape colour"
+        className="glass-strong flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 hover:bg-white/10 focus-ring shadow-xl">
+        <span className="w-3.5 h-3.5 rounded-full border border-white/40" style={{ background: stroke || '#ffffff' }} /> Colour
+      </button>
+      {open && <ShapeColorPopover mode={mode} setMode={setMode} stroke={stroke} fill={fill} canFill={canFill} onApply={onApply} />}
+    </div>
+  );
+}
+
 function DrawToolbar({
   tool, setTool, pen, setPen, color, setColor, width, setWidth,
   canUndo, canRedo, onUndo, onRedo, onClear, hasObjects,
   activeShape, onPickShape,
   onCopy, onPaste, canCopy, canPaste,
   emoji, setEmoji, gridMode, onCycleGrid, gridSize, onGridMode, onGridSize,
+  eraserType = 'stroke', setEraserType = () => {}, eraserSize = 36, setEraserSize = () => {}, preciseSize = 12, setPreciseSize = () => {},
 }) {
   const [gridMenuOpen, setGridMenuOpen] = useState(false);
   const closeGrid = useCallback(() => setGridMenuOpen(false), []);
@@ -2596,6 +2724,7 @@ function DrawToolbar({
   const [pos, setPos] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
   const [penMenuOpen, setPenMenuOpen] = useState(false);
+  const [eraserMenuOpen, setEraserMenuOpen] = useState(false);
   const barRef = useRef(null);
   const closeStyle = useCallback(() => setStyleFor(null), []);
   const anchorRefs = useRef({});
@@ -2681,6 +2810,13 @@ function DrawToolbar({
     if (!isDrawTool) setTool('draw');
     setPenMenuOpen((v) => !v);
   };
+  const eraserMeta = NB_ERASERS.find((x) => x.id === eraserType) || NB_ERASERS[0];
+  const EraserIcon = { precise: IEraserPrecise, stroke: IEraser, area: IEraserArea, lasso: IEraserLasso, box: IEraserBox }[eraserMeta.id] || IEraser;
+  const onEraserClick = () => {
+    setShapeMenuOpen(false); setStyleFor(null); setPenMenuOpen(false); setGridMenuOpen(false);
+    if (tool !== 'eraser') setTool('eraser');
+    setEraserMenuOpen((v) => !v);
+  };
   const onPickPen = (id) => { setTool('draw'); setPen(id); setPenMenuOpen(false); setStyleFor(id === 'emoji' ? null : 'pen'); };
   // Shape: inactive -> shape picker; active -> style popover.
   const onShapeClick = () => {
@@ -2750,9 +2886,18 @@ function DrawToolbar({
             <ToolButton active={tool === 'select'} onClick={() => { setStyleFor(null); setTool('select'); }} title="Select / Move (V)">
               <ICursor size={16} />
             </ToolButton>
-            <ToolButton active={tool === 'eraser'} onClick={() => { setStyleFor(null); setTool('eraser'); }} title="Stroke eraser (E)">
-              <IEraser size={16} />
-            </ToolButton>
+            <div className="relative" ref={anchorRef('eraser')}>
+              <ToolButton active={tool === 'eraser'} onClick={onEraserClick} title={`${eraserMeta.title} (E) — click to switch eraser`}>
+                <EraserIcon size={16} />
+              </ToolButton>
+              {eraserMenuOpen && (
+                <EraserFlyout
+                  active={eraserType} size={eraserSize} setSize={setEraserSize} pSize={preciseSize} setPSize={setPreciseSize} down={popDown} anchorRef={refFor('eraser')}
+                  onPick={(id) => { setEraserType(id); setTool('eraser'); if (id !== 'area' && id !== 'precise') setEraserMenuOpen(false); }}
+                  onClose={() => setEraserMenuOpen(false)}
+                />
+              )}
+            </div>
           </div>
 
           <Divider />
@@ -4011,9 +4156,11 @@ function ActionDock({ panelsHidden, onTogglePanels, onExportPng, onImportPdf, im
   );
 }
 
-function PersistentClock() {
+function PersistentClock({ shift = false }) {
+  const { s } = useSettings();
+  if (s.showClock === false) return null;
   return (
-    <div className="fixed top-3 right-3 z-40 pointer-events-none">
+    <div className="fixed top-3 z-40 pointer-events-none" style={{ right: shift ? '4.5rem' : '0.75rem' }}>
       <LiveClock />
     </div>
   );
@@ -4081,6 +4228,19 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
   useEffect(() => { colorRef.current = color; }, [color]);
   useEffect(() => { widthRef.current = width; }, [width]);
   useEffect(() => { activeShapeRef.current = activeShape; }, [activeShape]);
+
+  const [eraserType, setEraserType] = useState('stroke');   // stroke | area | lasso | box
+  const [eraserSize, setEraserSize] = useState(36);          // area-eraser brush diameter (screen px)
+  const [preciseSize, setPreciseSize] = useState(12);        // precise-eraser tip diameter (screen px)
+  const preciseSizeRef = useRef(12);
+  const eraserTypeRef = useRef(eraserType);
+  const eraserSizeRef = useRef(eraserSize);
+  useEffect(() => { eraserTypeRef.current = eraserType; }, [eraserType]);
+  useEffect(() => { eraserSizeRef.current = eraserSize; }, [eraserSize]);
+  useEffect(() => { preciseSizeRef.current = preciseSize; }, [preciseSize]);
+  const { s: nbSet } = useSettings();
+  const palmRef = useRef({ on: true, min: 72 });
+  palmRef.current = { on: nbSet.palmErase !== false, min: nbClampNum(nbSet.palmSize, 40, 160, 72) };
 
   const pickShape = useCallback((id) => {
     setActiveShape(id);
@@ -4455,10 +4615,178 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       return false;
     };
 
+    /* ---- Extra erasers (area / lasso / box) and palm erase.
+       "Does this object touch the region?" is answered pixel-exactly: the object is drawn to a small
+       offscreen canvas and clipped to the region; any pixel left means a hit. ---- */
+    const palm = { ids: new Map(), erased: false };
+    const hitCanvas = document.createElement('canvas');
+    const maskCanvas = document.createElement('canvas');
+    const eraseCandidates = () => canvas.getObjects().filter((o) => o.visible && o !== livePath && !NB_EPHEMERAL(o) && o.nbKind !== 'bgImage' && o !== bgImageObjRef.current);
+    const regionHitsObject = (o, bb, paint, maxDim = 420) => {
+      let ob;
+      try { ob = o.getBoundingRect(true, true); } catch (e) { return false; }
+      const l = Math.max(bb.l, ob.left), t = Math.max(bb.t, ob.top);
+      const r = Math.min(bb.r, ob.left + ob.width), b = Math.min(bb.b, ob.top + ob.height);
+      if (r <= l || b <= t) return false;
+      const vz = Math.abs(canvas.viewportTransform[0]) || 1;
+      const k = Math.min(vz, maxDim / Math.max(r - l, b - t));
+      const W = Math.max(1, Math.ceil((r - l) * k)), H = Math.max(1, Math.ceil((b - t) * k));
+      hitCanvas.width = W; hitCanvas.height = H;
+      maskCanvas.width = W; maskCanvas.height = H;
+      const g = hitCanvas.getContext('2d', { willReadFrequently: true });
+      const m = maskCanvas.getContext('2d', { willReadFrequently: true });
+      const prevOp = o.globalCompositeOperation;
+      g.save();
+      g.setTransform(k, 0, 0, k, -l * k, -t * k);
+      const prevSkip = canvas.skipOffscreen;
+      canvas.skipOffscreen = false;   // render() must draw the object even if Fabric thinks it is off-screen
+      try { o.globalCompositeOperation = 'source-over'; o.render(g); }
+      catch (e) { g.restore(); return false; }
+      finally { o.globalCompositeOperation = prevOp; canvas.skipOffscreen = prevSkip; }
+      g.restore();
+      m.save();
+      m.setTransform(k, 0, 0, k, -l * k, -t * k);
+      m.fillStyle = '#000';
+      paint(m);
+      m.restore();
+      const objPx = g.getImageData(0, 0, W, H).data, maskPx = m.getImageData(0, 0, W, H).data;
+      for (let i = 3; i < objPx.length; i += 4) if (objPx[i] > 12 && maskPx[i] > 12) return true;
+      return false;
+    };
+    const circleRegion = (x, y, rad) => ({ bb: { l: x - rad, t: y - rad, r: x + rad, b: y + rad }, paint: (g) => { g.beginPath(); g.arc(x, y, rad, 0, Math.PI * 2); g.fill(); } });
+    const polyRegion = (p) => {
+      let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+      p.forEach((q) => { l = Math.min(l, q.x); t = Math.min(t, q.y); r = Math.max(r, q.x); b = Math.max(b, q.y); });
+      return { bb: { l, t, r, b }, paint: (g) => { g.beginPath(); p.forEach((q, i) => (i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y))); g.closePath(); g.fill(); } };
+    };
+    const eraseRegion = (reg) => {
+      let any = false;
+      eraseCandidates().forEach((o) => { if (regionHitsObject(o, reg.bb, reg.paint)) { canvas.remove(o); any = true; } });
+      if (any) canvas.requestRenderAll();
+      return any;
+    };
+    /* Erase along the straight path a->b so fast swipes don't skip over strokes. */
+    const eraseSweep = (a, b, rad) => {
+      const dist = Math.hypot(b.x - a.x, b.y - a.y);
+      const steps = Math.min(60, Math.max(1, Math.ceil(dist / Math.max(2, rad * 0.6))));
+      let any = false;
+      for (let i = 1; i <= steps; i++) {
+        const f = i / steps;
+        if (eraseRegion(circleRegion(a.x + (b.x - a.x) * f, a.y + (b.y - a.y) * f, rad))) any = true;
+      }
+      return any;
+    };
+    /* ---- Precise eraser: rubs out only the part you touch. Each object gets an inverted clip mask
+       (stored in the object's own coordinates, so it moves / scales / rotates with it and is saved with the board). ---- */
+    const preciseRadius = () => (preciseSizeRef.current / 2) / (Math.abs(canvas.viewportTransform[0]) || 1);
+    const addEraseHole = (o, pts) => {
+      const inv = fabric.util.invertTransform(o.calcTransformMatrix());
+      const loc = pts.map((p) => fabric.util.transformPoint(new fabric.Point(p.x, p.y), inv));
+      let area = 0;
+      for (let i = 0; i < loc.length; i++) { const p = loc[i], q = loc[(i + 1) % loc.length]; area += p.x * q.y - q.x * p.y; }
+      if (area < 0) loc.reverse();   // one winding for every hole, so overlapping holes merge instead of cancelling
+      const sub = 'M ' + loc.map((p) => `${+p.x.toFixed(2)} ${+p.y.toFixed(2)}`).join(' L ') + ' Z';
+      const d = o.nbEraseD ? o.nbEraseD + ' ' + sub : sub;
+      o.nbEraseD = d;
+      o.clipPath = new fabric.Path(d, { fill: '#000', stroke: null, strokeWidth: 0, inverted: true, objectCaching: true });
+      o.dirty = true;
+      if (reg && reg.touched) reg.touched.add(o);
+    };
+    const cutAlong = (a, b, rad) => {
+      const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy), th = Math.atan2(dy, dx), pts = [];
+      if (len < 0.01) { for (let i = 0; i < 16; i++) pts.push({ x: a.x + rad * Math.cos(Math.PI * 2 * i / 16), y: a.y + rad * Math.sin(Math.PI * 2 * i / 16) }); }
+      else {
+        for (let i = 0; i <= 8; i++) { const ang = th - Math.PI / 2 + Math.PI * i / 8; pts.push({ x: b.x + rad * Math.cos(ang), y: b.y + rad * Math.sin(ang) }); }
+        for (let i = 0; i <= 8; i++) { const ang = th + Math.PI / 2 + Math.PI * i / 8; pts.push({ x: a.x + rad * Math.cos(ang), y: a.y + rad * Math.sin(ang) }); }
+      }
+      const rg = polyRegion(pts);
+      let any = false;
+      eraseCandidates().forEach((o) => { if (regionHitsObject(o, rg.bb, rg.paint)) { addEraseHole(o, pts); any = true; } });
+      if (any) canvas.requestRenderAll();
+      return any;
+    };
+    const brushRadius = () => (eraserSizeRef.current / 2) / (Math.abs(canvas.viewportTransform[0]) || 1);
+    const clearTop = () => { try { canvas.clearContext(canvas.contextTop); } catch (e) { /* canvas already disposed */ } };
+    const paintEraserPreview = (type, sPts, sRad) => {
+      const g = canvas.contextTop;
+      if (!g) return;
+      clearTop();
+      g.save();
+      g.lineWidth = 1.5; g.setLineDash([6, 4]);
+      g.strokeStyle = 'rgba(56,189,248,0.95)'; g.fillStyle = 'rgba(56,189,248,0.14)';
+      g.beginPath();
+      if (type === 'area') g.arc(sPts[0].x, sPts[0].y, sRad, 0, Math.PI * 2);
+      else if (type === 'box') { const a = sPts[0], b = sPts[sPts.length - 1]; g.rect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y)); }
+      else { sPts.forEach((q, i) => (i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y))); g.closePath(); }
+      g.fill(); g.stroke();
+      g.restore();
+    };
+    let reg = null; // area / lasso / box gesture in flight: { type, pts (scene), spts (screen), last }
+    const beginRegionErase = (type, e, pointer) => {
+      reg = { type, pts: [pointer], spts: [canvas.getPointer(e, true)], last: pointer };
+      let any = false;
+      if (type === 'area') { any = eraseRegion(circleRegion(pointer.x, pointer.y, brushRadius())); paintEraserPreview('area', reg.spts, eraserSizeRef.current / 2); }
+      else if (type === 'precise') { reg.touched = new Set(); any = cutAlong(pointer, pointer, preciseRadius()); paintEraserPreview('area', reg.spts, preciseSizeRef.current / 2); }
+      return any;
+    };
+    const moveRegionErase = (e, pointer) => {
+      if (!reg) return false;
+      const sp = canvas.getPointer(e, true);
+      let any = false;
+      if (reg.type === 'area') {
+        any = eraseSweep(reg.last, pointer, brushRadius());
+        reg.last = pointer; reg.spts = [sp];
+        paintEraserPreview('area', reg.spts, eraserSizeRef.current / 2);
+      } else if (reg.type === 'precise') {
+        if (Math.hypot(pointer.x - reg.last.x, pointer.y - reg.last.y) >= preciseRadius() * 0.35) { any = cutAlong(reg.last, pointer, preciseRadius()); reg.last = pointer; }
+        reg.spts = [sp];
+        paintEraserPreview('area', reg.spts, preciseSizeRef.current / 2);
+      } else if (reg.type === 'lasso') {
+        const lp = reg.spts[reg.spts.length - 1];
+        if (Math.hypot(sp.x - lp.x, sp.y - lp.y) >= 2) { reg.pts.push(pointer); reg.spts.push(sp); }
+        paintEraserPreview('lasso', reg.spts);
+      } else {
+        reg.pts[1] = pointer; reg.spts[1] = sp; reg.last = pointer;
+        paintEraserPreview('box', reg.spts);
+      }
+      return any;
+    };
+    const finishRegionErase = () => {
+      const r = reg; reg = null;
+      if (!r) return false;
+      clearTop();
+      if (r.type === 'precise') {
+        // drop any object that has been rubbed out completely so no invisible leftovers stay on the board
+        (r.touched || []).forEach((o) => {
+          if (!canvas.contains(o)) return;
+          const ob = o.getBoundingRect(true, true);
+          if (!regionHitsObject(o, { l: ob.left, t: ob.top, r: ob.left + ob.width, b: ob.top + ob.height }, (g) => g.fillRect(ob.left, ob.top, ob.width, ob.height), 1000)) canvas.remove(o);
+        });
+        canvas.requestRenderAll();
+        return false;   // history is recorded through erasedDuringGesture
+      }
+      if (r.type === 'lasso' && r.pts.length >= 3) return eraseRegion(polyRegion(r.pts));
+      if (r.type === 'box' && r.pts.length === 2) {
+        const a = r.pts[0], b = r.pts[1];
+        if (Math.abs(b.x - a.x) < 3 && Math.abs(b.y - a.y) < 3) return false;
+        const x0 = Math.min(a.x, b.x), y0 = Math.min(a.y, b.y), w = Math.abs(b.x - a.x), h = Math.abs(b.y - a.y);
+        return eraseRegion({ bb: { l: x0, t: y0, r: x0 + w, b: y0 + h }, paint: (g) => g.fillRect(x0, y0, w, h) });
+      }
+      return false;
+    };
+    /* Round hover ring for the Area eraser (mouse / pen hover only). */
+    canvas.on('mouse:move', (opt) => {
+      if (toolRef.current !== 'eraser' || (eraserTypeRef.current !== 'area' && eraserTypeRef.current !== 'precise') || reg) return;
+      const e = opt.e;
+      if (!e || e.touches) return;
+      paintEraserPreview('area', [canvas.getPointer(e, true)], (eraserTypeRef.current === 'precise' ? preciseSizeRef.current : eraserSizeRef.current) / 2);
+    });
+    canvas.on('mouse:out', () => { if (!reg) clearTop(); });
+
     let erasedDuringGesture = false;
     let erasing = false;
     let textPlace = null; // where the Text tool was pressed; the box is created on release
-    gestureBusyRef.current = () => !!(shapeStart || erasing || textPlace);
+    gestureBusyRef.current = () => !!(shapeStart || erasing || textPlace || palm.ids.size > 0);
 
     canvas.on('mouse:down', (opt) => {
       const e = opt.e;
@@ -4483,7 +4811,8 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       } else if (t === 'eraser') {
         erasing = true;
         erasedDuringGesture = false;
-        if (eraseAt(pointer)) erasedDuringGesture = true;
+        if (eraserTypeRef.current === 'stroke') { if (eraseAt(pointer)) erasedDuringGesture = true; }
+        else if (beginRegionErase(eraserTypeRef.current, e, pointer)) erasedDuringGesture = true;
       } else if (t === 'shape') {
         shapeStart = { x: pointer.x, y: pointer.y };
         liveShape = makeShapeFromDrag(activeShapeRef.current, pointer.x, pointer.y, pointer.x + 0.01, pointer.y + 0.01);
@@ -4533,7 +4862,8 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
         widths.push(w);
         redrawLive();
       } else if (t === 'eraser' && erasing) {
-        if (eraseAt(pointer)) erasedDuringGesture = true;
+        if (eraserTypeRef.current === 'stroke') { if (eraseAt(pointer)) erasedDuringGesture = true; }
+        else if (moveRegionErase(opt.e, pointer)) erasedDuringGesture = true;
       }
     });
 
@@ -4638,6 +4968,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       }
       if (erasing) {
         erasing = false;
+        if (finishRegionErase()) erasedDuringGesture = true;
         if (erasedDuringGesture) pushHistory();
         erasedDuringGesture = false;
       }
@@ -4706,6 +5037,50 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       setView(z, cx - (cx - v[4]) / v[0] * z, cy - (cy - v[5]) / v[3] * z);
       e.preventDefault(); e.stopPropagation();
     };
+    /* ---- Palm eraser: a wide touch contact that MOVES wipes away whatever it sweeps over.
+       A palm resting still does nothing, and the palm never draws or drags. Registered before the
+       pinch handlers so a palm touch is consumed first. ---- */
+    const touchRadius = (t) => Math.max(t.radiusX || t.webkitRadiusX || 0, t.radiusY || t.webkitRadiusY || 0);
+    const isPalmTouch = (t) => palmRef.current.on && touchRadius(t) * 2 >= palmRef.current.min;
+    const touchToScene = (cx, cy) => {
+      const rc = canvas.upperCanvasEl.getBoundingClientRect(), v = canvas.viewportTransform;
+      return { x: (cx - rc.left - v[4]) / v[0], y: (cy - rc.top - v[5]) / v[3] };
+    };
+    const onPalmStart = (e) => {
+      let hit = false;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (isPalmTouch(t)) { palm.ids.set(t.identifier, { x: t.clientX, y: t.clientY, moved: false }); hit = true; }
+      }
+      if (hit) { if (e.cancelable) e.preventDefault(); e.stopImmediatePropagation(); }
+    };
+    const onPalmMove = (e) => {
+      if (!palm.ids.size) return;
+      let mine = false;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i], st = palm.ids.get(t.identifier);
+        if (!st) continue;
+        mine = true;
+        if (!st.moved && Math.hypot(t.clientX - st.x, t.clientY - st.y) < 8) continue;   // resting palm erases nothing
+        st.moved = true;
+        const rad = Math.max(18, touchRadius(t)) / (Math.abs(canvas.viewportTransform[0]) || 1);
+        if (eraseSweep(touchToScene(st.x, st.y), touchToScene(t.clientX, t.clientY), rad)) palm.erased = true;
+        st.x = t.clientX; st.y = t.clientY;
+      }
+      if (mine) { if (e.cancelable) e.preventDefault(); e.stopImmediatePropagation(); }
+    };
+    const onPalmEnd = (e) => {
+      let mine = false;
+      for (let i = 0; i < e.changedTouches.length; i++) if (palm.ids.delete(e.changedTouches[i].identifier)) mine = true;
+      if (!mine) return;
+      if (!palm.ids.size && palm.erased) { palm.erased = false; pushHistory(); }
+      if (e.cancelable) e.preventDefault();
+      e.stopImmediatePropagation();
+    };
+    wrap.addEventListener('touchstart', onPalmStart, { capture: true, passive: false });
+    wrap.addEventListener('touchmove', onPalmMove, { capture: true, passive: false });
+    wrap.addEventListener('touchend', onPalmEnd, { capture: true, passive: false });
+    wrap.addEventListener('touchcancel', onPalmEnd, { capture: true, passive: false });
     // Capture on the wrapper so these run before Fabric's own listeners on the canvas.
     wrap.addEventListener('touchstart', onTS, { capture: true, passive: false });
     wrap.addEventListener('touchmove', onTM, { capture: true, passive: false });
@@ -4738,6 +5113,10 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
 
     return () => {
       stopGlowPulse();
+      wrap.removeEventListener('touchstart', onPalmStart, true);
+      wrap.removeEventListener('touchmove', onPalmMove, true);
+      wrap.removeEventListener('touchend', onPalmEnd, true);
+      wrap.removeEventListener('touchcancel', onPalmEnd, true);
       wrap.removeEventListener('touchstart', onTS, true);
       wrap.removeEventListener('touchmove', onTM, true);
       wrap.removeEventListener('touchend', onTE, true);
@@ -4770,6 +5149,11 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
     c.hoverCursor = isSelect ? 'move' : c.defaultCursor;
     c.requestRenderAll();
   }, [tool]);
+
+  useEffect(() => {
+    const c = fabricRef.current;
+    if (c && c.contextTop && (tool !== 'eraser' || (eraserType !== 'area' && eraserType !== 'precise'))) { try { c.clearContext(c.contextTop); } catch (e) { /* ignore */ } }
+  }, [tool, eraserType]);
 
   /* ---- Rotation handle for the selected 3D wireframe object ---- */
   const updateRotateHandle = useCallback(() => {
@@ -4821,6 +5205,21 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
     pushHistory();
   }, [pushHistory]);
 
+  /* Recolour the selected shape(s): which = 'stroke' (outline) or 'fill'; col = null clears the fill. */
+  const applyShapeColor = useCallback((which, col) => {
+    const c = fabricRef.current;
+    if (!c) return;
+    const objs = c.getActiveObjects().filter(nbIsShapeObj);
+    if (!objs.length) return;
+    objs.forEach((o) => {
+      if (which === 'stroke') { if (col) o.set('stroke', col); }
+      else if (nbShapeCanFill(o)) o.set('fill', col || 'transparent');
+      o.dirty = true;
+    });
+    c.requestRenderAll();
+    pushHistoryDebounced();
+  }, [pushHistoryDebounced]);
+
   useEffect(() => {
     const c = fabricRef.current;
     if (!c) return;
@@ -4831,10 +5230,18 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
         return;
       }
       const br = nbScreenRect(c, a);
-      const n = c.getActiveObjects().length;
-      const x = Math.round(br.left + br.width / 2);
+      const sel = c.getActiveObjects();
+      const n = sel.length;
+      const shapes = sel.filter(nbIsShapeObj);
+      const shape = shapes.length > 0;
+      const scol = shape ? (typeof shapes[0].stroke === 'string' ? shapes[0].stroke : '#ffffff') : null;
+      const fillObj = shapes.find(nbShapeCanFill);
+      const canFill = !!fillObj;
+      const sfill = canFill && typeof fillObj.fill === 'string' && fillObj.fill !== 'transparent' ? fillObj.fill : null;
+      const cw = c.getWidth();
+      const x = Math.round(Math.min(Math.max(br.left + br.width / 2, 96), Math.max(96, cw - 96)));
       const y = Math.round(Math.max(8, br.top - 40));
-      setSelChip((prev) => (prev && prev.x === x && prev.y === y && prev.n === n ? prev : { x, y, n }));
+      setSelChip((prev) => (prev && prev.x === x && prev.y === y && prev.n === n && prev.shape === shape && prev.scol === scol && prev.canFill === canFill && prev.sfill === sfill ? prev : { x, y, n, shape, scol, canFill, sfill }));
     };
     const evs = ['selection:created', 'selection:updated', 'selection:cleared', 'object:moving', 'object:scaling',
       'object:rotating', 'object:modified', 'text:editing:entered', 'text:editing:exited', 'after:render'];
@@ -5321,14 +5728,16 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
         </div>
       )}
       {selChip && (
-        <button
-          onClick={eraseSelection}
-          title="Erase selected (Delete)"
-          className="glass-strong absolute z-30 -translate-x-1/2 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-rose-300 hover:text-rose-200 hover:bg-rose-500/20 focus-ring shadow-xl"
-          style={{ left: selChip.x, top: selChip.y }}
-        >
-          <ITrash size={13} /> Erase{selChip.n > 1 ? ` ${selChip.n}` : ''}
-        </button>
+        <div className="absolute z-30 -translate-x-1/2 flex items-start gap-1.5" style={{ left: selChip.x, top: selChip.y }}>
+          {selChip.shape && <ShapeColorChip stroke={selChip.scol} fill={selChip.sfill} canFill={selChip.canFill} onApply={applyShapeColor} />}
+          <button
+            onClick={eraseSelection}
+            title="Erase selected (Delete)"
+            className="glass-strong flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-rose-300 hover:text-rose-200 hover:bg-rose-500/20 focus-ring shadow-xl"
+          >
+            <ITrash size={13} /> Erase{selChip.n > 1 ? ` ${selChip.n}` : ''}
+          </button>
+        </div>
       )}
       {!hasObjects && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -5351,6 +5760,9 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
         onCopy={copySelection} onPaste={pasteClipboard}
         canCopy={hasSelection} canPaste={hasClipboard}
         emoji={emoji} setEmoji={setEmoji}
+        eraserType={eraserType} setEraserType={setEraserType}
+        eraserSize={eraserSize} setEraserSize={setEraserSize}
+        preciseSize={preciseSize} setPreciseSize={setPreciseSize}
         gridSize={gridSize} onGridMode={setGridMode} onGridSize={setGridSize} gridMode={gridMode} onCycleGrid={() => setGridMode((g) => ({ off: 'grid', grid: 'dots', dots: 'lines', lines: 'off' }[g]))}
       />
       {rotateHandle && (
@@ -5415,6 +5827,10 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const rootRef = useRef(null);
 
+  const { s: nbS } = useSettings();
+  const avatarShown = nbS.showAvatarCanvas !== false && !!nbS.avatar;
+  const clockShown = nbS.showClock !== false;
+
   useEffect(() => {
     const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', onFsChange);
@@ -5423,7 +5839,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
-      rootRef.current?.requestFullscreen?.().catch(() => {});
+      document.documentElement.requestFullscreen?.().catch(() => {});
     } else {
       document.exitFullscreen?.().catch(() => {});
     }
@@ -5994,8 +6410,10 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
       />
       {topBarHidden && (
         <>
-          <PersistentClock />
-          <div className="fixed top-3 right-[9.5rem] z-40 pointer-events-none"><SaveStatus state={saveState} /></div>
+          <PersistentClock shift={avatarShown} />
+          {nbS.showSaveStatus !== false && (
+            <div className="fixed top-3 z-40 pointer-events-none" style={{ right: `${(avatarShown ? 4.5 : 0.75) + (clockShown ? 8.75 : 0)}rem` }}><SaveStatus state={saveState} /></div>
+          )}
         </>
       )}
       <Toast notice={notice} />
@@ -6057,6 +6475,11 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
             />
           </div>
           <CanvasViewport ref={viewportRef} initialBg={activeSlide?.bg} onContentChange={handleContentChange} viewLocked={pdfLocked} />
+          {avatarShown && (
+            <div className="pointer-events-none absolute top-3 right-3 z-20" aria-hidden="true" style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,.45))' }}>
+              <Avatar size={44} />
+            </div>
+          )}
 
           <NovaTools3 widgets={widgets} closeWidget={closeWidget} toggleMinimize={toggleMinimize} boundsRef={canvasStageRef} viewportRef={viewportRef} />
 
@@ -6255,7 +6678,10 @@ const NB_DEFAULTS = {
   blur: 14, radius: 1, fontScale: 1, motion: true, aurora: true, sound: true,
   splash: true, font: 'default', glow: true, penColor: '#ffffff', penWidth: 6, defGrid: 'off', gridSize: 32,
   aiProvider: 'gemini', aiKeyGemini: '', aiKeyGroq: '', aiKeyOpenrouter: '', aiModel: '',
+  showClock: true, showSave: true, showSaveStatus: true, showAvatarCanvas: true,
+  palmErase: true, palmSize: 72,
 };
+const nbClampNum = (v, lo, hi, d) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, Math.round(n))) : d; };
 function nbLoadSettings() {
   try { return { ...NB_DEFAULTS, ...(JSON.parse(localStorage.getItem(NB_SET_KEY)) || {}) }; } catch (e) { return { ...NB_DEFAULTS }; }
 }
@@ -6385,6 +6811,7 @@ function STog({ k }) {
 function SettingsPanel({ tab: startTab, onClose }) {
   const { s, set } = useSettings();
   const [tab, setTab] = useState(startTab || 'appearance');
+  useEffect(() => { if (startTab) setTab(startTab); }, [startTab]);
   const [err, setErr] = useState('');
   const fileRef = useRef(null);
   const importRef = useRef(null);
@@ -6427,7 +6854,8 @@ function SettingsPanel({ tab: startTab, onClose }) {
               </div>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; pickAvatar(f); }} />
             </div>
-            <label className="block text-xs text-slate-400 mb-1">Organiser / school name</label>
+            <SRow label="Show picture on board" hint={s.avatar ? 'Top-right corner of the canvas' : 'Upload a picture above first'}><STog k="showAvatarCanvas" /></SRow>
+            <label className="block text-xs text-slate-400 mb-1 mt-2">Organiser / school name</label>
             <input className="nb-in" maxLength={60} value={s.org} placeholder="e.g. Greenwood High School" onChange={(e) => set({ org: e.target.value })} />
             <label className="block text-xs text-slate-400 mt-3 mb-1">Your name (greeting)</label>
             <input className="nb-in" maxLength={40} value={s.userName} placeholder="e.g. Ms. Rao" onChange={(e) => set({ userName: e.target.value })} />
@@ -6468,6 +6896,10 @@ function SettingsPanel({ tab: startTab, onClose }) {
             <div className="py-2"><div className="flex justify-between text-sm text-slate-100"><span>Glass blur</span><span className="mono text-xs text-slate-500">{s.blur}px</span></div><input type="range" min="0" max="32" value={s.blur} onChange={(e) => set({ blur: +e.target.value })} className="nb-range" /></div>
             <div className="py-2"><div className="flex justify-between text-sm text-slate-100"><span>Corner roundness</span><span className="mono text-xs text-slate-500">{Math.round(s.radius * 100)}%</span></div><input type="range" min="0" max="2" step="0.1" value={s.radius} onChange={(e) => set({ radius: +e.target.value })} className="nb-range" /></div>
             <div className="py-2"><div className="flex justify-between text-sm text-slate-100"><span>Interface size</span><span className="mono text-xs text-slate-500">{Math.round(s.fontScale * 100)}%</span></div><input type="range" min="0.85" max="1.3" step="0.05" value={s.fontScale} onChange={(e) => set({ fontScale: +e.target.value })} className="nb-range" /></div>
+            <div className="text-xs text-slate-400 mt-3 mb-1">On the board</div>
+            <SRow label="Clock" hint="The time at the top right"><STog k="showClock" /></SRow>
+            <SRow label="Saved / Saving indicator" hint="The status pill beside the clock"><STog k="showSaveStatus" /></SRow>
+            <SRow label="Save button" hint="Download a .novaboard file (auto-save keeps working)"><STog k="showSave" /></SRow>
             <SRow label="Animations" hint="Turn off for low-power boards"><STog k="motion" /></SRow>
             <SRow label="Launch animation" hint="Droplet intro when NovaBoard opens"><STog k="splash" /></SRow>
             <SRow label="Startup sound" hint="Plop and chime during the intro"><STog k="sound" /></SRow>
@@ -6484,6 +6916,9 @@ function SettingsPanel({ tab: startTab, onClose }) {
               {NB_GRID_OPTS.map(([id, l]) => <button key={id} onClick={() => set({ defGrid: id })} className={`nb-chip ${s.defGrid === id ? 'on' : 'text-slate-400'}`}>{l}</button>)}
             </div>
             <div className="py-3"><div className="flex justify-between text-sm text-slate-100"><span>Guide spacing</span><span className="mono text-xs text-slate-500">{s.gridSize}px</span></div><input type="range" min="16" max="80" step="4" value={s.gridSize} onChange={(e) => set({ gridSize: +e.target.value })} className="nb-range" /></div>
+            <div className="text-xs text-slate-400 mt-2 mb-1">Touch screen</div>
+            <SRow label="Palm eraser" hint="Wipe with your palm to erase. A resting palm does nothing"><STog k="palmErase" /></SRow>
+            <div className="py-2"><div className="flex justify-between text-sm text-slate-100"><span>Palm detection size</span><span className="mono text-xs text-slate-500">{s.palmSize}px</span></div><input type="range" min="40" max="160" step="4" value={s.palmSize} onChange={(e) => set({ palmSize: +e.target.value })} className="nb-range" /><p className="text-[11px] text-slate-500 pt-1">Only touches wider than this count as a palm. Lower it if your palm is not detected; raise it if a finger or thumb erases by mistake.</p></div>
           </>)}
 
           {tab === 'ai' && (<>
