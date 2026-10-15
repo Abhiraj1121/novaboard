@@ -6678,6 +6678,7 @@ const NB_DEFAULTS = {
   blur: 14, radius: 1, fontScale: 1, motion: true, aurora: true, sound: true,
   splash: true, font: 'default', glow: true, penColor: '#ffffff', penWidth: 6, defGrid: 'off', gridSize: 32,
   aiProvider: 'gemini', aiKeyGemini: '', aiKeyGroq: '', aiKeyOpenrouter: '', aiModel: '',
+  turnUrl: '', turnUser: '', turnCred: '',
   showClock: true, showSave: true, showSaveStatus: true, showAvatarCanvas: true,
   palmErase: true, palmSize: 72,
 };
@@ -6686,10 +6687,28 @@ function nbLoadSettings() {
   try { return { ...NB_DEFAULTS, ...(JSON.parse(localStorage.getItem(NB_SET_KEY)) || {}) }; } catch (e) { return { ...NB_DEFAULTS }; }
 }
 const NB_AI_PROVIDERS = ['gemini', 'groq', 'openrouter'];
+const NB_AI_LINKS = { gemini: 'https://aistudio.google.com/apikey', groq: 'https://console.groq.com/keys', openrouter: 'https://openrouter.ai/keys' };
 const nbAiProv = (s) => (NB_AI_PROVIDERS.includes(s.aiProvider) ? s.aiProvider : 'gemini');
 const nbAiKeyField = (s) => ({ groq: 'aiKeyGroq', openrouter: 'aiKeyOpenrouter' }[nbAiProv(s)] || 'aiKeyGemini');
 const nbAiKey = (s) => s[nbAiKeyField(s)] || '';
 function nbSaveSettings(s) { try { localStorage.setItem(NB_SET_KEY, JSON.stringify(s)); } catch (e) { /* quota: ignore */ } }
+/* PeerJS options: free Google STUN by default, plus the user's own TURN relay (BYOK) when saved in Settings. */
+function nbPeerOpts() {
+  const iceServers = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
+  try {
+    const s = nbLoadSettings();
+    const urls = String(s.turnUrl || '').split(/[\s,]+/).filter(Boolean)
+      .map((u) => (/^(turns?|stuns?):/i.test(u) ? u : 'turn:' + u.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '').replace(/^\/+/, ''))) // no scheme -> turn:
+      .filter((u) => /^(turns?|stuns?):.+/i.test(u));
+    if (urls.length) {
+      const srv = { urls: urls.length === 1 ? urls[0] : urls };
+      if (s.turnUser) srv.username = s.turnUser;
+      if (s.turnCred) srv.credential = s.turnCred;
+      iceServers.push(srv);
+    }
+  } catch (e) { /* fall back to STUN only */ }
+  return { config: { iceServers } };
+}
 
 const nbHex2rgb = (h) => { const n = parseInt(h.replace('#', ''), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
 const nbMix = (rgb, t, k) => rgb.map((v, i) => Math.round(v + (t[i] - v) * k));
@@ -6815,20 +6834,20 @@ function SettingsPanel({ tab: startTab, onClose }) {
   const [err, setErr] = useState('');
   const fileRef = useRef(null);
   const importRef = useRef(null);
-  const tabs = [['profile', 'Profile'], ['appearance', 'Look'], ['interface', 'Interface'], ['board', 'Board'], ['ai', 'AI'], ['data', 'Data']];
+  const tabs = [['profile', 'Profile'], ['appearance', 'Look'], ['interface', 'Interface'], ['board', 'Board'], ['ai', 'AI'], ['network', 'Network'], ['data', 'Data']];
   const pickAvatar = async (f) => {
     if (!f) return; setErr('');
     try { set({ avatar: await nbResizeAvatar(f) }); } catch (e) { setErr('Could not read that image.'); }
   };
   const exportSettings = () => {
-    const { aiKeyGemini, aiKeyGroq, aiKeyOpenrouter, ...safe } = s; // API keys never leave this browser
+    const { aiKeyGemini, aiKeyGroq, aiKeyOpenrouter, turnCred, ...safe } = s; // API keys and TURN credential never leave this browser
     const blob = new Blob([JSON.stringify(safe, null, 1)], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'novaboard-settings.json'; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   };
   const importSettings = (f) => {
     if (!f) return; const r = new FileReader();
-    r.onload = () => { try { const { aiKeyGemini, aiKeyGroq, aiKeyOpenrouter, ...inc } = JSON.parse(r.result); set({ ...NB_DEFAULTS, aiKeyGemini: s.aiKeyGemini, aiKeyGroq: s.aiKeyGroq, aiKeyOpenrouter: s.aiKeyOpenrouter, ...inc }); setErr(''); } catch (e) { setErr('Invalid settings file.'); } };
+    r.onload = () => { try { const { aiKeyGemini, aiKeyGroq, aiKeyOpenrouter, turnCred, ...inc } = JSON.parse(r.result); set({ ...NB_DEFAULTS, aiKeyGemini: s.aiKeyGemini, aiKeyGroq: s.aiKeyGroq, aiKeyOpenrouter: s.aiKeyOpenrouter, turnCred: s.turnCred, ...inc }); setErr(''); } catch (e) { setErr('Invalid settings file.'); } };
     r.readAsText(f);
   };
   return (
@@ -6928,6 +6947,9 @@ function SettingsPanel({ tab: startTab, onClose }) {
               {[['gemini', 'Google Gemini'], ['groq', 'Groq'], ['openrouter', 'OpenRouter']].map(([id, l]) => <button key={id} onClick={() => set({ aiProvider: id, aiModel: '' })} className={`nb-chip ${nbAiProv(s) === id ? 'on' : 'text-slate-400'}`}>{l}</button>)}
             </div>
             <p className="text-[11px] text-slate-500 pb-1">{({ groq: 'Get a free key at console.groq.com/keys (no card).', openrouter: 'Get a free key at openrouter.ai/keys. Free models are rate-limited to about 20 requests a minute.' }[nbAiProv(s)]) || 'Get a free key at aistudio.google.com/apikey (no card).'}</p>
+            <SRow label="Get a free key" hint="Opens the provider's page in a new tab">
+              <a href={NB_AI_LINKS[nbAiProv(s)]} target="_blank" rel="noopener noreferrer" className={`nb-btn ${nbAiKey(s) ? 'sec' : ''} inline-block text-center no-underline`}>{nbAiKey(s) ? 'Open page' : 'Get API key'}</a>
+            </SRow>
             <SRow label="API key" hint={({ groq: 'Starts with gsk_', openrouter: 'Starts with sk-or-' }[nbAiProv(s)]) || 'Starts with AIza'}>
               <input type="password" autoComplete="off" value={nbAiKey(s)} onChange={(e) => set({ [nbAiKeyField(s)]: e.target.value.trim() })} placeholder={({ groq: 'gsk_...', openrouter: 'sk-or-...' }[nbAiProv(s)]) || 'AIza...'} className="w-44 px-2 py-1 rounded-md bg-slate-900/60 border border-slate-600/50 text-xs text-slate-100" aria-label="API key" />
             </SRow>
@@ -6935,6 +6957,27 @@ function SettingsPanel({ tab: startTab, onClose }) {
               <input type="text" value={s.aiModel} onChange={(e) => set({ aiModel: e.target.value.trim() })} placeholder={NB_AI_MODELS[nbAiProv(s)].text} className="w-44 px-2 py-1 rounded-md bg-slate-900/60 border border-slate-600/50 text-xs text-slate-100 mono" aria-label="Model name" />
             </SRow>
             {nbAiKey(s) && <SRow label="Remove key"><button className="nb-btn sec" onClick={() => set({ [nbAiKeyField(s)]: '' })}>Clear</button></SRow>}
+          </>)}
+
+          {tab === 'network' && (<>
+            <div className="text-sm text-slate-100 font-semibold">Live Share Network / Custom TURN (Optional)</div>
+            <p className="text-[11px] text-slate-500 pb-1">Live sharing is peer-to-peer. On mobile data (CGNAT) or strict firewalls it can fail without a TURN relay. You can get free TURN credentials from providers like Metered.ca or OpenRelay and paste them here. Leave empty to use free Google STUN only. Saved only in this browser; the credential is not included in settings export.</p>
+            <SRow label="Get free TURN credentials" hint="Opens in a new tab">
+              <span className="flex gap-2">
+                <a href="https://www.metered.ca/tools/openrelay/" target="_blank" rel="noopener noreferrer" className={`nb-btn ${s.turnUrl ? 'sec' : ''} inline-block text-center no-underline`}>OpenRelay</a>
+                <a href="https://www.metered.ca/" target="_blank" rel="noopener noreferrer" className="nb-btn sec inline-block text-center no-underline">Metered.ca</a>
+              </span>
+            </SRow>
+            <SRow label="TURN URL" hint="e.g. turn:host:443?transport=tcp">
+              <input type="text" autoComplete="off" spellCheck="false" value={s.turnUrl} onChange={(e) => set({ turnUrl: e.target.value.trim() })} placeholder="turn:example.com:443" className="w-44 px-2 py-1 rounded-md bg-slate-900/60 border border-slate-600/50 text-xs text-slate-100 mono" aria-label="TURN URL" />
+            </SRow>
+            <SRow label="Username">
+              <input type="text" autoComplete="off" spellCheck="false" value={s.turnUser} onChange={(e) => set({ turnUser: e.target.value.trim() })} className="w-44 px-2 py-1 rounded-md bg-slate-900/60 border border-slate-600/50 text-xs text-slate-100 mono" aria-label="TURN username" />
+            </SRow>
+            <SRow label="Credential">
+              <input type="password" autoComplete="off" value={s.turnCred} onChange={(e) => set({ turnCred: e.target.value.trim() })} className="w-44 px-2 py-1 rounded-md bg-slate-900/60 border border-slate-600/50 text-xs text-slate-100 mono" aria-label="TURN credential" />
+            </SRow>
+            {(s.turnUrl || s.turnUser || s.turnCred) && <SRow label="Remove TURN config"><button className="nb-btn sec" onClick={() => set({ turnUrl: '', turnUser: '', turnCred: '' })}>Clear</button></SRow>}
           </>)}
 
           {tab === 'data' && (<>
@@ -7507,11 +7550,12 @@ const nbLiveClean = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '
 /* The host session lives outside React so minimizing or re-opening the Live Share window never drops viewers. */
 const nbLive = {
   status: 'idle', code: '', viewers: 0, err: '', v: 0,
-  peer: null, conns: new Set(), timer: null, busy: false, last: null, lastSent: 0, vpRef: null, missing: 0,
+  peer: null, conns: new Set(), timer: null, openTimer: null, busy: false, last: null, lastSent: 0, vpRef: null, missing: 0,
   subs: new Set(),
   set(patch) { Object.assign(this, patch); this.v++; this.subs.forEach((f) => f()); },
   teardown() {
     if (this.timer) { clearInterval(this.timer); this.timer = null; }
+    if (this.openTimer) { clearTimeout(this.openTimer); this.openTimer = null; }
     try { this.conns.forEach((c) => c.close()); } catch (e) { /* ignore */ }
     this.conns.clear(); this.last = null; this.busy = false;
     try { if (this.peer) this.peer.destroy(); } catch (e) { /* ignore */ }
@@ -7537,27 +7581,44 @@ const nbLive = {
     this.teardown(); this.vpRef = viewportRef; this.missing = 0;
     const code = nbLiveCode();
     this.set({ status: 'starting', code, viewers: 0, err: '' });
-    const peer = new window.Peer(NB_LIVE_PREFIX + code);
+    const peer = new window.Peer(NB_LIVE_PREFIX + code, nbPeerOpts());
     this.peer = peer;
+    const mine = () => this.peer === peer; // ignore late events from a replaced or torn-down peer
+    this.openTimer = setTimeout(() => { // signalling server never answered
+      this.openTimer = null;
+      if (!mine() || this.status !== 'starting') return;
+      this.teardown();
+      this.set({ status: 'error', err: 'Could not reach the sharing server. Check your internet connection and try again.' });
+    }, 12000);
     peer.on('open', () => {
+      if (!mine()) return;
+      if (this.openTimer) { clearTimeout(this.openTimer); this.openTimer = null; }
       this.set({ status: 'live' });
       this.timer = setInterval(() => this.sendFrame(Date.now() - this.lastSent > 3000), 300);
     });
     peer.on('connection', (conn) => {
+      if (!mine()) { try { conn.close(); } catch (e) { /* ignore */ } return; }
       conn.on('open', () => {
+        if (!mine()) return;
         this.conns.add(conn); this.set({ viewers: this.conns.size });
         if (this.last) { try { conn.send(this.last); } catch (e) { /* ignore */ } } else this.sendFrame(true);
       });
-      const gone = () => { this.conns.delete(conn); this.set({ viewers: this.conns.size }); };
+      const gone = () => { if (this.conns.delete(conn)) this.set({ viewers: this.conns.size }); };
       conn.on('close', gone); conn.on('error', gone);
     });
     peer.on('error', (e) => {
+      if (!mine()) return;
       if (e && e.type === 'unavailable-id' && attempt < 3) { this.start(viewportRef, attempt + 1); return; }
       if (e && e.type === 'peer-unavailable') return;
       this.teardown();
       this.set({ status: 'error', err: 'Could not start sharing (' + ((e && e.type) || 'network') + '). Try again.' });
     });
-    peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) { /* ignore */ } });
+    peer.on('disconnected', () => {
+      if (!mine()) return;
+      if (this.status === 'live') { try { peer.reconnect(); } catch (e) { /* ignore */ } return; } // keep viewers through a short signalling drop
+      this.teardown();
+      this.set({ status: 'error', err: 'Lost connection to the sharing server. Try again.' });
+    });
   },
 };
 
@@ -7591,8 +7652,9 @@ function LiveShareTool({ viewportRef }) {
 }
 
 function LiveViewer({ onClose }) {
+  const { open: openSettings } = useSettings();
   const [input, setInput] = useState('');
-  const [status, setStatus] = useState('idle'); // idle | connecting | watching | ended | error
+  const [status, setStatus] = useState('idle'); // idle | connecting | watching | ended | error | netfail
   const [err, setErr] = useState('');
   const [src, setSrc] = useState(null);
   const ref = useRef({ peer: null, url: null, timer: null });
@@ -7610,27 +7672,35 @@ function LiveViewer({ onClose }) {
     const c = nbLiveClean(input);
     if (c.length !== 6) { setErr('Enter the 6-character passcode.'); return; }
     if (!window.Peer) { setErr('The sharing library did not load. Check your internet connection and reload.'); return; }
-    cleanup(); setErr(''); setStatus('connecting');
+    cleanup(); setErr(''); setSrc(null); setStatus('connecting');
     const r = ref.current;
-    const fail = (m) => { cleanup(); setStatus('error'); setErr(m); };
-    const peer = new window.Peer(); r.peer = peer;
-    r.timer = setTimeout(() => fail('Could not connect. Check the passcode and that the host is sharing.'), 15000);
+    let opened = false, dead = false; // dead: this attempt already ended in fail/netFail
+    const fail = (m) => { if (dead) return; dead = true; cleanup(); setStatus('error'); setErr(m); };
+    const netFail = () => { if (dead) return; dead = true; cleanup(); setSrc(null); setStatus('netfail'); setErr(''); };
+    const peer = new window.Peer(undefined, nbPeerOpts()); r.peer = peer;
+    const mine = () => !dead && r.peer === peer; // cleanup() clears r.peer, so late events become no-ops
+    r.timer = setTimeout(() => { if (mine() && !opened) netFail(); }, 12000);
     peer.on('open', () => {
+      if (!mine()) return;
       const conn = peer.connect(NB_LIVE_PREFIX + c, { reliable: true });
-      conn.on('open', () => { if (r.timer) { clearTimeout(r.timer); r.timer = null; } setStatus('watching'); });
+      conn.on('open', () => { if (!mine()) return; opened = true; if (r.timer) { clearTimeout(r.timer); r.timer = null; } setStatus('watching'); });
       conn.on('data', (d) => {
+        if (!mine()) return;
         try {
           const url = URL.createObjectURL(new Blob([d], { type: 'image/jpeg' }));
           if (r.url) URL.revokeObjectURL(r.url);
           r.url = url; setSrc(url);
         } catch (e) { /* ignore a bad frame */ }
       });
-      conn.on('close', () => { setStatus('ended'); });
+      conn.on('close', () => { if (!mine()) return; if (opened) setStatus('ended'); else netFail(); });
+      conn.on('error', () => { if (mine()) netFail(); });
     });
     peer.on('error', (e) => {
-      if (e && e.type === 'peer-unavailable') fail('No live board found for that passcode.');
-      else fail('Connection problem (' + ((e && e.type) || 'network') + ').');
+      if (!mine()) return;
+      if (e && e.type === 'peer-unavailable') fail('Board not found / Host is offline. Check the passcode and that the host is sharing.');
+      else netFail();
     });
+    peer.on('disconnected', () => { if (mine() && !opened) netFail(); }); // signalling lost before we reached the host
   };
   const leave = () => { cleanup(); onClose(); };
 
@@ -7643,6 +7713,20 @@ function LiveViewer({ onClose }) {
             <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${status === 'ended' ? 'bg-slate-400' : 'bg-emerald-400'}`} />{status === 'ended' ? 'Host ended the session' : 'Live'}
           </span>
           <button className="nb-btn pointer-events-auto" onClick={leave}>Leave</button>
+        </div>
+      </div>
+    );
+  }
+  if (status === 'netfail') {
+    return (
+      <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 px-4" onPointerDown={(e) => { if (e.target === e.currentTarget) leave(); }}>
+        <div className="glass-strong rounded-2xl p-5 w-full max-w-sm space-y-3" role="alertdialog" aria-label="Connection failed">
+          <div className="flex items-center gap-2 text-slate-100 font-semibold"><ILive size={18} /> Connection Failed</div>
+          <p className="text-xs text-slate-300">Could not connect directly. Restricted networks such as mobile data (e.g. Jio CGNAT) or strict firewalls block peer-to-peer links and need a TURN relay. Add one in Settings, or retry.</p>
+          <div className="flex flex-wrap gap-2 justify-end">
+            <button className="nb-btn sec" onClick={() => { leave(); openSettings('network'); }}>Configure TURN (Settings)</button>
+            <button className="nb-btn" onClick={join}>Retry</button>
+          </div>
         </div>
       </div>
     );
