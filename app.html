@@ -40,6 +40,31 @@
   }
   .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
 
+  /* ==========================================================================
+     App-shell interaction hardening (native-app feel)
+     1) Disable accidental text selection / long-press callouts across the UI.
+     2) Disable native drag ghosts on images, links and SVGs.
+     3) Re-enable selection wherever the user types or needs to copy text.
+     Set on html/body (not `*`): user-select resolves through inheritance, so this is
+     cheaper on large DOMs and lets the exceptions below cover their children too.
+     Tailwind utilities (select-all / select-text / select-none) still win by specificity.
+     ========================================================================== */
+  html, body {
+    -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;   /* Android / touch: no grey flash on tap */
+    -webkit-touch-callout: none;                /* iOS Safari: no long-press callout menu */
+  }
+  img, a, svg {
+    -webkit-user-drag: none; user-drag: none;   /* no ghost-image dragging (pointer events are untouched) */
+  }
+  img, a { -webkit-touch-callout: none; }
+
+  /* Exceptions: typing + copyable content. Children are included so nested spans stay selectable. */
+  input, textarea, [contenteditable]:not([contenteditable="false"]), .allow-select, .monaco-editor, pre, code,
+  [contenteditable]:not([contenteditable="false"]) *, .allow-select *, .monaco-editor *, pre *, code * {
+    -webkit-user-select: text !important; -moz-user-select: text !important; -ms-user-select: text !important; user-select: text !important;
+  }
+
   /* ---- Splash ---- */
   .splash-bg {
     background:
@@ -7610,7 +7635,7 @@ function AiTool({ viewportRef }) {
       {tab === 'chat' && (<>
         <div ref={endRef} className="h-48 overflow-y-auto space-y-1.5 text-xs">
           {msgs.length === 0 && <p className="text-slate-500">Ask a question or request an explanation.</p>}
-          {msgs.map((m, i) => <div key={i} className={`rounded-lg px-2 py-1.5 whitespace-pre-wrap ${m.role === 'user' ? 'bg-cyan-500/15 text-cyan-100 ml-6' : 'bg-slate-700/40 text-slate-100 mr-6'}`}>{m.content}</div>)}
+          {msgs.map((m, i) => <div key={i} className={`allow-select rounded-lg px-2 py-1.5 whitespace-pre-wrap ${m.role === 'user' ? 'bg-cyan-500/15 text-cyan-100 ml-6' : 'bg-slate-700/40 text-slate-100 mr-6'}`}>{m.content}</div>)}
           {busy && <div className="text-slate-500">Thinking…</div>}
         </div>
         <div className="flex gap-1.5">
