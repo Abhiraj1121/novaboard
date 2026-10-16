@@ -299,6 +299,106 @@
   .calc-key.fn { background: rgba(148,163,184,0.05); color: #94a3b8; font-size: 12px; }
   .calc-key.accent { background: linear-gradient(135deg, rgb(var(--a-400)), rgb(var(--b-400))); color: #0b1220; }
 
+  /* ===== Calculator redesign (visual only) ===== */
+  .calc-root { outline: none; }
+  .calc-display {
+    position: relative; overflow: hidden; margin-bottom: 12px; padding: 10px 14px 12px; border-radius: 18px;
+    background:
+      radial-gradient(120% 140% at 100% 0%, rgb(var(--a-400) / 0.16), transparent 55%),
+      radial-gradient(90% 120% at 0% 100%, rgb(var(--b-400) / 0.14), transparent 60%),
+      linear-gradient(180deg, rgba(2,6,23,0.78), rgba(2,6,23,0.55));
+    border: 1px solid rgb(var(--a-400) / 0.22);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -10px 24px -14px rgb(var(--a-400) / 0.35), 0 10px 24px -14px rgba(0,0,0,0.7);
+  }
+  .calc-display::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
+    background-image: radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px); background-size: 9px 9px;
+    -webkit-mask-image: linear-gradient(180deg, #000, transparent 85%); mask-image: linear-gradient(180deg, #000, transparent 85%);
+  }
+  .calc-meta { position: relative; display: flex; gap: 6px; justify-content: flex-start; min-height: 16px; }
+  .calc-badge {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 9px; font-weight: 700; letter-spacing: 0.14em;
+    padding: 2px 7px; border-radius: 999px; color: rgb(var(--a-300)); background: rgb(var(--a-400) / 0.12); border: 1px solid rgb(var(--a-400) / 0.28);
+  }
+  .calc-badge.err { color: #fda4af; background: rgba(244,63,94,0.14); border-color: rgba(244,63,94,0.35); }
+  .calc-expr {
+    position: relative; display: flex; justify-content: flex-end; overflow: hidden; white-space: nowrap; height: 20px; margin-top: 2px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; letter-spacing: 0.04em; color: rgb(148 163 184);
+  }
+  .calc-expr > span { flex: none; }
+  .calc-result {
+    position: relative; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.25; min-height: 38px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; letter-spacing: -0.01em;
+    background: linear-gradient(90deg, #ffffff 20%, rgb(var(--a-300)) 100%); -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent; filter: drop-shadow(0 0 14px rgb(var(--a-400) / 0.35));
+  }
+  .calc-result.err { background: none; -webkit-text-fill-color: #fb7185; color: #fb7185; filter: none; animation: calcShake 0.35s ease; }
+  @keyframes calcShake { 20% { transform: translateX(-4px); } 40% { transform: translateX(4px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+
+  .calc-root .calc-key {
+    position: relative; overflow: hidden; height: 42px; padding: 0 !important; border-radius: 14px;
+    font-size: 16px; font-weight: 600; letter-spacing: 0.01em; color: #e8eefc; cursor: pointer;
+    background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03));
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 2px 0 rgba(0,0,0,0.38), 0 8px 14px -8px rgba(0,0,0,0.6);
+    transition: transform 0.14s cubic-bezier(.3,1.5,.5,1), box-shadow 0.14s ease, filter 0.15s ease, background 0.15s ease;
+  }
+  .calc-root .calc-key:hover { transform: translateY(-1px); filter: brightness(1.18); background: linear-gradient(180deg, rgba(255,255,255,0.13), rgba(255,255,255,0.05)); }
+  .calc-root .calc-key:active { transform: translateY(1px) scale(0.96); filter: brightness(1.3); box-shadow: inset 0 2px 6px rgba(0,0,0,0.45), 0 0 0 rgba(0,0,0,0); }
+  .calc-root .calc-key.fn {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: rgb(var(--b-300));
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: linear-gradient(180deg, rgb(var(--b-400) / 0.16), rgb(var(--b-400) / 0.05)); border-color: rgb(var(--b-400) / 0.20);
+  }
+  .calc-root .calc-key.op {
+    font-size: 19px; color: rgb(var(--a-300));
+    background: linear-gradient(180deg, rgb(var(--a-400) / 0.24), rgb(var(--a-400) / 0.08)); border-color: rgb(var(--a-400) / 0.30);
+  }
+  .calc-root .calc-key.op.clr { color: #fda4af; font-size: 15px; background: linear-gradient(180deg, rgba(244,63,94,0.26), rgba(244,63,94,0.08)); border-color: rgba(244,63,94,0.32); }
+  .calc-root .calc-key.op.del { color: #fcd34d; font-size: 17px; background: linear-gradient(180deg, rgba(245,158,11,0.24), rgba(245,158,11,0.07)); border-color: rgba(245,158,11,0.30); }
+  .calc-root .calc-key.accent {
+    font-size: 22px; font-weight: 800; color: #07101e; border-color: rgba(255,255,255,0.35);
+    background: linear-gradient(135deg, rgb(var(--a-300)), rgb(var(--a-500)) 55%, rgb(var(--b-500)));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), 0 2px 0 rgba(0,0,0,0.35), 0 0 22px -2px rgb(var(--a-400) / 0.6);
+  }
+  .calc-root .calc-key.accent::after {
+    content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%; pointer-events: none;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,0.45), transparent); transform: skewX(-18deg);
+  }
+  .calc-root .calc-key.accent:hover::after { left: 130%; transition: left 0.6s ease; }
+  @media (prefers-reduced-motion: reduce) {
+    .calc-root .calc-key, .calc-root .calc-key.accent:hover::after { transition: none; }
+    .calc-result.err { animation: none; }
+  }
+
+  html[data-mode="light"] .calc-display {
+    background:
+      radial-gradient(120% 140% at 100% 0%, rgb(var(--a-400) / 0.16), transparent 55%),
+      linear-gradient(180deg, rgba(255,255,255,0.95), rgba(241,245,249,0.9));
+    border-color: rgb(var(--a-400) / 0.35);
+    box-shadow: inset 0 1px 0 #fff, 0 10px 22px -14px rgba(15,23,42,0.35);
+  }
+  html[data-mode="light"] .calc-display::before { background-image: radial-gradient(rgba(15,23,42,0.08) 1px, transparent 1px); }
+  html[data-mode="light"] .calc-expr { color: #64748b; }
+  html[data-mode="light"] .calc-result { background: linear-gradient(90deg, #0f172a 20%, rgb(var(--a-600)) 100%); -webkit-background-clip: text; background-clip: text; filter: none; }
+  html[data-mode="light"] .calc-result.err { background: none; -webkit-text-fill-color: #e11d48; color: #e11d48; }
+  html[data-mode="light"] .calc-root .calc-key {
+    color: #1e293b; background: linear-gradient(180deg, #ffffff, #eef2f7); border-color: rgba(15,23,42,0.09);
+    box-shadow: inset 0 1px 0 #fff, 0 2px 0 rgba(15,23,42,0.12), 0 8px 14px -8px rgba(15,23,42,0.3);
+  }
+  html[data-mode="light"] .calc-root .calc-key:hover { background: linear-gradient(180deg, #ffffff, #e2e8f0); }
+  html[data-mode="light"] .calc-root .calc-key.fn { color: rgb(var(--b-600)); background: linear-gradient(180deg, rgb(var(--b-400) / 0.18), rgb(var(--b-400) / 0.07)); }
+  html[data-mode="light"] .calc-root .calc-key.op { color: rgb(var(--a-700)); background: linear-gradient(180deg, rgb(var(--a-400) / 0.28), rgb(var(--a-400) / 0.1)); }
+  html[data-mode="light"] .calc-root .calc-key.op.clr { color: #be123c; }
+  html[data-mode="light"] .calc-root .calc-key.op.del { color: #b45309; }
+  html[data-mode="light"] .calc-root .calc-key.accent {
+    color: #fff; border-color: rgba(255,255,255,0.5);
+    background: linear-gradient(135deg, rgb(var(--a-400)), rgb(var(--a-600)) 60%, rgb(var(--b-600)));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 2px 0 rgba(15,23,42,0.2), 0 8px 18px -6px rgb(var(--a-500) / 0.65);
+  }
+  html[data-mode="light"] .calc-badge { color: rgb(var(--a-700)); background: rgb(var(--a-400) / 0.16); border-color: rgb(var(--a-500) / 0.4); }
+  html[data-mode="light"] .calc-badge.err { color: #be123c; background: rgba(244,63,94,0.12); border-color: rgba(244,63,94,0.4); }
+
   .laser-trail-canvas { position: absolute; inset: 0; pointer-events: auto; z-index: 25; cursor: crosshair; }
 
   @keyframes ring-dash { to { stroke-dashoffset: var(--ring-target, 0); } }
@@ -3698,6 +3798,7 @@ function CalculatorWidget() {
   const Key = ({ label, onClick, className = '', span = 1 }) => (
     <button
       onClick={onClick}
+      type="button"
       className={`calc-key py-2.5 focus-ring ${className}`}
       style={{ gridColumn: span > 1 ? `span ${span}` : undefined }}
     >
@@ -3706,10 +3807,12 @@ function CalculatorWidget() {
   );
 
   return (
-    <div className="w-64" tabIndex={0} onKeyDown={onKeyDown}>
-      <div className="bg-slate-950/60 rounded-lg px-3 py-3 mb-3 text-right border border-slate-800/60">
-        <div className="mono text-xs text-slate-500 h-4 truncate">{expr || '0'}</div>
-        <div className={`mono text-2xl truncate ${error ? 'text-rose-400' : 'text-slate-100'}`}>
+    <div className="calc-root w-full" tabIndex={0} onKeyDown={onKeyDown}>
+      <div className="calc-display">
+        <div className="calc-meta"><span className="calc-badge">DEG</span>{error && <span className="calc-badge err">ERR</span>}</div>
+        <div className="calc-expr"><span>{expr || '0'}</span></div>
+        <div className={`calc-result ${error ? 'err' : ''}`} aria-live="polite"
+          style={{ fontSize: (() => { const n = String(result !== null ? result : '').length; return error ? 28 : n > 16 ? 16 : n > 12 ? 20 : n > 9 ? 24 : 30; })() }}>
           {error ? 'Error' : result !== null ? result : '\u00A0'}
         </div>
       </div>
@@ -3718,16 +3821,16 @@ function CalculatorWidget() {
         <Key label="sin" className="fn" onClick={() => applyFn('sin')} />
         <Key label="cos" className="fn" onClick={() => applyFn('cos')} />
         <Key label="tan" className="fn" onClick={() => applyFn('tan')} />
-        <Key label="AC" className="op" onClick={clearAll} />
+        <Key label="AC" className="op clr" onClick={clearAll} />
 
         <Key label="ln" className="fn" onClick={() => applyFn('ln')} />
         <Key label="log" className="fn" onClick={() => applyFn('log')} />
         <Key label="√" className="fn" onClick={() => applyFn('sqrt')} />
-        <Key label="⌫" className="op" onClick={backspace} />
+        <Key label="⌫" className="op del" onClick={backspace} />
 
         <Key label="x²" className="fn" onClick={() => applyFn('sq')} />
-        <Key label="(" onClick={() => append('(')} />
-        <Key label=")" onClick={() => append(')')} />
+        <Key label="(" className="fn" onClick={() => append('(')} />
+        <Key label=")" className="fn" onClick={() => append(')')} />
         <Key label="÷" className="op" onClick={() => append('/')} />
 
         <Key label="7" onClick={() => append('7')} />
@@ -4286,8 +4389,9 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
     const c = fabricRef.current;
     const h = historyRef.current;
     if (!c || idx < 0 || idx >= h.stack.length) return;
+    let snap;
+    try { snap = JSON.parse(h.stack[idx]); } catch (e) { return; } // corrupt snapshot: bail out BEFORE locking history
     h.locked = true;
-    const snap = JSON.parse(h.stack[idx]);
     const bgImg = bgImageObjRef.current;
     c.loadFromJSON(snap, () => {
       if (bgImg) { c.add(bgImg); c.sendToBack(bgImg); }
@@ -6518,7 +6622,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
 
           {widgets.calculator && (
             <WidgetWindow
-              title="Scientific Calculator" icon={ICalcIcon}
+              title="Scientific Calculator" icon={ICalcIcon} width={296}
               initialPos={{ x: 24, y: 340 }} boundsRef={canvasStageRef}
               minimized={widgets.calculator.minimized}
               onMinimize={() => toggleMinimize('calculator', true)}
@@ -6858,7 +6962,7 @@ function SettingsPanel({ tab: startTab, onClose }) {
           <div className="flex-1"><div className="text-base font-semibold text-slate-100">Settings</div><div className="mono text-[10px] text-slate-500">NOVABOARD 3.0</div></div>
           <button onClick={onClose} aria-label="Close settings" className="navdock-btn focus-ring"><IX size={16} /></button>
         </div>
-        <div className="flex gap-1.5 px-5 pt-3">
+        <div className="flex flex-wrap gap-1.5 px-5 pt-3">
           {tabs.map(([id, l]) => <button key={id} onClick={() => setTab(id)} className={`nb-chip ${tab === id ? 'on' : 'text-slate-400'}`}>{l}</button>)}
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-1">
@@ -7421,6 +7525,7 @@ async function nbAiCall({ provider = 'gemini', key, model, system, messages, max
     if (res.status === 401 || res.status === 403) throw new Error('The API key was rejected. Check it in Settings > AI.');
     throw new Error((data && data.error && data.error.message) || `AI request failed (${res.status}).`);
   }
+  if (!data) throw new Error('The AI service sent an unreadable response. Please try again.');
   let text = '';
   if (provider !== 'gemini') text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
   else { const cand = data.candidates && data.candidates[0]; text = cand && cand.content && cand.content.parts ? cand.content.parts.map((x) => x.text || '').join('') : ''; }
