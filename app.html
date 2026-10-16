@@ -1108,6 +1108,138 @@ const IPalette = (p) => <Svg {...p}><circle cx="13.5" cy="6.5" r="0.5" fill="cur
 const ITrash = (p) => <Svg {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></Svg>;
 const IDot = (p) => <Svg {...p}><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></Svg>;
 
+/* ============================== WEB TRIAL GATE ==============================
+   The browser version is a TRIAL. The installed apps (Windows / Linux desktop, Android) are the full product.
+   NB_TRIAL is true only in a normal browser tab. It is false inside the Electron shell (window.novaDesktop,
+   nova:// origin), Android WebView / TWA shells, file:// and localhost, so the apps are never locked.
+   Add ?trial=1 to the URL to preview the locked experience anywhere.
+   Everything below is tunable from this one block. */
+const NB_DOWNLOAD_URL = 'https://abhiraj1121.github.io/novaboard/download.html';
+const NB_TRIAL_MAX_PAGES = 3;                                   // pages per board in the trial
+const NB_FREE_TOOLS = [];                                       // Tools-menu ids that stay free, e.g. ['timer', 'calculator']
+const NB_LOCKED_PENS = ['calligraphy', 'neon', 'dashed', 'emoji', 'laser'];
+const NB_LOCKED_ERASERS = ['precise', 'area', 'lasso', 'box'];
+const NB_LOCKED_GRIDS = ['dots', 'lines', 'graph', 'iso'];
+const NB_PEN_LABELS = { calligraphy: 'Calligraphy pen', neon: 'Neon glow pen', dashed: 'Dashed pen', emoji: 'Emoji pen', laser: 'Laser pen' };
+const NB_ERASER_LABELS = { precise: 'Precise eraser', area: 'Area eraser', lasso: 'Lasso eraser', box: 'Box eraser' };
+
+/* True on macOS, iOS and iPadOS. The app is not released for these platforms yet, so the web version is the
+   full product there and the trial gate is skipped. Remove the nbIsApplePlatform() line in nbDetectTrial()
+   once a Mac / iOS app ships. Note: iPadOS 13+ reports itself as "Macintosh" in desktop mode, so that is covered too. */
+function nbIsApplePlatform() {
+  try {
+    const ua = navigator.userAgent || '';
+    const plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+    if (/iPhone|iPad|iPod/i.test(ua)) return true;                        // iOS / iPadOS (mobile UA)
+    if (/Mac/i.test(plat) || /Macintosh|Mac OS X/i.test(ua)) return true; // macOS and iPadOS in desktop mode
+    return false;
+  } catch (e) { return false; }
+}
+
+function nbDetectTrial() {
+  try {
+    if (new URLSearchParams(location.search).get('trial') === '1') return true;
+    if (nbIsApplePlatform()) return false;                              // no Mac / iOS app yet -> never lock
+    if (window.novaDesktop || window.Capacitor || window.NovaAndroid || window.AndroidBridge) return false;
+    const ua = navigator.userAgent || '';
+    if (/\bwv\b/.test(ua) || /NovaBoardApp/i.test(ua)) return false;                 // Android WebView shell
+    if ((document.referrer || '').indexOf('android-app://') === 0) return false;     // Android TWA shell
+    if (location.protocol !== 'http:' && location.protocol !== 'https:') return false; // file:, nova:, capacitor:
+    const h = location.hostname;
+    if (h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === 'appassets.androidplatform.net') return false;
+    return true;
+  } catch (e) { return false; }
+}
+const NB_TRIAL = nbDetectTrial();
+
+const NB_LOCK_INFO = {
+  tools:    { title: 'Classroom tools', body: 'Timer, calculator, ruler, spotlight, polls, AI assistant, live share and the rest of the toolkit are part of the NovaBoard app.' },
+  settings: { title: 'Settings & profile', body: 'Themes, profile, AI keys, network options and board defaults are available in the NovaBoard app.' },
+  export_pdf: { title: 'Export as PDF', body: 'Exporting your whole board as a PDF is part of the NovaBoard app.' },
+  save_file: { title: 'Save as .novaboard file', body: 'Saving backups you can move between devices is part of the NovaBoard app. Your board is still auto-saved in this browser.' },
+  open_file: { title: 'Open .novaboard files', body: 'Opening saved workspaces is part of the NovaBoard app.' },
+  live:     { title: 'Live board', body: 'Joining and hosting live boards works best in the NovaBoard app.' },
+  pen:      { title: 'Premium pens', body: 'Calligraphy, neon, dashed, emoji and laser pens are part of the NovaBoard app.' },
+  eraser:   { title: 'Advanced erasers', body: 'Precise, area, lasso and box erasers are part of the NovaBoard app. The stroke eraser stays free.' },
+  shape:    { title: '3D shapes', body: 'The 3D wireframe shapes are part of the NovaBoard app. 2D shapes stay free.' },
+  grid:     { title: 'Background guides', body: 'Dots, lines, graph and isometric guides are part of the NovaBoard app. The plain grid stays free.' },
+  pages:    { title: 'More pages', body: 'The trial is limited to ' + NB_TRIAL_MAX_PAGES + ' pages per board. The NovaBoard app has no page limit.' },
+};
+/* Returns true (and opens the "get the app" dialog) when the feature is locked in this build. */
+function nbBlock(feature, label) {
+  if (!NB_TRIAL) return false;
+  try { window.dispatchEvent(new CustomEvent('nb-locked', { detail: { feature, label: label || null } })); } catch (e) { /* ignore */ }
+  return true;
+}
+const nbLockedPen = (id) => NB_TRIAL && NB_LOCKED_PENS.includes(id);
+const nbLockedEraser = (id) => NB_TRIAL && NB_LOCKED_ERASERS.includes(id);
+const nbLockedGrid = (id) => NB_TRIAL && NB_LOCKED_GRIDS.includes(id);
+const nbLockedTool = (id) => NB_TRIAL && !NB_FREE_TOOLS.includes(id);
+const nbPageCapped = (count) => { if (NB_TRIAL && count >= NB_TRIAL_MAX_PAGES) { nbBlock('pages'); return true; } return false; };
+
+/* Small amber padlock used on every locked control. */
+function LockBadge({ size = 11, className = '', title = 'Available in the NovaBoard app' }) {
+  if (!NB_TRIAL) return null;
+  return <span title={title} aria-label="Locked in the trial" className={`inline-flex items-center justify-center flex-shrink-0 text-amber-300 ${className}`}><ILock size={size} /></span>;
+}
+
+/* Top-right "TRIAL" chip + Download button (home screen and canvas top bar). */
+function TrialBar() {
+  if (!NB_TRIAL) return null;
+  return (
+    <div className="flex items-center gap-1.5 flex-shrink-0">
+      <span className="hidden md:inline mono text-[9px] tracking-wider px-1.5 py-0.5 rounded bg-amber-400/15 text-amber-300">TRIAL</span>
+      <a
+        href={NB_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer"
+        title="Download the NovaBoard app for the full experience"
+        className="flex items-center gap-1.5 text-xs font-semibold rounded-lg px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-indigo-500 hover:brightness-110 transition-all focus-ring whitespace-nowrap no-underline"
+        style={{ color: 'var(--on-accent)' }}
+      >
+        <IDownload size={13} /><span className="hidden sm:inline">Download app</span><span className="sm:hidden">App</span>
+      </a>
+    </div>
+  );
+}
+
+/* Listens for locked-feature clicks anywhere in the app and shows one shared dialog. */
+function NbTrialHost() {
+  const [hit, setHit] = useState(null);
+  useEffect(() => {
+    const on = (e) => setHit(e.detail || null);
+    window.addEventListener('nb-locked', on);
+    return () => window.removeEventListener('nb-locked', on);
+  }, []);
+  useEffect(() => {
+    if (!hit) return;
+    const onKey = (e) => { if (e.key === 'Escape') setHit(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [hit]);
+  if (!hit || !NB_TRIAL) return null;
+  const info = NB_LOCK_INFO[hit.feature] || NB_LOCK_INFO.tools;
+  const close = () => setHit(null);
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60" onPointerDown={(e) => { if (e.target === e.currentTarget) close(); }}>
+      <div role="dialog" aria-modal="true" aria-label="Available in the NovaBoard app" className="glass-strong modal-in rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center">
+        <span className="mx-auto w-12 h-12 rounded-2xl flex items-center justify-center bg-amber-400/10 text-amber-300 mb-4"><ILock size={22} /></span>
+        <div className="mono text-[10px] tracking-[0.2em] text-amber-300 mb-1">TRIAL VERSION</div>
+        <div className="text-lg font-semibold text-slate-100">{hit.label || info.title}</div>
+        <p className="text-sm text-slate-400 mt-2 leading-snug">{hit.label ? info.body.replace(/^[^.]*?\b(are|is) part of/, 'This is part of').replace(/^Timer,.*$/, info.body) : info.body}</p>
+        <p className="text-xs text-slate-500 mt-3 leading-snug">Download NovaBoard for every tool and the best experience. Your work here is not lost.</p>
+        <div className="flex flex-col gap-2 mt-5">
+          <a
+            href={NB_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer" onClick={close}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold bg-gradient-to-r from-cyan-500 to-indigo-500 hover:brightness-110 transition-all focus-ring no-underline"
+            style={{ color: 'var(--on-accent)' }}
+          ><IDownload size={15} /> Download the app</a>
+          <button onClick={close} className="px-4 py-2 text-sm rounded-lg text-slate-400 hover:text-slate-200 transition-colors focus-ring">Continue trial</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 /* ============================== SPLASH ============================== */
 
 function nbPlayDrop(ctx) {
@@ -1281,7 +1413,7 @@ function NewBoardModal({ onClose, onCreate }) {
   );
 }
 
-function ActionCard({ icon: IconCmp, title, desc, onClick, accent = 'cyan' }) {
+function ActionCard({ icon: IconCmp, title, desc, onClick, accent = 'cyan', locked = false }) {
   const accentClasses = accent === 'cyan'
     ? 'group-hover:border-cyan-500/40 group-hover:shadow-[0_0_0_1px_rgba(56,189,248,0.15),0_8px_30px_-8px_rgba(56,189,248,0.25)]'
     : 'group-hover:border-indigo-500/40 group-hover:shadow-[0_0_0_1px_rgba(129,140,248,0.15),0_8px_30px_-8px_rgba(129,140,248,0.25)]';
@@ -1290,8 +1422,9 @@ function ActionCard({ icon: IconCmp, title, desc, onClick, accent = 'cyan' }) {
   return (
     <button
       onClick={onClick}
-      className={`card-hover group glass text-left rounded-2xl p-5 flex flex-col gap-4 border-slate-700/50 ${accentClasses} focus-ring`}
+      className={`card-hover group glass text-left rounded-2xl p-5 flex flex-col gap-4 border-slate-700/50 ${accentClasses} focus-ring relative`}
     >
+      {locked && NB_TRIAL && <span className="absolute top-3 right-3 inline-flex items-center gap-1 mono text-[9px] tracking-wider px-1.5 py-0.5 rounded bg-amber-400/15 text-amber-300"><ILock size={10} /> APP</span>}
       <span className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconBg}`}>
         <IconCmp size={19} />
       </span>
@@ -1391,6 +1524,7 @@ function HomeScreen({ onEnterCanvas, sessions, setSessions, onOpenFile, recovery
 
   const handleBoardFilePicked = useCallback(async (file) => {
     if (!file) return;
+    if (nbBlock('open_file')) return;
     setOpeningFile(true);
     try {
       await onOpenFile(file);   // navigates to the canvas on success
@@ -1488,8 +1622,9 @@ function HomeScreen({ onEnterCanvas, sessions, setSessions, onOpenFile, recovery
             icon={IFolderOpen}
             title={openingFile ? 'Opening…' : 'Open .novaboard file'}
             desc="Load a workspace you saved from NovaBoard."
-            onClick={() => { if (!openingFile) boardInputRef.current?.click(); }}
+            onClick={() => { if (nbBlock('open_file')) return; if (!openingFile) boardInputRef.current?.click(); }}
             accent="cyan"
+            locked
           />
           <ActionCard
             icon={IClock}
@@ -1505,11 +1640,12 @@ function HomeScreen({ onEnterCanvas, sessions, setSessions, onOpenFile, recovery
             icon={ILive}
             title="Join live board"
             desc="Watch a teacher's board with a passcode."
-            onClick={() => setLiveOpen(true)}
+            onClick={() => { if (nbBlock('live')) return; setLiveOpen(true); }}
             accent="cyan"
+            locked
           />
         </div>
-        {liveOpen && <LiveViewer onClose={() => setLiveOpen(false)} />}
+        {liveOpen && !NB_TRIAL && <LiveViewer onClose={() => setLiveOpen(false)} />}
 
         <input
           ref={fileInputRef}
@@ -1718,7 +1854,7 @@ function ExportMenu({ onExportPdf, onExportPng, exporting, onClose }) {
       >
         {exporting ? <ILoader size={15} className="text-cyan-300" /> : <IFileText size={15} className="text-cyan-300" />}
         {exporting ? 'Compiling PDF…' : 'Export as PDF'}
-        <span className="ml-auto text-[10px] text-slate-500 mono">all pages</span>
+        {NB_TRIAL ? <LockBadge size={12} className="ml-auto" /> : <span className="ml-auto text-[10px] text-slate-500 mono">all pages</span>}
       </button>
       <button
         onClick={onExportPng}
@@ -1848,6 +1984,7 @@ function CanvasTopBar({ session, onBackHome, onNewBoard, isFullscreen, onToggleF
 
       <div className="flex-1" />
 
+      <TrialBar />
       <OrgBadge />
       {s.showSaveStatus !== false && <SaveStatus state={saveState} />}
 
@@ -1862,18 +1999,18 @@ function CanvasTopBar({ session, onBackHome, onNewBoard, isFullscreen, onToggleF
         </button>
       )}
       <button
-        onClick={onOpenFile}
-        title="Open a .novaboard file"
+        onClick={() => { if (nbBlock('open_file')) return; onOpenFile(); }}
+        title={NB_TRIAL ? 'Open a .novaboard file (available in the app)' : 'Open a .novaboard file'}
         className="flex items-center gap-1.5 text-xs mono text-slate-400 hover:text-cyan-300 transition-colors focus-ring rounded-md px-2.5 py-1.5 border border-slate-700/60 hover:border-cyan-500/40"
       >
-        <IFolderOpen size={13} /> <span className="hidden md:inline">Open</span>
+        <IFolderOpen size={13} /> <span className="hidden md:inline">Open</span><LockBadge size={10} />
       </button>
       {s.showSave !== false && <button
         onClick={onSaveFile}
-        title="Save this workspace as a .novaboard file"
+        title={NB_TRIAL ? 'Save as a .novaboard file (available in the app)' : 'Save this workspace as a .novaboard file'}
         className="flex items-center gap-1.5 text-xs mono text-slate-400 hover:text-cyan-300 transition-colors focus-ring rounded-md px-2.5 py-1.5 border border-slate-700/60 hover:border-cyan-500/40"
       >
-        <ISave size={13} /> <span className="hidden md:inline">Save</span>
+        <ISave size={13} /> <span className="hidden md:inline">Save</span><LockBadge size={10} />
       </button>}
 
       <button
@@ -2582,8 +2719,9 @@ function ShapeFlyout({ activeShape, onPick, onClose, anchorRef, down = false }) 
             key={s.id}
             onClick={() => onPick(s.id)}
             title={s.label}
-            className={`tool-btn focus-ring !w-full !h-11 flex-col gap-0.5 ${activeShape === s.id ? 'active' : ''}`}
+            className={`tool-btn focus-ring !w-full !h-11 flex-col gap-0.5 relative ${activeShape === s.id ? 'active' : ''}`}
           >
+            {NB_TRIAL && SHAPES_3D.some((x) => x.id === s.id) && <LockBadge size={9} className="absolute top-1 right-1" />}
             <s.icon size={17} />
           </button>
         ))}
@@ -2627,8 +2765,9 @@ function PenFlyout({ pens, activePen, onPick, onStyle, onClose, anchorRef, down 
               key={pn.id}
               onClick={() => onPick(pn.id)}
               title={pn.title}
-              className={`tool-btn focus-ring !w-full !h-14 flex-col gap-1 ${activePen === pn.id ? 'active' : ''}`}
+              className={`tool-btn focus-ring !w-full !h-14 flex-col gap-1 relative ${activePen === pn.id ? 'active' : ''}`}
             >
+              {nbLockedPen(pn.id) && <LockBadge size={9} className="absolute top-1 right-1" />}
               <pn.icon size={17} />
               <span className="text-[9px] leading-none truncate max-w-full">{pn.short}</span>
             </button>
@@ -2745,7 +2884,8 @@ function EraserFlyout({ active, onPick, size, setSize, pSize, setPSize, onClose,
             const Ic = icons[er.id];
             return (
               <button key={er.id} onClick={() => onPick(er.id)} title={er.hint}
-                className={`tool-btn focus-ring !w-full !h-14 flex-col gap-1 ${active === er.id ? 'active' : ''}`}>
+                className={`tool-btn focus-ring !w-full !h-14 flex-col gap-1 relative ${active === er.id ? 'active' : ''}`}>
+                {nbLockedEraser(er.id) && <LockBadge size={9} className="absolute top-1 right-1" />}
                 <Ic size={17} />
                 <span className="text-[10px] leading-none">{er.label}</span>
               </button>
@@ -3018,7 +3158,7 @@ function DrawToolbar({
               {eraserMenuOpen && (
                 <EraserFlyout
                   active={eraserType} size={eraserSize} setSize={setEraserSize} pSize={preciseSize} setPSize={setPreciseSize} down={popDown} anchorRef={refFor('eraser')}
-                  onPick={(id) => { setEraserType(id); setTool('eraser'); if (id !== 'area' && id !== 'precise') setEraserMenuOpen(false); }}
+                  onPick={(id) => { if (nbLockedEraser(id)) { setEraserMenuOpen(false); setEraserType(id); return; } setEraserType(id); setTool('eraser'); if (id !== 'area' && id !== 'precise') setEraserMenuOpen(false); }}
                   onClose={() => setEraserMenuOpen(false)}
                 />
               )}
@@ -4199,7 +4339,7 @@ function WidgetDock({ open, onToggle, active, onLaunch, dropUp, dropSide }) {
           open ? 'text-cyan-300 border-cyan-500/40 bg-cyan-500/10' : 'text-slate-400 border-slate-700/60 hover:border-cyan-500/40 hover:text-cyan-300'
         }`}
       >
-        <IWidgets size={13} /> Tools
+        <IWidgets size={13} /> Tools <LockBadge size={10} />
       </button>
       {open && (
         <div
@@ -4211,14 +4351,15 @@ function WidgetDock({ open, onToggle, active, onLaunch, dropUp, dropSide }) {
             <React.Fragment key={it.id}>
             {it.action && !(items[idx - 1] && items[idx - 1].action) && <div className="h-px bg-slate-700/50 my-1 mx-2" />}
             <button
-              onClick={() => onLaunch(it.id)}
+              onClick={() => { if (nbLockedTool(it.id)) { onToggle(false); nbBlock('tools', it.label); return; } onLaunch(it.id); }}
               className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-slate-200 hover:bg-slate-800/60 transition-colors focus-ring"
             >
               <it.icon size={15} className={active[it.id] ? 'text-cyan-300' : 'text-slate-500'} />
               {it.label}
-              {it.isNew && <span className="mono text-[8px] px-1 rounded bg-cyan-500/20 text-cyan-300">NEW</span>}
-              {active[it.id] && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400" />}
-              {it.action && <span className="ml-auto mono text-[10px] text-slate-600">add</span>}
+              {!nbLockedTool(it.id) && it.isNew && <span className="mono text-[8px] px-1 rounded bg-cyan-500/20 text-cyan-300">NEW</span>}
+              {nbLockedTool(it.id) && <LockBadge size={12} className="ml-auto" />}
+              {!nbLockedTool(it.id) && active[it.id] && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400" />}
+              {!nbLockedTool(it.id) && it.action && <span className="ml-auto mono text-[10px] text-slate-600">add</span>}
             </button>
             </React.Fragment>
           ))}
@@ -4324,9 +4465,17 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
   const loadTokenRef = useRef(0);     // guards against out-of-order async slide loads
 
   const [tool, setTool] = useState('draw');
-  const [pen, setPen] = useState('ballpoint');
+  const [pen, setPenRaw] = useState('ballpoint');
+  const setPen = useCallback((id) => {
+    if (nbLockedPen(id)) { nbBlock('pen', NB_PEN_LABELS[id]); return; }
+    setPenRaw(id);
+  }, []);
   const [emoji, setEmoji] = useState('⭐');
-  const [gridMode, setGridMode] = useState(() => nbLoadSettings().defGrid || 'off'); // off | grid | dots | lines | graph | iso
+  const [gridMode, setGridModeRaw] = useState(() => { const m = nbLoadSettings().defGrid || 'off'; return nbLockedGrid(m) ? 'off' : m; }); // off | grid | dots | lines | graph | iso
+  const setGridMode = useCallback((v) => {
+    if (typeof v === 'string' && nbLockedGrid(v)) { nbBlock('grid', NB_GRID_OPTS.map((o) => (o[0] === v ? o[1] + ' guide' : null)).find(Boolean)); return; }
+    setGridModeRaw(v);
+  }, []);
   const [gridSize, setGridSize] = useState(() => nbLoadSettings().gridSize || 32);
   const [viewZoom, setViewZoom] = useState(1);        // PDF view zoom (1 = fit)
   const [isPdfView, setIsPdfView] = useState(false);   // true only on PDF page slides
@@ -4357,7 +4506,11 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
   useEffect(() => { widthRef.current = width; }, [width]);
   useEffect(() => { activeShapeRef.current = activeShape; }, [activeShape]);
 
-  const [eraserType, setEraserType] = useState('stroke');   // stroke | area | lasso | box
+  const [eraserType, setEraserTypeRaw] = useState('stroke');   // stroke | area | lasso | box
+  const setEraserType = useCallback((id) => {
+    if (nbLockedEraser(id)) { nbBlock('eraser', NB_ERASER_LABELS[id]); return; }
+    setEraserTypeRaw(id);
+  }, []);
   const [eraserSize, setEraserSize] = useState(36);          // area-eraser brush diameter (screen px)
   const [preciseSize, setPreciseSize] = useState(12);        // precise-eraser tip diameter (screen px)
   const preciseSizeRef = useRef(12);
@@ -4371,6 +4524,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
   palmRef.current = { on: nbSet.palmErase !== false, min: nbClampNum(nbSet.palmSize, 40, 160, 72) };
 
   const pickShape = useCallback((id) => {
+    if (NB_TRIAL && SHAPES_3D.some((x) => x.id === id)) { nbBlock('shape', (SHAPES_3D.find((x) => x.id === id) || {}).label); return; }
     setActiveShape(id);
     setTool('shape');
   }, []);
@@ -5892,7 +6046,7 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
         eraserType={eraserType} setEraserType={setEraserType}
         eraserSize={eraserSize} setEraserSize={setEraserSize}
         preciseSize={preciseSize} setPreciseSize={setPreciseSize}
-        gridSize={gridSize} onGridMode={setGridMode} onGridSize={setGridSize} gridMode={gridMode} onCycleGrid={() => setGridMode((g) => ({ off: 'grid', grid: 'dots', dots: 'lines', lines: 'off' }[g]))}
+        gridSize={gridSize} onGridMode={setGridMode} onGridSize={setGridSize} gridMode={gridMode} onCycleGrid={() => setGridMode((g) => (NB_TRIAL ? { off: 'grid', grid: 'off' } : { off: 'grid', grid: 'dots', dots: 'lines', lines: 'off' })[g] || 'off')}
       />
       {rotateHandle && (
         <RotateHandle
@@ -6187,6 +6341,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
 
   /* Top bar: Save as .novaboard. The picker is opened synchronously from the click. */
   const handleSaveFile = useCallback(() => {
+    if (nbBlock('save_file')) return;
     const fname = nbSafeFileName(boardRef.current.title) + '.novaboard';
     nbSaveFile(async () => {
       const vp = viewportRef.current;
@@ -6256,6 +6411,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
   const handleAddPage = useCallback((bg) => {
     const vp = viewportRef.current;
     if (!vp) return;
+    if (nbPageCapped(slidesRef.current.length)) return;
     captureActiveSlide();
     setSlides((prev) => {
       const fresh = makeSlide(bg);
@@ -6321,6 +6477,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
   const handleDuplicateAt = useCallback((idx) => {
     const vp = viewportRef.current;
     if (!vp || typeof idx !== 'number') return;
+    if (nbPageCapped(slidesRef.current.length)) return;
     const cur = activeIndexRef.current;
     const list = slidesRef.current.slice();
     if (!list[idx] || !list[cur]) return;
@@ -6373,6 +6530,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
 
   /* Tools menu: Image Upload / Sticky Note act on the canvas; the rest open widgets. */
   const handleLaunchTool = useCallback((id) => {
+    if (nbLockedTool(id)) { setWidgetDockOpen(false); nbBlock('tools'); return; }
     if (id === 'image') { setWidgetDockOpen(false); if (imageInputRef.current) imageInputRef.current.click(); return; }
     if (id === 'sticky') { setWidgetDockOpen(false); if (viewportRef.current) viewportRef.current.addStickyNote(); return; }
     if (id === 'table') { setWidgetDockOpen(false); if (viewportRef.current) viewportRef.current.addTable(); return; }
@@ -6439,6 +6597,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
 
   /* ---- PDF export: flatten every slide (bg + vectors) into a downloadable multi-page PDF ---- */
   const handleExportPdf = useCallback(async () => {
+    if (nbBlock('export_pdf')) return;
     const vp = viewportRef.current;
     if (!vp) return;
     setExporting(true);
@@ -6562,7 +6721,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
           activeIndex={activeIndex}
           onSelect={goToSlide}
           onReorder={handleReorder}
-          onAddPage={() => setNewPageOpen(true)}
+          onAddPage={() => { if (nbPageCapped(slidesRef.current.length)) return; setNewPageOpen(true); }}
           onDuplicateAt={handleDuplicateAt}
           collapsed={sidebarCollapsed || panelsHidden}
           selectMode={selectMode}
@@ -6579,7 +6738,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
               total={slides.length}
               onPrev={() => goToSlide(activeIndex - 1)}
               onNext={() => goToSlide(activeIndex + 1)}
-              onAddPage={() => setNewPageOpen(true)}
+              onAddPage={() => { if (nbPageCapped(slidesRef.current.length)) return; setNewPageOpen(true); }}
               onDuplicatePage={handleDuplicatePage}
               onDeletePage={() => setConfirmDeletePage(true)}
               onSwap={swapDocks}
@@ -6721,7 +6880,7 @@ function App() {
     const mq = matchMedia('(prefers-color-scheme: light)'); const h = () => nbApplyTheme(settings);
     mq.addEventListener('change', h); return () => mq.removeEventListener('change', h);
   }, [settings]);
-  const ctxVal = useMemo(() => ({ s: settings, set: setSettings, open: (tab) => setPanel(tab || 'appearance') }), [settings, setSettings]);
+  const ctxVal = useMemo(() => ({ s: settings, set: setSettings, open: (tab) => { if (nbBlock('settings')) return; setPanel(tab || 'appearance'); } }), [settings, setSettings]);
   const [view, setView] = useState(() => (nbLoadSettings().splash === false ? VIEWS.HOME : VIEWS.SPLASH));
   const [activeSession, setActiveSession] = useState(null);
   const [sessions, setSessions] = useState(() => loadSessions());
@@ -6760,7 +6919,8 @@ function App() {
     <SettingsCtx.Provider value={ctxVal}>
     <div className="h-full w-full relative">
       {settings.aurora && view === VIEWS.HOME && <div className="nb-aurora" aria-hidden="true"><i /><i /><i /></div>}
-      {panel && <SettingsPanel tab={panel} onClose={() => setPanel(null)} />}
+      {panel && !NB_TRIAL && <SettingsPanel tab={panel} onClose={() => setPanel(null)} />}
+      <NbTrialHost />
       {view === VIEWS.SPLASH && (
         <SplashScreen onDone={handleSplashDone} />
       )}
@@ -6922,8 +7082,9 @@ function HomeBar() {
   const { open } = useSettings();
   return (
     <div className="flex items-center gap-1.5 glass rounded-2xl p-1.5 flex-shrink-0">
+      <TrialBar />
       <ModeToggle />
-      <button onClick={() => open()} title="Settings" aria-label="Settings" className="navdock-btn focus-ring"><IGear size={16} /></button>
+      <button onClick={() => open()} title={NB_TRIAL ? 'Settings (available in the app)' : 'Settings'} aria-label="Settings" className="navdock-btn focus-ring relative"><IGear size={16} />{NB_TRIAL && <LockBadge size={9} className="absolute -top-0.5 -right-0.5 rounded-full bg-slate-900/90 p-0.5" />}</button>
       <button onClick={() => open('profile')} title="Profile" aria-label="Profile" className="focus-ring rounded-full"><Avatar size={32} /></button>
     </div>
   );
@@ -6938,7 +7099,7 @@ function OrgBadge() {
         {s.org && <span className="hidden lg:inline text-xs text-slate-300 max-w-[140px] truncate">{s.org}</span>}
       </button>
       <ModeToggle />
-      <button onClick={() => open()} title="Settings" aria-label="Settings" className="navdock-btn focus-ring"><IGear size={15} /></button>
+      <button onClick={() => open()} title={NB_TRIAL ? 'Settings (available in the app)' : 'Settings'} aria-label="Settings" className="navdock-btn focus-ring relative"><IGear size={15} />{NB_TRIAL && <LockBadge size={9} className="absolute -top-0.5 -right-0.5 rounded-full bg-slate-900/90 p-0.5" />}</button>
     </div>
   );
 }
@@ -7992,11 +8153,12 @@ function GridMenu({ anchorRef, mode, size, onMode, onSize, onClose, down }) {
         <div className="mono text-[10px] tracking-wider text-slate-500 mb-2">BACKGROUND GUIDE</div>
         <div className="grid grid-cols-3 gap-2">
           {NB_GRID_OPTS.map(([id, label]) => (
-            <button key={id} onClick={() => onMode(id)} className={`rounded-xl p-1.5 border text-center focus-ring ${mode === id ? 'border-cyan-400/70 bg-cyan-500/10' : 'border-slate-700/60 hover:border-slate-500/70'}`}>
+            <button key={id} onClick={() => onMode(id)} className={`relative rounded-xl p-1.5 border text-center focus-ring ${mode === id ? 'border-cyan-400/70 bg-cyan-500/10' : 'border-slate-700/60 hover:border-slate-500/70'}`}>
               <div className="rounded-md mb-1 relative overflow-hidden" style={{ height: 34, background: '#1e293b', ...(id === 'off' ? {} : nbGridStyle(id, 10, '255,255,255')) }}>
                 {id === 'graph' && <div className="absolute inset-0" style={{ background: 'linear-gradient(rgba(255,255,255,.8),rgba(255,255,255,.8)) center/100% 1px no-repeat, linear-gradient(rgba(255,255,255,.8),rgba(255,255,255,.8)) center/1px 100% no-repeat' }} />}
               </div>
               <div className="text-[11px] text-slate-300">{label}</div>
+              {nbLockedGrid(id) && <LockBadge size={9} className="absolute top-1 right-1 rounded-full bg-slate-900/80 p-0.5" />}
             </button>
           ))}
         </div>
