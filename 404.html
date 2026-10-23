@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 · Sector Lost in Orbit · Novaboard</title>
+  <meta name="robots" content="noindex">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Bricolage Grotesque & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --void: #0a0716;
+      --dusk: #1b1140;
+      --nova: #ffb86b;
+      --ember: #ff5d8f;
+      --mist: #cfc8ee;
+      --cyan: #7dd3fc;
+      --violet: #a855f7;
+      --font-display: "Bricolage Grotesque", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow-x: hidden;
+      background-color: var(--void);
+      color: var(--mist);
+      font-family: var(--font-display);
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 50% 42%, rgba(255, 93, 143, 0.12) 0%, transparent 45%),
+        radial-gradient(ellipse 85% 65% at 50% 55%, var(--dusk) 0%, var(--void) 75%);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 100dvh;
+      position: relative;
+    }
+
+    /* Cosmic Canvas */
+    canvas#sky {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      cursor: crosshair;
+    }
+
+    /* Ambient Vignette & Scanline Overlay */
+    .cosmic-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      background:
+        radial-gradient(circle at 50% 50%, transparent 55%, rgba(6, 4, 14, 0.65) 100%),
+        repeating-linear-gradient(
+          to bottom,
+          transparent 0px,
+          transparent 3px,
+          rgba(255, 255, 255, 0.012) 4px
+        );
+    }
+
+    /* 3D Hero Typography Container */
+    .hero-code-wrap {
+      perspective: 1100px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .code-3d {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(0.25rem, 1.5vw, 0.85rem);
+      font-size: clamp(5.2rem, 20vw, 11.5rem);
+      font-weight: 800;
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      color: #ffffff;
+      transform-style: preserve-3d;
+      transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+      animation: riseIn 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .digit-four {
+      position: relative;
+      display: inline-block;
+      background: linear-gradient(180deg, #ffffff 15%, #e2dcff 65%, #9b8ec7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 12px 35px rgba(255, 184, 107, 0.22));
+      transform: translateZ(35px);
+      transition: transform 0.3s ease, filter 0.3s ease;
+    }
+
+    .code-3d:hover .digit-four {
+      filter: drop-shadow(0 0 42px rgba(255, 93, 143, 0.45));
+    }
+
+    /* Living Supernova '0' */
+    .nova-zero {
+      position: relative;
+      width: 0.86em;
+      height: 0.86em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      transform: translateZ(55px);
+      margin: 0 0.03em;
+    }
+
+    /* Ambient Outer Corona */
+    .nova-corona {
+      position: absolute;
+      inset: -18%;
+      border-radius: 50%;
+      background: radial-gradient(
+        circle,
+        rgba(255, 184, 107, 0.5) 0%,
+        rgba(255, 93, 143, 0.32) 38%,
+        rgba(168, 85, 247, 0.15) 62%,
+        transparent 76%
+      );
+      filter: blur(12px);
+      animation: coronaBreathe 4s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    /* Pulsing Star Core */
+    .nova-core {
+      position: absolute;
+      inset: 14%;
+      border-radius: 50%;
+      background: radial-gradient(
+        circle at 38% 36%,
+        #ffffff 0%,
+        #fff3d6 22%,
+        var(--nova) 48%,
+        var(--ember) 78%,
+        #931545 100%
+      );
+      box-shadow:
+        0 0 35px 6px rgba(255, 184, 107, 0.75),
+        0 0 80px 20px rgba(255, 93, 143, 0.45),
+        inset 0 0 22px rgba(255, 255, 255, 0.85);
+      animation: corePulse 3.2s ease-in-out infinite;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease;
+    }
+
+    .nova-zero:hover .nova-core {
+      transform: scale(1.12);
+      filter: brightness(1.2);
+    }
+
+    .nova-zero:active .nova-core {
+      transform: scale(0.92);
+    }
+
+    /* 3D Tilted Accretion Disk */
+    .accretion-disk {
+      position: absolute;
+      inset: -16%;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      border-top-color: rgba(255, 184, 107, 0.9);
+      border-right-color: rgba(255, 93, 143, 0.65);
+      border-bottom-color: rgba(125, 211, 252, 0.4);
+      border-left-color: rgba(168, 85, 247, 0.75);
+      transform: rotateX(71deg) rotateY(-14deg) rotateZ(0deg);
+      box-shadow:
+        0 0 24px rgba(255, 184, 107, 0.45),
+        inset 0 0 24px rgba(255, 93, 143, 0.35);
+      animation: spinDisk 7s linear infinite;
+      pointer-events: none;
+    }
+
+    .accretion-disk-secondary {
+      position: absolute;
+      inset: -6%;
+      border-radius: 50%;
+      border: 1.5px dashed rgba(255, 230, 190, 0.6);
+      transform: rotateX(71deg) rotateY(18deg) rotateZ(0deg);
+      animation: spinDiskReverse 11s linear infinite;
+      pointer-events: none;
+    }
+
+    /* Orbiting Mini Satellite */
+    .orbit-track {
+      position: absolute;
+      inset: -10%;
+      border-radius: 50%;
+      animation: orbitSpin 5.5s linear infinite;
+      pointer-events: none;
+    }
+
+    .orbit-satellite {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 10px;
+      height: 10px;
+      margin-left: -5px;
+      margin-top: -5px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 0 12px 3px var(--cyan), 0 0 22px 6px var(--ember);
+    }
+
+    /* Expanding Shockwave Rings */
+    .shock-ring {
+      position: absolute;
+      inset: 14%;
+      border-radius: 50%;
+      border: 2px solid var(--nova);
+      opacity: 0;
+      pointer-events: none;
+      animation: shockExpand 3.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+    }
+
+    .shock-ring.ring-2 {
+      animation-delay: 1.7s;
+      border-color: var(--ember);
+    }
+
+    /* Supernova Click Burst Class */
+    .nova-zero.bursting .nova-core {
+      animation: hyperFlash 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Glassmorphic Telemetry Card */
+    .telemetry-card {
+      background: linear-gradient(
+        155deg,
+        rgba(27, 17, 64, 0.68) 0%,
+        rgba(10, 7, 22, 0.78) 100%
+      );
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(207, 200, 238, 0.16);
+      box-shadow:
+        0 24px 60px rgba(0, 0, 0, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      animation: riseIn 1s 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* Terminal Path Box */
+    .terminal-pill {
+      background: rgba(8, 5, 18, 0.78);
+      border: 1px solid rgba(207, 200, 238, 0.2);
+      font-family: var(--font-mono);
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .terminal-pill:hover {
+      border-color: rgba(255, 184, 107, 0.45);
+      box-shadow: 0 0 24px rgba(255, 184, 107, 0.12);
+    }
+
+    /* Primary CTA Button */
+    .btn-nova {
+      background: linear-gradient(135deg, var(--nova) 0%, var(--ember) 100%);
+      color: #160912;
+      font-weight: 800;
+      box-shadow:
+        0 8px 28px rgba(255, 93, 143, 0.38),
+        inset 0 1px 1px rgba(255, 255, 255, 0.45);
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease, filter 0.2s ease;
+    }
+
+    .btn-nova:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow:
+        0 14px 36px rgba(255, 93, 143, 0.55),
+        0 0 20px rgba(255, 184, 107, 0.4);
+      filter: brightness(1.05);
+    }
+
+    .btn-nova:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    /* Secondary Glass Button */
+    .btn-glass {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(207, 200, 238, 0.22);
+      color: #f3f0ff;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .btn-glass:hover {
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 184, 107, 0.45);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .btn-glass.active-mode {
+      background: rgba(125, 211, 252, 0.16);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      box-shadow: 0 0 22px rgba(125, 211, 252, 0.28);
+    }
+
+    /* HUD Bar Styling */
+    .hud-bar {
+      font-family: var(--font-mono);
+      background: rgba(10, 7, 22, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-color: rgba(207, 200, 238, 0.12);
+    }
+
+    .kbd-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 0.375rem;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(207, 200, 238, 0.18);
+      font-size: 0.72rem;
+      color: var(--mist);
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .kbd-tag:hover {
+      background: rgba(255, 184, 107, 0.15);
+      border-color: var(--nova);
+      color: #fff;
+    }
+
+    /* Keyframe Animations */
+    @keyframes riseIn {
+      from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes corePulse {
+      0%, 100% {
+        transform: scale(0.95);
+        filter: brightness(0.96);
+      }
+      50% {
+        transform: scale(1.06);
+        filter: brightness(1.18);
+      }
+    }
+
+    @keyframes coronaBreathe {
+      0%, 100% {
+        transform: scale(0.92);
+        opacity: 0.75;
+      }
+      50% {
+        transform: scale(1.15);
+        opacity: 1;
+      }
+    }
+
+    @keyframes spinDisk {
+      0% {
+        transform: rotateX(71deg) rotateY(-14deg) rotateZ(0deg);
+      }
+      100% {
+        transform: rotateX(71deg) rotateY(-14deg) rotateZ(360deg);
+      }
+    }
+
+    @keyframes spinDiskReverse {
+      0% {
+        transform: rotateX(71deg) rotateY(18deg) rotateZ(360deg);
+      }
+      100% {
+        transform: rotateX(71deg) rotateY(18deg) rotateZ(0deg);
+      }
+    }
+
+    @keyframes orbitSpin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes shockExpand {
+      0% {
+        transform: scale(0.85);
+        opacity: 0.75;
+      }
+      100% {
+        transform: scale(2.65);
+        opacity: 0;
+      }
+    }
+
+    @keyframes hyperFlash {
+      0% {
+        transform: scale(1);
+        filter: brightness(1);
+      }
+      35% {
+        transform: scale(1.42);
+        filter: brightness(2.2);
+        box-shadow: 0 0 120px 45px rgba(255, 255, 255, 0.95);
+      }
+      100% {
+        transform: scale(1);
+        filter: brightness(1);
+      }
+    }
+
+    /* Reduced Motion Support */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      .shock-ring {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body class="selection:bg-[#ff5d8f] selection:text-white">
+
+  <!-- Interactive Deep-Space Canvas -->
+  <canvas id="sky" aria-hidden="true"></canvas>
+  <div class="cosmic-overlay" aria-hidden="true"></div>
+
+  <!-- Top Telemetry Navigation Bar -->
+  <header class="hud-bar relative z-10 w-full border-b px-4 py-3 sm:px-8">
+    <div class="mx-auto flex max-w-6xl items-center justify-between gap-3">
+      <!-- Brand Logo / Link -->
+      <a href="/novaboard/" id="navBrandLink" class="group flex items-center gap-2.5 text-white focus:outline-none">
+        <span class="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#ffb86b] via-[#ff5d8f] to-[#a855f7] p-[1px] shadow-lg shadow-[#ff5d8f]/20 transition-transform duration-200 group-hover:scale-105">
+          <span class="flex h-full w-full items-center justify-center rounded-[7px] bg-[#0e0920]">
+            <!-- Nova Star SVG -->
+            <svg class="h-4 w-4 text-[#ffb86b] transition-transform duration-500 group-hover:rotate-90" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 1L14.8 9.2L23 12L14.8 14.8L12 23L9.2 14.8L1 12L9.2 9.2L12 1Z"/>
+            </svg>
+          </span>
+        </span>
+        <span class="font-['Bricolage_Grotesque'] text-lg font-extrabold tracking-tight text-white group-hover:text-[#ffb86b] transition-colors">
+          Novaboard
+        </span>
+        <span class="hidden rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium uppercase tracking-widest text-[#cfc8ee]/70 sm:inline-block">
+          Deep Space Relay
+        </span>
+      </a>
+
+      <!-- Right Status & Interactive Telemetry -->
+      <div class="flex items-center gap-2 sm:gap-3 text-xs">
+        <!-- Supernova Burst Counter -->
+        <button id="novaCounterBtn" type="button" title="Click to trigger a Supernova shockwave" class="flex items-center gap-1.5 rounded-full border border-[#ffb86b]/30 bg-[#ffb86b]/10 px-2.5 py-1 text-[#ffb86b] transition hover:bg-[#ffb86b]/20">
+          <span class="h-1.5 w-1.5 rounded-full bg-[#ffb86b] animate-ping"></span>
+          <span class="hidden sm:inline">SUPERNOVAS:</span>
+          <span id="novaCountVal" class="font-bold">0</span>
+        </button>
+
+        <!-- Sound Synth Toggle -->
+        <button id="audioToggleBtn" type="button" title="Toggle Cosmic Synth Audio" class="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[#cfc8ee] transition hover:border-white/30 hover:text-white">
+          <svg id="audioIconOff" class="h-3.5 w-3.5 text-[#cfc8ee]/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+          </svg>
+          <svg id="audioIconOn" class="hidden h-3.5 w-3.5 text-[#7dd3fc]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+          </svg>
+          <span id="audioLabel" class="hidden md:inline">SFX: OFF</span>
+        </button>
+
+        <!-- Online Telemetry Pill -->
+        <div class="flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-emerald-300">
+          <span class="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
+          <span class="hidden sm:inline">TELEMETRY:</span>
+          <span class="font-semibold">ONLINE</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Center Stage -->
+  <main class="relative z-10 mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center px-4 py-6 text-center sm:px-6">
+    
+    <!-- Interactive 3D '404' with Accretion Disk Supernova -->
+    <div class="hero-code-wrap mb-2 sm:mb-4">
+      <div id="code3d" class="code-3d" role="img" aria-label="Error 404">
+        <span class="digit-four">4</span>
+        
+        <!-- Center '0' Living Supernova -->
+        <div id="novaZero" class="nova-zero" role="button" tabindex="0" title="Click or press Space to detonate Supernova" aria-label="Interactive Supernova Zero">
+          <span class="nova-corona"></span>
+          <span class="shock-ring"></span>
+          <span class="shock-ring ring-2"></span>
+          <span class="accretion-disk"></span>
+          <span class="accretion-disk-secondary"></span>
+          <span class="nova-core"></span>
+          <span class="orbit-track">
+            <span class="orbit-satellite"></span>
+          </span>
+        </div>
+
+        <span class="digit-four">4</span>
+      </div>
+    </div>
+
+    <!-- Glassmorphic Mission Telemetry & Diagnostics Card -->
+    <section class="telemetry-card w-full rounded-3xl p-5 sm:p-8">
+      <!-- Top Diagnostic Status Tag -->
+      <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-[#ff5d8f]/35 bg-[#ff5d8f]/10 px-3 py-1 font-mono text-xs font-medium text-[#ff85aa]">
+        <span class="h-1.5 w-1.5 rounded-full bg-[#ff5d8f]"></span>
+        <span>ERR_ORBIT_DECAY · HTTP 404</span>
+      </div>
+
+      <h1 class="text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
+        This page drifted out of orbit
+      </h1>
+
+      <p class="mx-auto mt-2.5 max-w-lg text-sm leading-relaxed text-[#cfc8ee]/90 sm:text-base">
+        The coordinates you followed don’t exist on <strong class="font-semibold text-white">Novaboard</strong>. The sector may have relocated to a new constellation, or it was never charted.
+      </p>
+
+      <!-- Smart URL Diagnostics Terminal Pill -->
+      <div class="mt-5">
+        <div class="terminal-pill mx-auto flex max-w-lg items-center justify-between gap-2 rounded-xl px-3.5 py-2.5 text-left text-xs sm:text-sm">
+          <div class="flex min-w-0 flex-1 items-center gap-2">
+            <span class="shrink-0 font-bold text-[#ffb86b]">GET</span>
+            <span id="pathDisplay" class="truncate text-[#e6e1ff]" title="Failed request path">/novaboard/lost-sector</span>
+          </div>
+          <button
+            id="copyPathBtn"
+            type="button"
+            class="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-xs font-medium text-[#cfc8ee] transition hover:border-[#ffb86b]/50 hover:bg-white/10 hover:text-white active:scale-95"
+            title="Copy failed URL path"
+          >
+            <svg id="copyIcon" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <span id="copyBtnText">Copy Path</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Status Toast message (hidden unless triggered) -->
+      <div id="statusToast" class="mt-2 h-4 font-mono text-xs text-[#7dd3fc] opacity-0 transition-opacity duration-300" aria-live="polite">
+        Coordinates copied to clipboard.
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
+        <!-- Primary CTA: Back to Novaboard -->
+        <a
+          href="/novaboard/"
+          id="primaryHomeBtn"
+          class="btn-nova inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+        >
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          <span>Back to Novaboard</span>
+        </a>
+
+        <!-- Secondary CTA: Previous Sector -->
+        <button
+          id="backHistoryBtn"
+          type="button"
+          class="btn-glass inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm sm:text-base"
+        >
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Previous Sector</span>
+        </button>
+
+        <!-- Interactive CTA: Pulse Supernova -->
+        <button
+          id="pulseNovaBtn"
+          type="button"
+          class="btn-glass inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm sm:text-base text-[#ffb86b]"
+        >
+          <svg class="h-4 w-4 text-[#ffb86b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <span>Pulse Supernova</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Subtle Interactive Hint -->
+    <p class="mt-4 font-mono text-xs text-[#cfc8ee]/60">
+      Tip: Click anywhere in space for a shockwave · Hold click or press <span class="text-[#7dd3fc]">[W]</span> for Hyperspace Warp
+    </p>
+  </main>
+
+  <!-- Bottom Cosmic HUD Bar -->
+  <footer class="hud-bar relative z-10 w-full border-t px-4 py-2.5 sm:px-8">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 text-[11px] text-[#cfc8ee]/75">
+      <!-- Live Coordinates & Telemetry -->
+      <div class="flex items-center gap-4">
+        <div>
+          <span class="text-[#cfc8ee]/45">COORDS:</span>
+          <span id="hudCoords" class="text-white">RA 14h 29m · DEC -62° 40'</span>
+        </div>
+        <div class="hidden sm:block">
+          <span class="text-[#cfc8ee]/45">STARS:</span>
+          <span id="hudStars" class="text-[#ffb86b]">0</span>
+        </div>
+        <div>
+          <span class="text-[#cfc8ee]/45">VELOCITY:</span>
+          <span id="hudVelocity" class="text-[#7dd3fc]">0.02c</span>
+        </div>
+      </div>
+
+      <!-- Interactive Keyboard Shortcut Controls -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button type="button" id="kbdHome" class="kbd-tag" title="Return to Novaboard Home">
+          <span class="font-bold text-white">[H]</span> Home
+        </button>
+        <button type="button" id="kbdShock" class="kbd-tag" title="Trigger Supernova Shockwave">
+          <span class="font-bold text-[#ffb86b]">[Space]</span> Shockwave
+        </button>
+        <button type="button" id="kbdWarp" class="kbd-tag" title="Toggle Hyperspace Warp Drive">
+          <span class="font-bold text-[#7dd3fc]">[W]</span> Warp Drive
+        </button>
+        <button type="button" id="kbdComet" class="kbd-tag hidden sm:inline-flex" title="Spawn Shooting Star">
+          <span class="font-bold text-[#ff5d8f]">[C]</span> Comet
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Interactive Script -->
+  <script>
+    (function () {
+      'use strict';
+
+      // --- 1. Smart URL Path Diagnostics ---
+      const pathDisplay = document.getElementById('pathDisplay');
+      const statusToast = document.getElementById('statusToast');
+      const copyPathBtn = document.getElementById('copyPathBtn');
+      const copyBtnText = document.getElementById('copyBtnText');
+      const NOVABOARD_URL = 'https://abhiraj1121.github.io/novaboard/';
+
+      let detectedPath = '/novaboard/unknown-sector';
+      try {
+        const rawPath = window.location.pathname || '';
+        // If running inside a preview sandbox or root blank path, show a realistic path
+        if (
+          !rawPath ||
+          rawPath === '/' ||
+          rawPath === 'blank' ||
+          rawPath.includes('srcdoc') ||
+          rawPath.endsWith('/404.html')
+        ) {
+          detectedPath = '/novaboard/sector-404-uncharted';
+        } else {
+          detectedPath = rawPath + (window.location.search || '');
+        }
+      } catch (err) {
+        detectedPath = '/novaboard/sector-404-uncharted';
+      }
+      pathDisplay.textContent = detectedPath;
+
+      // Smart Navigation Links (works both hosted on abhiraj1121.github.io/novaboard/ and in previews)
+      function navigateToNovaboard(e) {
+        if (e) e.preventDefault();
+        try {
+          if (window.location.hostname.includes('github.io')) {
+            window.location.href = '/novaboard/';
+          } else {
+            window.open(NOVABOARD_URL, '_blank', 'noopener,noreferrer');
+          }
+        } catch (err) {
+          window.location.href = NOVABOARD_URL;
+        }
+      }
+
+      document.getElementById('primaryHomeBtn').addEventListener('click', navigateToNovaboard);
+      document.getElementById('navBrandLink').addEventListener('click', navigateToNovaboard);
+
+      // Toast Notification Helper
+      let toastTimer = null;
+      function showToast(msg) {
+        statusToast.textContent = msg;
+        statusToast.style.opacity = '1';
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          statusToast.style.opacity = '0';
+        }, 2600);
+      }
+
+      // Copy Path Button (using document.execCommand('copy') for iframe compatibility)
+      copyPathBtn.addEventListener('click', () => {
+        const tempInput = document.createElement('textarea');
+        tempInput.value = detectedPath;
+        tempInput.style.position = 'fixed';
+        tempInput.style.opacity = '0';
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        try {
+          document.execCommand('copy');
+          copyBtnText.textContent = 'Copied!';
+          showToast('Telemetry path copied: ' + detectedPath);
+          playCosmicSound('copy');
+          setTimeout(() => {
+            copyBtnText.textContent = 'Copy Path';
+          }, 1800);
+        } catch (err) {
+          showToast('Unable to copy path automatically.');
+        }
+        document.body.removeChild(tempInput);
+      });
+
+      // Previous Sector Button
+      document.getElementById('backHistoryBtn').addEventListener('click', () => {
+        playCosmicSound('blip');
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          showToast('No previous sector in flight log · Redirecting to Novaboard...');
+          setTimeout(() => navigateToNovaboard(), 1100);
+        }
+      });
+
+      // --- 2. Optional Web Audio API Cosmic Synthesizer (Zero external dependencies) ---
+      let audioCtx = null;
+      let soundEnabled = false;
+      const audioToggleBtn = document.getElementById('audioToggleBtn');
+      const audioIconOff = document.getElementById('audioIconOff');
+      const audioIconOn = document.getElementById('audioIconOn');
+      const audioLabel = document.getElementById('audioLabel');
+
+      function initAudio() {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) {
+            audioCtx = new AudioContextClass();
+          }
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      }
+
+      audioToggleBtn.addEventListener('click', () => {
+        soundEnabled = !soundEnabled;
+        if (soundEnabled) {
+          initAudio();
+          audioIconOff.classList.add('hidden');
+          audioIconOn.classList.remove('hidden');
+          audioLabel.textContent = 'SFX: ON';
+          playCosmicSound('blip');
+          showToast('Cosmic Telemetry Audio Enabled');
+        } else {
+          audioIconOn.classList.add('hidden');
+          audioIconOff.classList.remove('hidden');
+          audioLabel.textContent = 'SFX: OFF';
+          showToast('Cosmic Telemetry Audio Muted');
+        }
+      });
+
+      function playCosmicSound(type) {
+        if (!soundEnabled) return;
+        initAudio();
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'supernova') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(190, now);
+          osc.frequency.exponentialRampToValueAtTime(42, now + 0.65);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+          osc.start(now);
+          osc.stop(now + 0.66);
+        } else if (type === 'warp') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(110, now);
+          osc.frequency.exponentialRampToValueAtTime(440, now + 0.45);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+          osc.start(now);
+          osc.stop(now + 0.46);
+        } else if (type === 'copy' || type === 'blip') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+          osc.start(now);
+          osc.stop(now + 0.13);
+        }
+      }
+
+      // --- 3. Interactive Cosmic Canvas (#sky) ---
+      const canvas = document.getElementById('sky');
+      const ctx = canvas.getContext('2d');
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      const hudCoords = document.getElementById('hudCoords');
+      const hudStars = document.getElementById('hudStars');
+      const hudVelocity = document.getElementById('hudVelocity');
+      const novaCountVal = document.getElementById('novaCountVal');
+      const novaZero = document.getElementById('novaZero');
+      const code3d = document.getElementById('code3d');
+      const kbdWarp = document.getElementById('kbdWarp');
+
+      let width = 0;
+      let height = 0;
+      let dpr = 1;
+
+      let stars = [];
+      let nebulae = [];
+      let shooters = [];
+      let particles = [];
+      let shockwaves = [];
+      let trailParticles = [];
+
+      let mx = 0, my = 0, tx = 0, ty = 0;
+      let pointerX = window.innerWidth / 2;
+      let pointerY = window.innerHeight / 2;
+      let warpMode = false;
+      let pointerHeld = false;
+      let warpFactor = 0; // 0 = normal, 1 = full hyperspace
+      let supernovaCount = 0;
+
+      const STAR_PALETTE = ['#ffffff', '#e4dfff', '#ffcf9a', '#ffb86b', '#ff85aa', '#7dd3fc'];
+
+      function initCanvas() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        width = canvas.width = window.innerWidth * dpr;
+        height = canvas.height = window.innerHeight * dpr;
+
+        // Populate Stars
+        stars = [];
+        const starCount = Math.min(Math.round((window.innerWidth * window.innerHeight) / 4800), 320);
+        hudStars.textContent = starCount;
+
+        for (let i = 0; i < starCount; i++) {
+          stars.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            vx: 0,
+            vy: 0,
+            z: Math.random() * 0.9 + 0.15,
+            phase: Math.random() * Math.PI * 2,
+            color: STAR_PALETTE[Math.floor(Math.random() * STAR_PALETTE.length)]
+          });
+        }
+
+        // Populate Subtle Drifting Nebula Clouds
+        nebulae = [
+          { x: width * 0.25, y: height * 0.3, r: Math.max(width, height) * 0.28, color: 'rgba(255, 93, 143, 0.055)', vx: 0.08 * dpr, vy: 0.04 * dpr },
+          { x: width * 0.75, y: height * 0.65, r: Math.max(width, height) * 0.32, color: 'rgba(255, 184, 107, 0.05)', vx: -0.06 * dpr, vy: -0.05 * dpr },
+          { x: width * 0.5, y: height * 0.2, r: Math.max(width, height) * 0.25, color: 'rgba(125, 211, 252, 0.04)', vx: 0.05 * dpr, vy: -0.04 * dpr }
+        ];
+      }
+
+      window.addEventListener('resize', initCanvas);
+
+      // Spawn a Shooting Star / Comet
+      function spawnShooter() {
+        if (prefersReducedMotion) return;
+        const fromLeft = Math.random() > 0.3;
+        shooters.push({
+          x: fromLeft ? Math.random() * width * 0.65 : width * (0.4 + Math.random() * 0.5),
+          y: Math.random() * height * 0.38,
+          vx: (fromLeft ? 1 : -1) * (12 + Math.random() * 6) * dpr,
+          vy: (5 + Math.random() * 4) * dpr,
+          life: 1,
+          color: Math.random() > 0.4 ? '#ffb86b' : '#7dd3fc'
+        });
+      }
+
+      // Trigger a Supernova Shockwave at (cx, cy) in CSS pixels
+      function triggerSupernova(clientX, clientY, isHeroZero = false) {
+        const sx = clientX * dpr;
+        const sy = clientY * dpr;
+
+        supernovaCount++;
+        novaCountVal.textContent = supernovaCount;
+        playCosmicSound('supernova');
+
+        // Animate Hero '0' if triggered
+        novaZero.classList.remove('bursting');
+        void novaZero.offsetWidth; // reflow
+        novaZero.classList.add('bursting');
+
+        // Add expanding shockwave ring on canvas
+        shockwaves.push({
+          x: sx,
+          y: sy,
+          radius: 10 * dpr,
+          maxRadius: Math.max(width, height) * 0.55,
+          alpha: 0.95,
+          color: isHeroZero ? '#ffb86b' : '#ff5d8f'
+        });
+
+        // Push nearby stars radially outward
+        const blastRadius = 320 * dpr;
+        for (let i = 0; i < stars.length; i++) {
+          const s = stars[i];
+          const px = ((s.x + mx * s.z) % width + width) % width;
+          const py = ((s.y + my * s.z) % height + height) % height;
+          const dx = px - sx;
+          const dy = py - sy;
+          const dist = Math.hypot(dx, dy) || 1;
+          if (dist < blastRadius) {
+            const force = (1 - dist / blastRadius) * 18 * dpr * s.z;
+            s.vx += (dx / dist) * force;
+            s.vy += (dy / dist) * force;
+          }
+        }
+
+        // Spawn burst particles
+        const count = isHeroZero ? 48 : 30;
+        for (let i = 0; i < count; i++) {
+          const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.3;
+          const speed = (2 + Math.random() * 9) * dpr;
+          particles.push({
+            x: sx,
+            y: sy,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size: (1.5 + Math.random() * 2.8) * dpr,
+            life: 1,
+            decay: 0.014 + Math.random() * 0.015,
+            color: STAR_PALETTE[Math.floor(Math.random() * STAR_PALETTE.length)]
+          });
+        }
+      }
+
+      // Pointer Move: Parallax, 3D Hero Tilt, Stardust Trail, HUD Coords
+      window.addEventListener('pointermove', (e) => {
+        pointerX = e.clientX;
+        pointerY = e.clientY;
+
+        const normX = e.clientX / window.innerWidth - 0.5;
+        const normY = e.clientY / window.innerHeight - 0.5;
+
+        tx = normX * 45 * dpr;
+        ty = normY * 45 * dpr;
+
+        // 3D Tilt on the '404' Hero
+        if (!prefersReducedMotion && code3d) {
+          const rotateY = normX * 18;
+          const rotateX = -normY * 18;
+          code3d.style.transform = `rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg)`;
+        }
+
+        // Update HUD Cosmic Coordinates
+        const raH = Math.floor(12 + normX * 12);
+        const raM = Math.floor(Math.abs(normX * 60) % 60);
+        const decD = Math.floor(-45 + normY * 90);
+        hudCoords.textContent = `RA ${String(raH).padStart(2, '0')}h ${String(raM).padStart(2, '0')}m · DEC ${decD >= 0 ? '+' : ''}${decD}°`;
+
+        // Spawn subtle stardust trail on movement
+        if (!prefersReducedMotion && Math.random() < 0.65) {
+          trailParticles.push({
+            x: e.clientX * dpr,
+            y: e.clientY * dpr,
+            vx: (Math.random() - 0.5) * 1.2 * dpr,
+            vy: (Math.random() - 0.5) * 1.2 * dpr,
+            size: (1 + Math.random() * 1.8) * dpr,
+            life: 0.85,
+            color: Math.random() > 0.5 ? '#ffb86b' : '#ff5d8f'
+          });
+        }
+      });
+
+      // Click on Canvas Background triggers Shockwave; Hold engages temporary Warp
+      canvas.addEventListener('pointerdown', (e) => {
+        pointerHeld = true;
+        triggerSupernova(e.clientX, e.clientY, false);
+      });
+
+      window.addEventListener('pointerup', () => {
+        pointerHeld = false;
+      });
+
+      // Clicking the Center '0' Nova
+      function triggerCenterNova(e) {
+        if (e) e.stopPropagation();
+        const rect = novaZero.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        triggerSupernova(cx, cy, true);
+      }
+
+      novaZero.addEventListener('click', triggerCenterNova);
+      novaZero.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          triggerCenterNova();
+        }
+      });
+
+      document.getElementById('pulseNovaBtn').addEventListener('click', () => triggerCenterNova());
+      document.getElementById('novaCounterBtn').addEventListener('click', () => triggerCenterNova());
+
+      // Toggle Warp Mode
+      function toggleWarpMode() {
+        warpMode = !warpMode;
+        playCosmicSound('warp');
+        if (warpMode) {
+          kbdWarp.classList.add('border-[#7dd3fc]', 'text-[#7dd3fc]');
+          showToast('Hyperspace Warp Drive: ENGAGED');
+        } else {
+          kbdWarp.classList.remove('border-[#7dd3fc]', 'text-[#7dd3fc]');
+          showToast('Hyperspace Warp Drive: DISENGAGED');
+        }
+      }
+
+      // Keyboard Shortcuts & HUD Buttons
+      document.getElementById('kbdHome').addEventListener('click', navigateToNovaboard);
+      document.getElementById('kbdShock').addEventListener('click', () => triggerCenterNova());
+      document.getElementById('kbdWarp').addEventListener('click', toggleWarpMode);
+      document.getElementById('kbdComet').addEventListener('click', () => {
+        spawnShooter();
+        playCosmicSound('blip');
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.code === 'Space') {
+          e.preventDefault();
+          triggerCenterNova();
+        } else if (e.key === 'w' || e.key === 'W') {
+          toggleWarpMode();
+        } else if (e.key === 'h' || e.key === 'H') {
+          navigateToNovaboard();
+        } else if (e.key === 'c' || e.key === 'C') {
+          spawnShooter();
+          playCosmicSound('blip');
+        }
+      });
+
+      // --- 4. Main Animation Loop ---
+      function renderFrame(t) {
+        mx += (tx - mx) * 0.06;
+        my += (ty - my) * 0.06;
+
+        const targetWarp = (warpMode || pointerHeld) && !prefersReducedMotion ? 1 : 0;
+        warpFactor += (targetWarp - warpFactor) * 0.08;
+
+        // Update Velocity HUD
+        const vel = (0.02 + warpFactor * 9.82).toFixed(2);
+        hudVelocity.textContent = vel + 'c';
+
+        ctx.clearRect(0, 0, width, height);
+
+        // 1. Render Drifting Nebula Clouds
+        for (let i = 0; i < nebulae.length; i++) {
+          const n = nebulae[i];
+          if (!prefersReducedMotion) {
+            n.x += n.vx;
+            n.y += n.vy;
+            if (n.x < 0 || n.x > width) n.vx *= -1;
+            if (n.y < 0 || n.y > height) n.vy *= -1;
+          }
+          const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r);
+          grad.addColorStop(0, n.color);
+          grad.addColorStop(1, 'rgba(10, 7, 22, 0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        const centerX = width * 0.5;
+        const centerY = height * 0.45;
+
+        // 2. Render Multi-Layer Parallax Stars & Warp Streaks
+        for (let i = 0; i < stars.length; i++) {
+          const s = stars[i];
+          if (!prefersReducedMotion) {
+            s.y -= s.z * (0.14 + warpFactor * 3.8) * dpr;
+            s.x += s.vx;
+            s.y += s.vy;
+            s.vx *= 0.92;
+            s.vy *= 0.92;
+            if (s.y < -10) s.y = height + 10;
+            if (s.y > height + 10) s.y = -10;
+            if (s.x < -10) s.x = width + 10;
+            if (s.x > width + 10) s.x = -10;
+          }
+
+          const px = ((s.x + mx * s.z) % width + width) % width;
+          const py = ((s.y + my * s.z) % height + height) % height;
+          const twinkle = 0.35 + 0.65 * Math.abs(Math.sin(t / 1300 * s.z + s.phase));
+
+          ctx.globalAlpha = prefersReducedMotion ? 0.75 : twinkle;
+
+          if (warpFactor > 0.05) {
+            // Draw radial hyperspace streak
+            const dx = px - centerX;
+            const dy = py - centerY;
+            const streakScale = 1 + warpFactor * 0.14 * s.z;
+            ctx.strokeStyle = s.color;
+            ctx.lineWidth = s.z * 1.7 * dpr;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(centerX + dx * streakScale, centerY + dy * streakScale);
+            ctx.stroke();
+          } else {
+            ctx.fillStyle = s.color;
+            ctx.beginPath();
+            ctx.arc(px, py, s.z * 1.55 * dpr, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        // 3. Render Expanding Shockwaves
+        for (let i = shockwaves.length - 1; i >= 0; i--) {
+          const sw = shockwaves[i];
+          sw.radius += 14 * dpr;
+          sw.alpha *= 0.94;
+          ctx.globalAlpha = Math.max(sw.alpha, 0);
+          ctx.strokeStyle = sw.color;
+          ctx.lineWidth = 2.5 * dpr;
+          ctx.beginPath();
+          ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+          ctx.stroke();
+          if (sw.alpha <= 0.02 || sw.radius > sw.maxRadius) {
+            shockwaves.splice(i, 1);
+          }
+        }
+
+        // 4. Render Supernova Burst Particles
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vx *= 0.96;
+          p.vy *= 0.96;
+          p.life -= p.decay;
+          if (p.life <= 0) {
+            particles.splice(i, 1);
+            continue;
+          }
+          ctx.globalAlpha = p.life;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 5. Render Stardust Pointer Trail
+        for (let i = trailParticles.length - 1; i >= 0; i--) {
+          const tp = trailParticles[i];
+          tp.x += tp.vx;
+          tp.y += tp.vy;
+          tp.life -= 0.035;
+          if (tp.life <= 0) {
+            trailParticles.splice(i, 1);
+            continue;
+          }
+          ctx.globalAlpha = tp.life * 0.75;
+          ctx.fillStyle = tp.color;
+          ctx.beginPath();
+          ctx.arc(tp.x, tp.y, tp.size * tp.life, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 6. Render Shooting Stars / Comets
+        for (let j = shooters.length - 1; j >= 0; j--) {
+          const k = shooters[j];
+          k.x += k.vx;
+          k.y += k.vy;
+          k.life -= 0.016;
+          if (k.life <= 0) {
+            shooters.splice(j, 1);
+            continue;
+          }
+          const tailX = k.x - k.vx * 10;
+          const tailY = k.y - k.vy * 10;
+          const grad = ctx.createLinearGradient(k.x, k.y, tailX, tailY);
+          grad.addColorStop(0, `rgba(255, 255, 255, ${Math.max(k.life, 0)})`);
+          grad.addColorStop(0.3, k.color);
+          grad.addColorStop(1, 'rgba(255, 184, 107, 0)');
+
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 2.2 * dpr;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(k.x, k.y);
+          ctx.lineTo(tailX, tailY);
+          ctx.stroke();
+
+          // Glowing Comet Head
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(k.x, k.y, 2.2 * dpr, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.globalAlpha = 1;
+        if (!prefersReducedMotion) {
+          requestAnimationFrame(renderFrame);
+        }
+      }
+
+      window.onload = function () {
+        initCanvas();
+        if (prefersReducedMotion) {
+          renderFrame(0);
+        } else {
+          requestAnimationFrame(renderFrame);
+          setInterval(spawnShooter, 4200);
+          setTimeout(spawnShooter, 1200);
+        }
+      };
+    })();
+  </script>
+</body>
+</html>
