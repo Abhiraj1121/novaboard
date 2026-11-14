@@ -18,6 +18,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- PPTX import: pptxtojson ships ESM/CJS only (no UMD/IIFE build), so it's loaded here as a real
+     ES module via jsDelivr's +esm auto-bundle, then handed off to window for the rest of this
+     page's plain global-script code to call. A classic <script> and a <script type="module">
+     coexist fine on one page; this needs no bundler. -->
+<script type="module">
+  import { parse } from 'https://cdn.jsdelivr.net/npm/pptxtojson@2.2.0/+esm';
+  window.pptxtojson = { parse };
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -1011,6 +1020,7 @@ function nbBootTelemetry(storage) {
     { label: 'COMPUTE', value: cores + mem, ok: true },
     { label: 'CANVAS ENGINE', value: window.fabric ? `fabric ${window.fabric.version}` : 'not loaded', ok: !!window.fabric },
     { label: 'DOC ENGINE', value: (window.pdfjsLib ? 'pdf.js' : 'pdf.js missing') + ' · ' + (window.jspdf ? 'jsPDF' : 'jsPDF missing'), ok: !!(window.pdfjsLib && window.jspdf) },
+    { label: 'PPTX IMPORT', value: window.pptxtojson ? 'pptxtojson ready' : 'loading / unavailable', ok: !!window.pptxtojson },
     { label: 'LOCAL STORAGE', value: storage.text, ok: storage.ok },
     { label: 'AUTO-SAVE', value: storage.ok ? 'armed · crash-safe' : 'unavailable', ok: storage.ok },
     { label: 'NETWORK', value: nav.onLine === false ? 'offline · fully local' : 'online', ok: true },
@@ -2907,7 +2917,13 @@ function DrawToolbar({
     window.addEventListener('pointercancel', up);
   };
 
-  /* Keep a dragged bar inside the stage when the stage (or the bar) changes size. */
+  /* Keep a dragged bar inside the stage when the stage changes size.
+     IMPORTANT: only observe the parent/stage, never the bar element itself.
+     Collapsing/expanding the bar (or switching to the emoji pen) changes the
+     bar's own width; if we also observe `el`, that width change fires this
+     callback and re-clamps `pos` against the new (wider/narrower) bar size,
+     silently overwriting the stored position — which is exactly the bug
+     where the bar "opens somewhere else" after collapse/expand. */
   useEffect(() => {
     const el = barRef.current;
     const parent = el && el.offsetParent;
@@ -2923,7 +2939,6 @@ function DrawToolbar({
       });
     });
     ro.observe(parent);
-    ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
@@ -3554,7 +3569,7 @@ function WidgetWindow({ title, icon: Icon, initialPos, boundsRef, minimized, onM
           <IX size={13} />
         </button>
       </div>
-      <div className="p-3.5">
+      <div className="p-3.5 overflow-y-auto" style={{ maxHeight: '85vh' }}>
         {children}
       </div>
     </div>
@@ -4230,7 +4245,7 @@ function WidgetDock({ open, onToggle, active, onLaunch, dropUp, dropSide }) {
 
 /* ---------- Bottom action dock: Import / Export / Tools, swappable to the opposite corner ---------- */
 
-function ActionDock({ panelsHidden, onTogglePanels, onExportPng, onImportPdf, importing, onExportPdf, exporting, widgetDockOpen, setWidgetDockOpen, activeWidgets, onLaunchWidget, onSwap, side }) {
+function ActionDock({ panelsHidden, onTogglePanels, onExportPng, onImport, importing, onExportPdf, exporting, widgetDockOpen, setWidgetDockOpen, activeWidgets, onLaunchWidget, onSwap, side }) {
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const pdfInputRef = useRef(null);
 
@@ -4254,14 +4269,14 @@ function ActionDock({ panelsHidden, onTogglePanels, onExportPng, onImportPdf, im
       <button
         onClick={() => pdfInputRef.current?.click()}
         disabled={importing}
-        title="Import PDF"
+        title="Import a PDF or PowerPoint (.pptx) file"
         className="flex items-center gap-1.5 text-xs mono text-slate-400 hover:text-cyan-300 transition-colors focus-ring rounded-md px-2.5 py-1.5 border border-slate-700/60 hover:border-cyan-500/40 disabled:opacity-50"
       >
         {importing ? <ILoader size={13} /> : <IUpload size={13} />}
-        {importing ? 'Importing…' : 'Import PDF'}
+        {importing ? 'Importing…' : 'Import'}
       </button>
-      <input ref={pdfInputRef} type="file" accept="application/pdf" className="hidden"
-        onChange={(e) => { onImportPdf(e.target.files?.[0]); e.target.value = ''; }} />
+      <input ref={pdfInputRef} type="file" accept="application/pdf,.pptx,.pdf" className="hidden"
+        onChange={(e) => { onImport(e.target.files?.[0]); e.target.value = ''; }} />
 
       <div className="relative">
         <button
@@ -4382,7 +4397,9 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
     const h = historyRef.current;
     setHistoryState({ canUndo: h.index > 0, canRedo: h.index < h.stack.length - 1 });
     const c = fabricRef.current;
-    setHasObjects(!!c && c.getObjects().length > 0);
+    // A PDF/PPTX page background doesn't count as "something to clear" — only drawn/typed
+    // content does, matching what doClear actually removes.
+    setHasObjects(!!c && c.getObjects().some((o) => o.nbKind !== 'bgImage' && o !== bgImageObjRef.current));
   }, []);
 
   const pushHistory = useCallback(() => {
@@ -5530,12 +5547,15 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
     return () => window.removeEventListener('keydown', onKey);
   }, [undo, redo, pushHistory, copySelection, pasteClipboard]);
 
-  /* ---- Clear board (with confirm; undo also restores it) ---- */
+  /* ---- Clear board (with confirm; undo also restores it) ----
+     Clears drawn/typed content only. A PDF/PPTX page background (nbKind 'bgImage', the same
+     object tracked by bgImageObjRef) is intentionally kept — "Clear board" should erase what the
+     person drew or added on top of an imported page, not remove the imported page itself. */
   const doClear = useCallback(() => {
     const c = fabricRef.current;
     if (!c) return;
     c.discardActiveObject();
-    c.getObjects().slice().forEach((o) => c.remove(o));
+    c.getObjects().slice().forEach((o) => { if (o.nbKind !== 'bgImage' && o !== bgImageObjRef.current) c.remove(o); });
     c.requestRenderAll();
     pushHistory();
     setConfirmClear(false);
@@ -5654,6 +5674,12 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       return url;
     },
     getBackgroundColor() { return bgColor; },
+    /* AI Slides tool: the logical page size to render generated slides at, so they line up
+       with the live canvas exactly like any other blank page (same convention as addAiNotes). */
+    getStageSize() {
+      const c = fabricRef.current;
+      return c ? { W: c.getWidth(), H: c.getHeight() } : { W: 1280, H: 720 };
+    },
     /* Current page as a PNG data URL (temporary laser strokes are hidden). */
     getPagePng() {
       const c = fabricRef.current;
@@ -5725,6 +5751,48 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
           probe.src = raw;
         };
         reader.readAsDataURL(file);
+      });
+    },
+
+    /* AI Image tool: fetch a generated image (cross-origin) and place it exactly like a user upload. */
+    addImageFromUrl(url) {
+      return new Promise((resolve, reject) => {
+        const c = fabricRef.current;
+        if (!c) { reject(new Error('The canvas is not ready yet.')); return; }
+        if (!url) { reject(new Error('No image to add.')); return; }
+        fetch(url)
+          .then((res) => {
+            if (!res.ok) throw new Error(`Image request failed (${res.status}).`);
+            return res.blob();
+          })
+          .then((blob) => new Promise((res2, rej2) => {
+            const reader = new FileReader();
+            reader.onerror = () => rej2(new Error('Could not read the generated image.'));
+            reader.onload = () => res2(reader.result);
+            reader.readAsDataURL(blob);
+          }))
+          .then((dataUrl) => {
+            fabric.Image.fromURL(dataUrl, (img, isError) => {
+              if (isError || !img || !img.width || !img.height) { reject(new Error('That image could not be placed.')); return; }
+              const k = Math.min(1, (c.getWidth() * 0.6) / img.width, (c.getHeight() * 0.6) / img.height);
+              img.set({
+                left: c.getWidth() / 2, top: c.getHeight() / 2,
+                originX: 'center', originY: 'center',
+                scaleX: k, scaleY: k,
+                nbKind: 'image', selectable: true, evented: true,
+              });
+              toolRef.current = 'select';
+              c.skipTargetFind = false;
+              c.selection = true;
+              c.add(img);
+              c.setActiveObject(img);
+              setTool('select');
+              c.requestRenderAll();
+              pushHistory();
+              resolve();
+            }, { crossOrigin: 'anonymous' });
+          })
+          .catch((e) => reject(new Error((e && e.message) || 'Could not fetch the generated image.')));
       });
     },
 
@@ -6269,6 +6337,39 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
     });
   }, [captureActiveSlide]);
 
+  /* AI Slides tool: insert a batch of pre-rendered slide records (bg+json+thumb) right after
+     the current page, then jump to the first new one. Mirrors importPdfFile's append logic. */
+  const addGeneratedDeck = useCallback((records) => {
+    const vp = viewportRef.current;
+    if (!vp || !records || !records.length) return;
+    captureActiveSlide();
+    setSlides((prev) => {
+      const insertAt = activeIndexRef.current + 1;
+      const fresh = records.map((r) => ({ ...makeSlide(r.bg), id: r.id || uid(), json: r.json, thumb: r.thumb }));
+      const next = [...prev.slice(0, insertAt), ...fresh, ...prev.slice(insertAt)];
+      slidesRef.current = next;
+      activeIndexRef.current = insertAt;
+      setActiveIndex(insertAt);
+      setTimeout(() => vp.loadSlide(fresh[0]), 0);
+      return next;
+    });
+  }, [captureActiveSlide]);
+
+  /* AI Slides tool: patch one already-created slide (by id) once its image finishes generating.
+     Updates the stored record; if that page is the one on screen, also refreshes the live canvas. */
+  const updateGeneratedSlide = useCallback((slideId, patch) => {
+    const vp = viewportRef.current;
+    setSlides((prev) => {
+      const idx = prev.findIndex((sl) => sl.id === slideId);
+      if (idx === -1) return prev;
+      const next = prev.slice();
+      next[idx] = { ...next[idx], ...patch };
+      slidesRef.current = next;
+      if (idx === activeIndexRef.current && vp) setTimeout(() => vp.loadSlide(next[idx]), 0);
+      return next;
+    });
+  }, []);
+
   const doDeletePage = useCallback(() => {
     const vp = viewportRef.current;
     setConfirmDeletePage(false);
@@ -6437,6 +6538,44 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
     }
   }, []);
 
+  /* Import .pptx from the top toolbar (shares the "Import" button with PDF). Mirrors the AI
+     Slides tool's own PPTX import, but runs standalone — it only needs the viewport, not that
+     tool's UI/state — and lands pages the same way importPdfFile does (appended if the board
+     already has content, otherwise replacing the single blank starter page). */
+  const importPptxFile = useCallback(async (file) => {
+    if (!file) return;
+    if (!window.pptxtojson) { setImportError('The PPTX import module is still loading (or failed to load). Wait a moment and try again, or check your connection.'); return; }
+    setImportError(null);
+    setImporting(true);
+    try {
+      const vp = viewportRef.current;
+      if (!vp) throw new Error('Open a board first.');
+      const buffer = await file.arrayBuffer();
+      const parsed = await window.pptxtojson.parse(buffer, { imageMode: 'base64', videoMode: 'none', audioMode: 'none' });
+      const pptxSlides = (parsed && parsed.slides) || [];
+      if (!pptxSlides.length) throw new Error('No slides found in that file.');
+      const { W, H } = vp.getStageSize();
+      const themeObj = NB_SLIDE_THEMES[0][2];
+      const specs = pptxSlides.map((sl) => nbPptxSlideToSpec(sl, parsed.size));
+      const records = [];
+      for (const spec of specs) records.push(await nbRenderFreeformSlideRecord(spec, themeObj, W, H));
+      addGeneratedDeck(records.map((r) => ({ ...r, id: uid() })));
+    } catch (err) {
+      setImportError(err.message || 'Could not read that PowerPoint file.');
+    } finally {
+      setImporting(false);
+    }
+  }, [addGeneratedDeck]);
+
+  /* Single "Import" entry point for the toolbar button: dispatches by file extension to
+     whichever pipeline already handles that type, so the button/UI stays generic. */
+  const importFile = useCallback((file) => {
+    if (!file) return;
+    const name = (file.name || '').toLowerCase();
+    if (name.endsWith('.pptx')) importPptxFile(file);
+    else importPdfFile(file);
+  }, [importPptxFile, importPdfFile]);
+
   /* ---- PDF export: flatten every slide (bg + vectors) into a downloadable multi-page PDF ---- */
   const handleExportPdf = useCallback(async () => {
     const vp = viewportRef.current;
@@ -6591,7 +6730,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
               panelsHidden={panelsHidden}
               onTogglePanels={() => setPanelsHidden((v) => !v)}
               onExportPng={handleExportPng}
-              onImportPdf={importPdfFile}
+              onImport={importFile}
               importing={importing}
               onExportPdf={handleExportPdf}
               exporting={exporting}
@@ -6610,7 +6749,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
             </div>
           )}
 
-          <NovaTools3 widgets={widgets} closeWidget={closeWidget} toggleMinimize={toggleMinimize} boundsRef={canvasStageRef} viewportRef={viewportRef} />
+          <NovaTools3 widgets={widgets} closeWidget={closeWidget} toggleMinimize={toggleMinimize} boundsRef={canvasStageRef} viewportRef={viewportRef} addGeneratedDeck={addGeneratedDeck} updateGeneratedSlide={updateGeneratedSlide} />
 
           {widgets.laser && (
             <LaserPointerOverlay containerRef={canvasStageRef} color="#38bdf8" />
@@ -7516,7 +7655,7 @@ function nbShrinkImage(dataUrl, max = 1280) {
     img.src = dataUrl;
   });
 }
-async function nbAiCall({ provider = 'gemini', key, model, system, messages, maxTokens = 1200 }) {
+async function nbAiCall({ provider = 'gemini', key, model, system, messages, maxTokens = 1200, signal }) {
   if (!key) throw new Error('Add your free API key in Settings > AI first.');
   const hasImage = messages.some((x) => Array.isArray(x.content) && x.content.some((b) => b.type === 'image'));
   const defs = NB_AI_MODELS[provider] || NB_AI_MODELS.gemini;
@@ -7541,8 +7680,8 @@ async function nbAiCall({ provider = 'gemini', key, model, system, messages, max
     };
   }
   let res;
-  try { res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) }); }
-  catch (e) { throw new Error('Could not reach the AI service. Check your internet connection.'); }
+  try { res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal }); }
+  catch (e) { if (e && e.name === 'AbortError') throw e; throw new Error('Could not reach the AI service. Check your internet connection.'); }
   let data = null;
   try { data = await res.json(); } catch (e) { /* non-JSON error body */ }
   if (!res.ok) {
@@ -7572,6 +7711,536 @@ const NB_AI_PAGE = [
   ['solve', 'Solve math', 'Read any handwritten or printed math on this whiteboard page and solve it step by step, briefly.'],
   ['recognize', 'Read handwriting', 'Transcribe any handwriting or text on this page, and name any shapes or diagrams you see.'],
 ];
+
+/* ---- Free AI image generation (Pollinations.ai: no key, no signup) ---- */
+const IImagine = (p) => <Svg {...p}><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" /><circle cx="8.5" cy="9.5" r="1.6" /><path d="M20.5 15l-5-5-8 8" /></Svg>;
+const NB_IMAGINE_STYLES = [
+  ['photo', 'Photo', 'photorealistic, natural lighting, high detail'],
+  ['illustration', 'Illustration', 'flat vector illustration, clean lines, soft shading'],
+  ['3d', '3D render', '3d render, soft studio lighting, clay material, pastel colors'],
+  ['watercolor', 'Watercolor', 'watercolor painting, gentle brush strokes, paper texture'],
+  ['sketch', 'Sketch', 'pencil sketch, hand drawn, black and white, crosshatching'],
+];
+const NB_IMAGINE_SIZES = [['1:1', 1024, 1024], ['4:3', 1024, 768], ['16:9', 1152, 648], ['3:4', 768, 1024]];
+/* Builds a Pollinations URL. No key/signup required; nologo keeps the board classroom-friendly. */
+function nbImagineUrl(prompt, { styleHint, width, height, seed } = {}) {
+  const full = styleHint ? `${prompt.trim()}, ${styleHint}` : prompt.trim();
+  const encoded = encodeURIComponent(full);
+  const params = new URLSearchParams({
+    width: String(width || 1024),
+    height: String(height || 1024),
+    nologo: 'true',
+    model: 'flux',
+  });
+  if (seed != null) params.set('seed', String(seed));
+  return `https://image.pollinations.ai/prompt/${encoded}?${params.toString()}`;
+}
+/* Resolves once the image has actually decoded (Pollinations can be slow on cold starts); rejects with a clear message otherwise. */
+function nbImagineLoad(url, timeoutMs = 45000) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    let done = false;
+    const timer = setTimeout(() => { if (!done) { done = true; reject(new Error('The image generator is taking too long. Try again.')); } }, timeoutMs);
+    img.onload = () => { if (done) return; done = true; clearTimeout(timer); resolve(url); };
+    img.onerror = () => { if (done) return; done = true; clearTimeout(timer); reject(new Error('Could not generate that image. Try a different description.')); };
+    img.src = url;
+  });
+}
+
+function ImagineTool({ viewportRef }) {
+  const [prompt, setPrompt] = useState('');
+  const [style, setStyle] = useState('photo');
+  const [size, setSize] = useState('1:1');
+  const [seed, setSeed] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [resultUrl, setResultUrl] = useState('');
+  const [adding, setAdding] = useState(false);
+  const stop = (e) => e.stopPropagation();
+
+  const generate = (reroll) => {
+    const text = prompt.trim();
+    if (!text || busy) return;
+    setBusy(true); setErr(''); if (!reroll) setResultUrl('');
+    const [, w, h] = NB_IMAGINE_SIZES.find((x) => x[0] === size) || NB_IMAGINE_SIZES[0];
+    const styleHint = (NB_IMAGINE_STYLES.find((x) => x[0] === style) || NB_IMAGINE_STYLES[0])[2];
+    const nextSeed = reroll ? Math.floor(Math.random() * 1e9) : (seed != null ? seed : Math.floor(Math.random() * 1e9));
+    const url = nbImagineUrl(text, { styleHint, width: w, height: h, seed: nextSeed });
+    nbImagineLoad(url)
+      .then((finalUrl) => { setSeed(nextSeed); setResultUrl(finalUrl); })
+      .catch((e) => setErr(e.message || 'Something went wrong.'))
+      .finally(() => setBusy(false));
+  };
+
+  const addToBoard = () => {
+    const vp = viewportRef && viewportRef.current;
+    if (!vp || !resultUrl || adding) return;
+    setAdding(true); setErr('');
+    vp.addImageFromUrl(resultUrl)
+      .catch((e) => setErr(e.message || 'Could not add that image to the board.'))
+      .finally(() => setAdding(false));
+  };
+
+  const box = 'w-full px-2 py-1.5 rounded-md bg-slate-900/60 border border-slate-600/50 text-xs text-slate-100';
+  return (
+    <div className="space-y-2" onPointerDown={stop}>
+      <p className="text-[11px] text-slate-500">Free AI image generation, powered by Pollinations.ai — no key needed.</p>
+      <textarea
+        className={`${box} resize-none`} rows={2} value={prompt} placeholder="Describe the image, e.g. a friendly cartoon sun over green hills"
+        onChange={(e) => setPrompt(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); generate(false); } }}
+      />
+      <div className="flex flex-wrap gap-1.5">
+        {NB_IMAGINE_STYLES.map(([id, l]) => <button key={id} onClick={() => setStyle(id)} className={`nb-chip ${style === id ? 'on' : 'text-slate-400'}`}>{l}</button>)}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {NB_IMAGINE_SIZES.map(([id]) => <button key={id} onClick={() => setSize(id)} className={`nb-chip ${size === id ? 'on' : 'text-slate-400'}`}>{id}</button>)}
+      </div>
+      <div className="flex gap-1.5">
+        <button className="nb-btn" disabled={busy || !prompt.trim()} onClick={() => generate(false)}>{busy ? 'Generating…' : 'Generate'}</button>
+        {resultUrl && !busy && <button className="nb-btn sec" onClick={() => generate(true)}>Reroll</button>}
+      </div>
+      {busy && <div className="text-xs text-slate-500">Painting your image… this can take up to a few seconds.</div>}
+      {resultUrl && !busy && (<>
+        <img src={resultUrl} alt={prompt} className="allow-select w-full rounded-lg border border-slate-600/50" draggable={false} />
+        <button className="nb-btn" disabled={adding} onClick={addToBoard}>{adding ? 'Adding…' : 'Use in slide / add to board'}</button>
+      </>)}
+      {err && <div className="text-xs text-red-300" role="alert">{err}</div>}
+    </div>
+  );
+}
+
+/* ---- AI Slides: generates a themed slide deck (native Fabric pages, not plain bullet text) ---- */
+const ISlides = (p) => <Svg {...p}><rect x="3.5" y="4.5" width="17" height="12" rx="1.5" /><path d="M8 20h8M12 16.5v3.5" /></Svg>;
+
+const NB_SLIDE_THEMES = [
+  ['nova', 'Nova', { bg: '#0b1324', panel: 'rgba(56,189,248,.14)', quoteTint: 'rgba(56,189,248,.35)', accent: '#38bdf8', text: '#eef2f7', muted: '#93a4bd' }],
+  ['indigo', 'Indigo', { bg: '#120f2b', panel: 'rgba(129,140,248,.16)', quoteTint: 'rgba(129,140,248,.35)', accent: '#818cf8', text: '#eef0ff', muted: '#a3a0c4' }],
+  ['amber', 'Amber', { bg: '#1c1407', panel: 'rgba(251,191,36,.16)', quoteTint: 'rgba(251,191,36,.35)', accent: '#fbbf24', text: '#fff7e6', muted: '#c9b592' }],
+  ['forest', 'Forest', { bg: '#07160f', panel: 'rgba(74,222,128,.14)', quoteTint: 'rgba(74,222,128,.35)', accent: '#4ade80', text: '#eafff2', muted: '#8fb39f' }],
+];
+const NB_SLIDE_LEVELS = ['Elementary', 'Middle school', 'High school', 'Adult'];
+const NB_SLIDE_LAYOUTS = ['title', 'bullets', 'twoColumn', 'bigStat', 'quote', 'imageFocus'];
+const NB_SLIDES_SYSTEM = 'You design classroom slide decks. Reply with ONLY a raw JSON array, no markdown, no backticks, no commentary before or after it.';
+function nbSlidesPrompt(topic, count, level) {
+  return `Create a ${count}-slide classroom deck about: ${topic.trim()}. Audience: ${level}.\nReturn ONLY a JSON array of exactly ${count} objects, one per slide, each shaped like:\n{"layout":"title|bullets|twoColumn|bigStat|quote|imageFocus","title":"short title","subtitle":"short subtitle (title layout only)","bullets":["point", "..."] (max 4, bullets layout),"left":["point","..."] (max 3, twoColumn),"right":["point","..."] (max 3, twoColumn),"stat":"a big number or short phrase (bigStat)","statLabel":"what the stat means (bigStat)","caption":"short caption (bigStat or imageFocus)","quote":"short quote (quote layout)","attribution":"who said it (quote layout)","imagePrompt":"short visual description for an illustration, no text in the image (imageFocus only)","notes":"one sentence of speaker notes"}\nOnly include the fields that layout needs; omit the rest. Make slide 1 "title". Vary the other layouts — do not repeat "bullets" for every slide, and use "imageFocus" at most twice. Keep every piece of text short enough to read on a projector from across a room. Output nothing but the JSON array.`;
+}
+function nbParseSlideJson(raw) {
+  let text = String(raw || '').replace(/```json|```/gi, '').trim();
+  const tryParse = (t) => { try { const arr = JSON.parse(t); return (Array.isArray(arr) && arr.length) ? arr : null; } catch (e) { return null; } };
+  let arr = tryParse(text);
+  if (arr) return arr;
+  const m = text.match(/\[[\s\S]*\]/);
+  if (m) { arr = tryParse(m[0]); if (arr) return arr; }
+  // Some free models get cut off mid-array (hit their own output limit) before the closing ].
+  // Repair by dropping the last, incomplete object and closing the array ourselves.
+  const start = text.indexOf('[');
+  if (start !== -1) {
+    const body = text.slice(start + 1);
+    const lastComplete = body.lastIndexOf('},');
+    if (lastComplete !== -1) { arr = tryParse('[' + body.slice(0, lastComplete + 1) + ']'); if (arr) return arr; }
+    const lastObj = body.lastIndexOf('}');
+    if (lastObj !== -1) { arr = tryParse('[' + body.slice(0, lastObj + 1) + ']'); if (arr) return arr; }
+  }
+  return null;
+}
+function nbSingleSlidePrompt(topic, level, layout) {
+  return `Rewrite ONE classroom slide for a deck about: ${topic.trim()}. Audience: ${level}. The slide's layout must stay "${layout}".\nReturn ONLY one JSON object (no array, no markdown) using only the fields that layout needs, from: title, subtitle, bullets (max 4), left (max 3), right (max 3), stat, statLabel, caption, quote, attribution, imagePrompt, notes. Make it noticeably different from before, just as short and projector-readable, layout:"${layout}". Output nothing but the JSON object.`;
+}
+function nbParseSingleSlide(raw) {
+  let text = String(raw || '').replace(/```json|```/gi, '').trim();
+  const tryParse = (t) => { try { const o = JSON.parse(t); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : null; } catch (e) { return null; } };
+  let obj = tryParse(text);
+  if (obj) return obj;
+  const m = text.match(/\{[\s\S]*\}/);
+  return m ? tryParse(m[0]) : null;
+}
+function nbFitFont(text, w, base, min) {
+  const len = String(text || '').length;
+  let f = base;
+  if (len > 60) f *= 0.78;
+  if (len > 110) f *= 0.62;
+  return Math.max(min, Math.round(f));
+}
+function nbSlideBg(theme, W, H) {
+  return [
+    new fabric.Rect({ left: 0, top: 0, width: W, height: H, fill: theme.bg, selectable: false, evented: false, nbKind: 'slidebg' }),
+    new fabric.Rect({ left: 0, top: 0, width: Math.max(6, W * 0.014), height: H, fill: theme.accent, selectable: false, evented: false, nbKind: 'slidebg' }),
+  ];
+}
+function nbText(text, opts) {
+  return new fabric.Textbox(String(text == null ? '' : text), { fontFamily: TEXT_FONT, selectable: true, evented: true, nbKind: 'text', ...opts });
+}
+function nbLayoutTitle(spec, theme, W, H) {
+  const o = nbSlideBg(theme, W, H);
+  o.push(nbText(spec.title || 'Untitled', { left: W / 2, top: H * 0.42, originX: 'center', originY: 'center', width: W * 0.8, textAlign: 'center', fontSize: nbFitFont(spec.title, W, W * 0.07, 22), fontWeight: '700', fill: theme.text }));
+  if (spec.subtitle) o.push(nbText(spec.subtitle, { left: W / 2, top: H * 0.58, originX: 'center', width: W * 0.7, textAlign: 'center', fontSize: Math.max(14, W * 0.022), fill: theme.muted }));
+  return o;
+}
+function nbLayoutBullets(spec, theme, W, H) {
+  const o = nbSlideBg(theme, W, H), mx = W * 0.09;
+  o.push(nbText(spec.title || '', { left: mx, top: H * 0.09, width: W * 0.82, fontSize: nbFitFont(spec.title, W, W * 0.04, 18), fontWeight: '700', fill: theme.text }));
+  o.push(new fabric.Rect({ left: mx, top: H * 0.21, width: W * 0.14, height: 4, fill: theme.accent, selectable: false, evented: false }));
+  const items = (spec.bullets || []).slice(0, 4), rowH = (H * 0.63) / Math.max(1, items.length);
+  items.forEach((t, i) => {
+    const y = H * 0.28 + i * rowH;
+    o.push(new fabric.Circle({ left: mx, top: y + rowH * 0.22, radius: 5, fill: theme.accent, selectable: false, evented: false }));
+    o.push(nbText(t, { left: mx + 26, top: y, width: W * 0.78, fontSize: Math.max(15, W * 0.024), fill: theme.text, lineHeight: 1.25 }));
+  });
+  return o;
+}
+function nbLayoutTwoColumn(spec, theme, W, H) {
+  const o = nbSlideBg(theme, W, H), mx = W * 0.09;
+  o.push(nbText(spec.title || '', { left: mx, top: H * 0.08, width: W * 0.82, fontSize: nbFitFont(spec.title, W, W * 0.038, 18), fontWeight: '700', fill: theme.text }));
+  const colW = W * 0.37, colY = H * 0.26, colH = H * 0.6;
+  [[spec.left, mx], [spec.right, W / 2 + W * 0.04]].forEach(([list, x]) => {
+    o.push(new fabric.Rect({ left: x, top: colY, width: colW, height: colH, rx: 10, ry: 10, fill: theme.panel, selectable: false, evented: false }));
+    const rows = (list || []).slice(0, 3), rh = colH / Math.max(1, rows.length);
+    rows.forEach((t, i) => o.push(nbText('• ' + t, { left: x + 16, top: colY + 14 + i * rh, width: colW - 32, fontSize: Math.max(13, W * 0.019), fill: theme.text, lineHeight: 1.25 })));
+  });
+  return o;
+}
+function nbLayoutBigStat(spec, theme, W, H) {
+  const o = nbSlideBg(theme, W, H);
+  if (spec.title) o.push(nbText(spec.title, { left: W / 2, top: H * 0.14, originX: 'center', width: W * 0.8, textAlign: 'center', fontSize: Math.max(16, W * 0.03), fontWeight: '700', fill: theme.muted }));
+  o.push(nbText(spec.stat || '', { left: W / 2, top: H * 0.46, originX: 'center', originY: 'center', width: W * 0.8, textAlign: 'center', fontSize: Math.max(40, W * 0.13), fontWeight: '700', fill: theme.accent }));
+  if (spec.statLabel) o.push(nbText(spec.statLabel, { left: W / 2, top: H * 0.68, originX: 'center', width: W * 0.7, textAlign: 'center', fontSize: Math.max(16, W * 0.024), fill: theme.text }));
+  if (spec.caption) o.push(nbText(spec.caption, { left: W / 2, top: H * 0.82, originX: 'center', width: W * 0.7, textAlign: 'center', fontSize: Math.max(12, W * 0.016), fill: theme.muted, fontStyle: 'italic' }));
+  return o;
+}
+function nbLayoutQuote(spec, theme, W, H) {
+  const o = nbSlideBg(theme, W, H);
+  o.push(nbText('\u201C', { left: W * 0.08, top: H * 0.1, fontSize: W * 0.12, fill: theme.quoteTint, fontWeight: '700' }));
+  o.push(nbText(spec.quote || '', { left: W / 2, top: H * 0.44, originX: 'center', originY: 'center', width: W * 0.72, textAlign: 'center', fontSize: Math.max(20, W * 0.036), fontStyle: 'italic', fill: theme.text }));
+  if (spec.attribution) o.push(nbText('— ' + spec.attribution, { left: W / 2, top: H * 0.7, originX: 'center', width: W * 0.6, textAlign: 'center', fontSize: Math.max(14, W * 0.02), fill: theme.muted }));
+  return o;
+}
+function nbLayoutImageFocus(spec, theme, W, H, imageEl) {
+  const o = nbSlideBg(theme, W, H), mx = W * 0.08;
+  if (spec.title) o.push(nbText(spec.title, { left: mx, top: H * 0.08, width: W * 0.84, fontSize: nbFitFont(spec.title, W, W * 0.036, 18), fontWeight: '700', fill: theme.text }));
+  const bx = mx, by = H * 0.22, bw = W * 0.84, bh = H * 0.58;
+  if (imageEl) {
+    const k = Math.min(bw / imageEl.width, bh / imageEl.height);
+    imageEl.set({ left: bx + bw / 2, top: by + bh / 2, originX: 'center', originY: 'center', scaleX: k, scaleY: k, nbKind: 'image' });
+    o.push(imageEl);
+  } else {
+    o.push(new fabric.Rect({ left: bx, top: by, width: bw, height: bh, rx: 14, ry: 14, fill: theme.panel, stroke: theme.accent, strokeDashArray: [6, 6], strokeWidth: 1.5, selectable: false, evented: false, nbKind: 'imgPlaceholder' }));
+    o.push(nbText('Image generating…', { left: bx + bw / 2, top: by + bh / 2, originX: 'center', originY: 'center', width: bw * 0.8, textAlign: 'center', fontSize: Math.max(13, W * 0.018), fill: theme.muted }));
+  }
+  if (spec.caption) o.push(nbText(spec.caption, { left: W / 2, top: H * 0.86, originX: 'center', width: W * 0.7, textAlign: 'center', fontSize: Math.max(12, W * 0.016), fill: theme.muted, fontStyle: 'italic' }));
+  return o;
+}
+const NB_SLIDE_BUILDERS = { title: nbLayoutTitle, bullets: nbLayoutBullets, twoColumn: nbLayoutTwoColumn, bigStat: nbLayoutBigStat, quote: nbLayoutQuote };
+function nbBuildSlideObjects(spec, theme, W, H, imageEl) {
+  const layout = NB_SLIDE_LAYOUTS.includes(spec.layout) ? spec.layout : 'bullets';
+  if (layout === 'imageFocus') return nbLayoutImageFocus(spec, theme, W, H, imageEl);
+  return (NB_SLIDE_BUILDERS[layout] || nbLayoutBullets)(spec, theme, W, H);
+}
+/* Renders one slide spec into a {bg, json, thumb} record using an offscreen canvas — never
+   touches the live board canvas, so a whole deck can be built while the user keeps working. */
+function nbRenderSlideRecord(spec, theme, W, H, imageEl) {
+  const canvas = new fabric.StaticCanvas(null, { width: W, height: H });
+  nbBuildSlideObjects(spec, theme, W, H, imageEl).forEach((o) => canvas.add(o));
+  canvas.renderAll();
+  const json = canvas.toJSON(NB_PROPS);
+  const thumb = canvas.toDataURL({ format: 'jpeg', quality: 0.55, multiplier: Math.min(1, 220 / W) });
+  canvas.dispose();
+  return { bg: theme.bg, json, thumb };
+}
+function nbLoadImageEl(url) {
+  return new Promise((resolve, reject) => {
+    fabric.Image.fromURL(url, (img, isError) => { if (isError || !img || !img.width) reject(new Error('Image failed to load.')); else resolve(img); }, { crossOrigin: 'anonymous' });
+  });
+}
+/* Imported-PPTX slide: places each parsed element (pptxtojson's output) at its real position,
+   scaled from the source slide's own point-based size onto this board's pixel canvas. Unlike the
+   AI layouts above (a themed template filled from a structured spec), this one just reproduces
+   whatever boxes the original slide had — text, shapes-with-text, and images — since an arbitrary
+   PPTX can't be losslessly forced into the 6 AI templates. Async because images (base64 data URLs)
+   must resolve to real Fabric image objects before the canvas can render them; this mirrors
+   nbRenderSlideRecord's {bg, json, thumb} shape so it drops into addGeneratedDeck unchanged. */
+async function nbRenderFreeformSlideRecord(spec, theme, W, H) {
+  const canvas = new fabric.StaticCanvas(null, { width: W, height: H });
+  nbSlideBg(theme, W, H).forEach((o) => canvas.add(o));
+  const srcW = spec.srcW || 960, srcH = spec.srcH || 540;
+  const sx = W / srcW, sy = H / srcH;
+  for (const el of (spec.elements || [])) {
+    const left = (el.left || 0) * sx, top = (el.top || 0) * sy;
+    const width = Math.max(4, (el.width || 0) * sx), height = Math.max(4, (el.height || 0) * sy);
+    if (el.type === 'image' && el.src) {
+      try {
+        const img = await nbLoadImageEl(el.src);
+        const k = Math.min(width / img.width, height / img.height);
+        img.set({ left: left + width / 2, top: top + height / 2, originX: 'center', originY: 'center', scaleX: k, scaleY: k, angle: el.rotate || 0, nbKind: 'image' });
+        canvas.add(img);
+      } catch (e) { /* skip images that fail to decode; rest of the slide still renders */ }
+    } else {
+      const text = String(el.text || '').trim();
+      if (!text) continue;
+      canvas.add(nbText(text, {
+        left, top, width, height,
+        fontSize: Math.max(10, Math.min(height * 0.8, (el.fontSize || 18) * Math.min(sx, sy) * 1.33)), // pt -> px, clamped to its own box
+        fontWeight: el.bold ? '700' : '400', fontStyle: el.italic ? 'italic' : 'normal',
+        textAlign: el.align || 'left', fill: el.color || theme.text, lineHeight: 1.2,
+      }));
+    }
+  }
+  canvas.renderAll();
+  const json = canvas.toJSON(NB_PROPS);
+  const thumb = canvas.toDataURL({ format: 'jpeg', quality: 0.55, multiplier: Math.min(1, 220 / W) });
+  canvas.dispose();
+  return { bg: theme.bg, json, thumb };
+}
+/* Converts one pptxtojson slide (its own element shape) into the plain {elements, srcW, srcH}
+   spec that nbRenderFreeformSlideRecord expects — text/shape elements keep their visible text,
+   HTML tags stripped (pptxtojson returns rich-text HTML; this app's Textbox wants plain text). */
+function nbPptxSlideToSpec(slide, size) {
+  const stripHtml = (html) => String(html || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
+  const firstStyle = (html, attr) => { const m = String(html || '').match(new RegExp(attr + ':\\s*([^;"]+)')); return m ? m[1].trim() : null; };
+  const elements = (slide.elements || []).map((el) => {
+    if (el.type === 'image') {
+      const src = el.base64 || null;
+      return src ? { type: 'image', left: el.left, top: el.top, width: el.width, height: el.height, rotate: el.rotate, src } : null;
+    }
+    if (el.type === 'text' || el.type === 'shape') {
+      const text = stripHtml(el.content);
+      if (!text) return null;
+      const html = el.content || '';
+      return {
+        type: 'text', left: el.left, top: el.top, width: el.width, height: el.height, text,
+        bold: /font-weight:\s*bold/i.test(html) || /<strong/i.test(html),
+        italic: /font-style:\s*italic/i.test(html) || /<em/i.test(html),
+        align: el.vAlign, color: firstStyle(html, 'color') || null,
+        fontSize: parseFloat(firstStyle(html, 'font-size')) || 18,
+      };
+    }
+    return null;
+  }).filter(Boolean);
+  return { layout: 'freeform', elements, srcW: (size && size.width) || 960, srcH: (size && size.height) || 540, notes: slide.note || '' };
+}
+function nbFetchImageDataUrl(url) {
+  return fetch(url).then((res) => { if (!res.ok) throw new Error('Image request failed (' + res.status + ').'); return res.blob(); })
+    .then((blob) => new Promise((resolve, reject) => { const r = new FileReader(); r.onerror = () => reject(new Error('Could not read the generated image.')); r.onload = () => resolve(r.result); r.readAsDataURL(blob); }));
+}
+/* Pollinations' free endpoint needs a cooldown between generations (about 45s) or the next
+   request comes back broken/blocked. This gate is shared across the whole deck's image fill. */
+const NB_IMAGE_COOLDOWN_MS = 45000;
+let nbImageCooldownUntil = 0;
+
+function SlidesTool({ viewportRef, addGeneratedDeck, updateGeneratedSlide }) {
+  const { s } = useSettings();
+  const [topic, setTopic] = useState('');
+  const [level, setLevel] = useState(NB_SLIDE_LEVELS[2]);
+  const [count, setCount] = useState(6);
+  const [theme, setTheme] = useState('nova');
+  const [withImages, setWithImages] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [status, setStatus] = useState('');
+  const [cooldownLeft, setCooldownLeft] = useState(0);
+  const [deck, setDeck] = useState([]);       // [{id, spec, thumb}] of the deck just created, for the row list
+  const [rowBusy, setRowBusy] = useState({}); // { [slideId]: true } while that one row is regenerating
+  const deckRef = useRef([]);        // mirrors `deck`, read synchronously inside the image-fill loop
+  const deckThemeRef = useRef(null); // theme object used for the current deck, reused by per-row regenerate
+  const deckWHRef = useRef(null);    // {W, H} used for the current deck, reused by per-row regenerate
+  const cancelRef = useRef(false);   // set true by the Cancel button; polled between steps
+  const abortRef = useRef(null);     // AbortController for the in-flight deck-writing call
+  const stop = (e) => e.stopPropagation();
+
+  useEffect(() => {
+    const t = setInterval(() => setCooldownLeft(Math.max(0, Math.ceil((nbImageCooldownUntil - Date.now()) / 1000))), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  /* Waits `ms`, but wakes up early if the person hits Cancel, so a 45s cooldown wait doesn't
+     block the Cancel button from taking effect. */
+  const sleepCancellable = (ms) => new Promise((resolve) => {
+    const start = Date.now();
+    const tick = () => { if (cancelRef.current || Date.now() - start >= ms) resolve(); else setTimeout(tick, 250); };
+    tick();
+  });
+
+  const estimateLabel = () => {
+    if (!withImages) return 'Usually 10–20s to write.';
+    const maxImgs = Math.min(2, count);
+    return `Usually 10–20s to write, plus up to ~${maxImgs * 45}s for up to ${maxImgs} image${maxImgs > 1 ? 's' : ''} (one at a time).`;
+  };
+
+  const patchDeckThumb = (id, thumb) => {
+    deckRef.current = deckRef.current.map((d) => (d.id === id ? { ...d, thumb } : d));
+    setDeck(deckRef.current);
+  };
+
+  const fillImagesSequentially = async (themeObj, W, H) => {
+    const needing = deckRef.current.filter((d) => d.spec.layout === 'imageFocus' && d.spec.imagePrompt);
+    for (let i = 0; i < needing.length; i++) {
+      if (cancelRef.current) break;
+      const { id, spec } = needing[i];
+      const wait = nbImageCooldownUntil - Date.now();
+      if (wait > 0) { setStatus(`Image ${i + 1}/${needing.length} — waiting ${Math.ceil(wait / 1000)}s (Pollinations cooldown)…`); await sleepCancellable(wait); }
+      if (cancelRef.current) break;
+      setStatus(`Generating image ${i + 1}/${needing.length}…`);
+      try {
+        const url = nbImagineUrl(spec.imagePrompt, { styleHint: 'clean educational illustration, no text', width: 1024, height: 768 });
+        await nbImagineLoad(url);
+        const dataUrl = await nbFetchImageDataUrl(url);
+        nbImageCooldownUntil = Date.now() + NB_IMAGE_COOLDOWN_MS;
+        const imgEl = await nbLoadImageEl(dataUrl);
+        const record = nbRenderSlideRecord(spec, themeObj, W, H, imgEl);
+        updateGeneratedSlide(id, record);
+        patchDeckThumb(id, record.thumb);
+      } catch (e) {
+        nbImageCooldownUntil = Date.now() + NB_IMAGE_COOLDOWN_MS; // still cooling down even on failure
+        // Leave that slide's placeholder in place; not fatal to the rest of the deck.
+      }
+    }
+    setStatus('');
+  };
+
+  const cancelGenerate = () => {
+    cancelRef.current = true;
+    if (abortRef.current) abortRef.current.abort();
+    setStatus('Cancelling…');
+  };
+
+  const generate = () => {
+    if (!topic.trim() || busy) return;
+    cancelRef.current = false;
+    setBusy(true); setErr(''); setStatus('Writing your deck…'); setDeck([]); deckRef.current = [];
+    const themeObj = (NB_SLIDE_THEMES.find((t) => t[0] === theme) || NB_SLIDE_THEMES[0])[2];
+    const vp = viewportRef && viewportRef.current;
+    if (!vp) { setErr('Open a board first.'); setBusy(false); setStatus(''); return; }
+    const { W, H } = vp.getStageSize();
+    deckThemeRef.current = themeObj; deckWHRef.current = { W, H };
+    // Free-tier routed models (e.g. openrouter/free) can wrap the reply in prose, or get cut
+    // off mid-array before the closing bracket. Retry automatically — scaling the token budget
+    // to the slide count — instead of making the person click Generate again.
+    const tokenBudget = Math.min(4000, 500 + count * 260);
+    (async () => {
+      try {
+        let specsRaw = null, lastErr = null;
+        for (let attempt = 0; attempt < 3 && !specsRaw && !cancelRef.current; attempt++) {
+          if (attempt > 0) setStatus(`Writing your deck… (attempt ${attempt + 1} of 3)`);
+          try {
+            const prompt = nbSlidesPrompt(topic, count, level) + (attempt > 0 ? '\nYour previous reply was not valid, complete JSON. Keep every field shorter so the whole array fits in one reply, and output nothing but the JSON array — no prose, no markdown fences.' : '');
+            const controller = new AbortController(); abortRef.current = controller;
+            const out = await nbAiCall({ provider: nbAiProv(s), key: nbAiKey(s), model: s.aiModel, system: NB_SLIDES_SYSTEM, maxTokens: tokenBudget, messages: [{ role: 'user', content: prompt }], signal: controller.signal });
+            specsRaw = nbParseSlideJson(out);
+          } catch (e) { lastErr = e; }
+        }
+        if (cancelRef.current) { setStatus(''); return; }
+        if (!specsRaw) throw (lastErr || new Error('The AI reply could not be read as a deck after 3 tries. Try again, or switch providers in Settings > AI.'));
+        const specs = specsRaw.slice(0, count).map((sp) => (sp && typeof sp === 'object' ? sp : {}));
+        if (!withImages) specs.forEach((sp) => { if (sp.layout === 'imageFocus') sp.layout = 'bullets'; });
+        const ids = specs.map(() => uid());
+        const records = specs.map((sp, i) => ({ id: ids[i], ...nbRenderSlideRecord(sp, themeObj, W, H) }));
+        deckRef.current = specs.map((sp, i) => ({ id: ids[i], spec: sp, thumb: records[i].thumb }));
+        setDeck(deckRef.current);
+        addGeneratedDeck(records);
+        setStatus('');
+        if (withImages && !cancelRef.current) fillImagesSequentially(themeObj, W, H);
+      } catch (e) {
+        if (!(e && e.name === 'AbortError')) setErr(e.message || 'Something went wrong.');
+        setStatus('');
+      } finally {
+        setBusy(false); abortRef.current = null;
+      }
+    })();
+  };
+
+  /* Regenerates one already-placed slide in place (same layout, new content/image), without
+     touching the rest of the deck. Reuses the theme and page size the deck was built with. */
+  const regenerateSlide = (id) => {
+    if (rowBusy[id]) return;
+    const row = deckRef.current.find((d) => d.id === id);
+    const themeObj = deckThemeRef.current, dims = deckWHRef.current;
+    if (!row || !themeObj || !dims) return;
+    setRowBusy((m) => ({ ...m, [id]: true })); setErr('');
+    (async () => {
+      try {
+        const out = await nbAiCall({ provider: nbAiProv(s), key: nbAiKey(s), model: s.aiModel, system: NB_SLIDES_SYSTEM, maxTokens: 500, messages: [{ role: 'user', content: nbSingleSlidePrompt(topic, level, row.spec.layout) }] });
+        const obj = nbParseSingleSlide(out);
+        if (!obj) throw new Error('Could not read that slide. Try again.');
+        const spec = { ...obj, layout: row.spec.layout };
+        let imgEl = null;
+        if (spec.layout === 'imageFocus' && withImages && spec.imagePrompt) {
+          const wait = nbImageCooldownUntil - Date.now();
+          if (wait > 0) { setStatus(`Waiting ${Math.ceil(wait / 1000)}s (Pollinations cooldown)…`); await sleepCancellable(wait); setStatus(''); }
+          try {
+            const url = nbImagineUrl(spec.imagePrompt, { styleHint: 'clean educational illustration, no text', width: 1024, height: 768 });
+            await nbImagineLoad(url);
+            const dataUrl = await nbFetchImageDataUrl(url);
+            nbImageCooldownUntil = Date.now() + NB_IMAGE_COOLDOWN_MS;
+            imgEl = await nbLoadImageEl(dataUrl);
+          } catch (e) { nbImageCooldownUntil = Date.now() + NB_IMAGE_COOLDOWN_MS; }
+        }
+        const record = nbRenderSlideRecord(spec, themeObj, dims.W, dims.H, imgEl);
+        updateGeneratedSlide(id, record);
+        deckRef.current = deckRef.current.map((d) => (d.id === id ? { ...d, spec, thumb: record.thumb } : d));
+        setDeck(deckRef.current);
+      } catch (e) {
+        setErr(e.message || 'Could not regenerate that slide.');
+      } finally {
+        setRowBusy((m) => { const n = { ...m }; delete n[id]; return n; });
+      }
+    })();
+  };
+
+  if (!nbAiKey(s)) {
+    return (
+      <div className="space-y-2 text-xs text-slate-300" onPointerDown={stop}>
+        <p>Add a free Gemini, Groq or OpenRouter API key in Settings &gt; AI to generate slide decks.</p>
+      </div>
+    );
+  }
+
+  const box = 'w-full px-2 py-1.5 rounded-md bg-slate-900/60 border border-slate-600/50 text-xs text-slate-100';
+  return (
+    <div className="space-y-2 max-h-[70vh] overflow-y-auto" onPointerDown={stop}>
+      <p className="text-[11px] text-slate-500">Generates a themed slide deck as real board pages — titles, two-column layouts, big stats, quotes — not plain bullet text.</p>
+      <textarea className={`${box} resize-none`} rows={2} value={topic} placeholder="Deck topic, e.g. the water cycle" onChange={(e) => setTopic(e.target.value)} />
+      <div className="flex flex-wrap gap-1.5">{NB_SLIDE_LEVELS.map((l) => <button key={l} onClick={() => setLevel(l)} className={`nb-chip ${level === l ? 'on' : 'text-slate-400'}`}>{l}</button>)}</div>
+      <div className="flex flex-wrap gap-1.5">
+        {NB_SLIDE_THEMES.map(([id, l, t]) => (
+          <button key={id} onClick={() => setTheme(id)} className={`nb-chip flex items-center gap-1 ${theme === id ? 'on' : 'text-slate-400'}`}>
+            <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: t.accent }} />{l}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-[11px] text-slate-500">Slides</span>
+        {[4, 6, 8].map((n) => <button key={n} onClick={() => setCount(n)} className={`nb-chip ${count === n ? 'on' : 'text-slate-400'}`}>{n}</button>)}
+        <label className="flex items-center gap-1 text-[11px] text-slate-400 ml-auto">
+          <input type="checkbox" checked={withImages} onChange={(e) => setWithImages(e.target.checked)} /> Images
+        </label>
+      </div>
+      {!busy && <div className="text-[11px] text-slate-500">{estimateLabel()}</div>}
+      <div className="flex gap-1.5">
+        <button className="nb-btn flex-1" disabled={busy || !topic.trim()} onClick={generate}>{busy ? 'Generating…' : 'Generate deck'}</button>
+        {busy && <button className="nb-btn sec" onClick={cancelGenerate}>Cancel</button>}
+      </div>
+      <p className="text-[11px] text-slate-500">Want to bring in an existing deck instead? Use the <b>Import</b> button in the top toolbar — it reads PDF and PowerPoint (.pptx) files and places their pages on the board.</p>
+      {status && <div className="text-xs text-slate-500">{status}</div>}
+      {!status && cooldownLeft > 0 && <div className="text-[11px] text-slate-500">Pollinations cooldown: {cooldownLeft}s before the next image can generate.</div>}
+      {err && <div className="text-xs text-red-300" role="alert">{err}</div>}
+      {deck.length > 0 && (
+        <div className="space-y-1 pt-2 border-t border-slate-700/50">
+          <div className="text-[11px] text-slate-500">Slides — tap ↻ to regenerate just one</div>
+          <div className="space-y-1 max-h-40 overflow-y-auto pr-0.5">
+            {deck.map((d, i) => (
+              <div key={d.id} className="flex items-center gap-2 bg-slate-900/40 rounded-md p-1">
+                {d.thumb ? <img src={d.thumb} className="w-10 h-7 object-cover rounded border border-slate-700/60 allow-select" draggable={false} /> : <div className="w-10 h-7 rounded bg-slate-800 shrink-0" />}
+                <div className="flex-1 min-w-0 text-[11px] text-slate-300 truncate">{i + 1}. {d.spec.title || (d.spec.layout === 'freeform' ? 'Imported slide' : d.spec.layout)}</div>
+                {d.spec.layout !== 'freeform' && <button className="px-1.5 py-0.5 rounded text-[11px] bg-slate-700/70 text-slate-200 disabled:opacity-40" disabled={!!rowBusy[d.id] || busy} onClick={() => regenerateSlide(d.id)} title="Regenerate this slide">{rowBusy[d.id] ? '…' : '↻'}</button>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function AiTool({ viewportRef }) {
   const { s, open } = useSettings();
@@ -7879,7 +8548,7 @@ function LiveViewer({ onClose }) {
 }
 
 /* ---- Renders all 3.0 tools; mounted inside the board stage ---- */
-function NovaTools3({ widgets, closeWidget, toggleMinimize, boundsRef, viewportRef }) {
+function NovaTools3({ widgets, closeWidget, toggleMinimize, boundsRef, viewportRef, addGeneratedDeck, updateGeneratedSlide }) {
   const base = { boundsRef, close: closeWidget, mini: toggleMinimize };
   return (<>
     {widgets.protractor && <ProtractorOverlay boundsRef={boundsRef} onClose={() => closeWidget('protractor')} />}
@@ -7894,6 +8563,8 @@ function NovaTools3({ widgets, closeWidget, toggleMinimize, boundsRef, viewportR
     {widgets.convert && <Tool id="convert" title="Unit Converter" icon={IConvert} width={280} pos={{ x: 580, y: 110 }} w={widgets.convert} {...base}><ConvertTool /></Tool>}
     {widgets.live && <Tool id="live" title="Live Share" icon={ILive} width={280} pos={{ x: 160, y: 90 }} w={widgets.live} {...base} close={(id) => { nbLive.end(); closeWidget(id); }}><LiveShareTool viewportRef={viewportRef} /></Tool>}
     {widgets.ai && <Tool id="ai" title="AI Assistant" icon={ISparkle} width={340} pos={{ x: 120, y: 70 }} w={widgets.ai} {...base}><AiTool viewportRef={viewportRef} /></Tool>}
+    {widgets.imagine && <Tool id="imagine" title="AI Image" icon={IImagine} width={340} pos={{ x: 480, y: 70 }} w={widgets.imagine} {...base}><ImagineTool viewportRef={viewportRef} /></Tool>}
+    {widgets.slides && <Tool id="slides" title="AI Slides" icon={ISlides} width={340} pos={{ x: 160, y: 60 }} w={widgets.slides} {...base}><SlidesTool viewportRef={viewportRef} addGeneratedDeck={addGeneratedDeck} updateGeneratedSlide={updateGeneratedSlide} /></Tool>}
     {widgets.clock && <Tool id="clock" title="Clock" icon={IClockFace} width={220} pos={{ x: 620, y: 70 }} w={widgets.clock} {...base}><ClockTool /></Tool>}
   </>);
 }
@@ -7905,6 +8576,8 @@ const NB_NEW_TOOLS = [
   { id: 'clock', label: 'Clock', icon: IClockFace }, { id: 'protractor', label: 'Protractor', icon: IProtractor },
   { id: 'shade', label: 'Screen Shade', icon: IShade },
   { id: 'ai', label: 'AI Assistant', icon: ISparkle },
+  { id: 'imagine', label: 'AI Image', icon: IImagine },
+  { id: 'slides', label: 'AI Slides', icon: ISlides },
   { id: 'live', label: 'Live Share', icon: ILive },
 ];
 
