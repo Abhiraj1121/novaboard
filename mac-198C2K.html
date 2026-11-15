@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>NovaBoard OS 3.0</title>
+<title>NovaBoard OS 4.0</title>
 <link rel="icon" href="icon/novaboard-icon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="512x512" href="icon/novaboard-icon-512.png">
 <link rel="apple-touch-icon" href="icon/novaboard-icon-512.png">
@@ -439,7 +439,7 @@
 
 :root{--a-50:235 248 254;--a-100:215 242 254;--a-200:175 229 252;--a-300:136 215 251;--a-400:86 199 249;--a-500:56 189 248;--a-600:48 161 211;--a-700:39 132 174;--a-800:28 94 124;--a-900:20 66 87;--b-50:242 244 254;--b-100:230 232 254;--b-200:205 209 252;--b-300:179 186 251;--b-400:148 157 249;--b-500:129 140 248;--b-600:110 119 211;--b-700:90 98 174;--b-800:64 70 124;--b-900:45 49 87;--s-50:248 250 252;--s-100:241 245 249;--s-200:226 232 240;--s-300:203 213 225;--s-400:148 163 184;--s-500:100 116 139;--s-600:71 85 105;--s-700:51 65 85;--s-800:30 41 59;--s-900:15 23 42;--s-950:2 6 23;}
 
-  /* ================= NovaBoard 3.0 : theme system + material-futuristic skin ================= */
+  /* ================= NovaBoard 4.0 : theme system + material-futuristic skin ================= */
   :root {
     --a-300: 125 211 252; --a-400: 56 189 248; --a-500: 14 165 233;
     --b-400: 129 140 248; --b-500: 99 102 241;
@@ -554,7 +554,7 @@
   html[data-mode="light"] .nb-avatar { color: #04101c; }
   html[data-mode="light"] .glass-strong, html[data-mode="light"] .glass { color: #1e293b; }
 
-  /* ---- 3.0 launch animation: droplet -> ripple -> logo ---- */
+  /* ---- 4.0 launch animation: droplet -> ripple -> logo ---- */
   .nbs-stage { background: radial-gradient(80% 80% at 50% 50%, color-mix(in srgb, var(--bg-deep) 92%, rgb(var(--a-400))) 0%, var(--bg-deep) 100%); cursor: pointer; }
   .nbs-exit { animation: nbs-out .45s ease forwards; }
   @keyframes nbs-out { to { opacity: 0; transform: scale(1.06); filter: blur(6px); } }
@@ -595,7 +595,7 @@
   html[data-glow="off"] .nb-avatar, html[data-glow="off"] .nbs-logo-wrap { box-shadow: var(--elev1); }
   html[data-glow="off"] .nb-aurora i { opacity: .12; }
 
-  /* ===== NovaBoard 3.0 : smoother material motion + reliable edge tabs ===== */
+  /* ===== NovaBoard 4.0 : smoother material motion + reliable edge tabs ===== */
   :root { --ease-out: cubic-bezier(.22,1,.36,1); --ease-io: cubic-bezier(.65,0,.35,1); }
   button, .nb-chip, .nb-btn, [role="button"] {
     transition: background-color .22s var(--ease-out), border-color .22s var(--ease-out), color .22s var(--ease-out),
@@ -708,7 +708,7 @@ function saveSessions(sessions) {
 
 /* ============================== STORAGE: IndexedDB auto-save, .novaboard files, boot audio ============================== */
 
-const NB_VERSION = '3.0.3';
+const NB_VERSION = '4.0';
 const NB_LOGO_SRC = 'data:image/webp;base64,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';
 const NB_MAX_BOARDS = 40;          // recent boards kept on this device; older ones are removed
 const NB_FLAG_KEY = 'novaboard.session.v1';
@@ -1190,7 +1190,7 @@ function SplashScreen({ onDone }) {
         <div className="nbs-word" aria-label="NovaBoard">
           {word.map((c, i) => <span key={i} style={{ animationDelay: `${(reduced ? 0.2 : 2.0) + i * 0.05}s` }}>{c}</span>)}
         </div>
-        <div className="nbs-sub mono">{org ? org : 'SMART BOARD WORKSPACE'} <b>3.0</b></div>
+        <div className="nbs-sub mono">{org ? org : 'SMART BOARD WORKSPACE'} <b>4.0</b></div>
       </div>
       <div className="nbs-skip mono">click to skip</div>
     </div>
@@ -7710,7 +7710,7 @@ function App() {
   );
 }
 
-/* ============================== NOVABOARD 3.0 : SETTINGS + THEMES ============================== */
+/* ============================== NOVABOARD 4.0 : SETTINGS + THEMES ============================== */
 
 /* ============================== PROFILES ==============================
    Up to 8 personal profiles + the built-in Global profile (always open, no password).
@@ -7985,7 +7985,7 @@ function SettingsPanel({ tab: startTab, onClose }) {
       <div className="nb-drawer glass-strong h-full w-full max-w-md flex flex-col rounded-none sm:rounded-l-3xl">
         <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-700/40">
           <IGear size={18} className="text-cyan-300" />
-          <div className="flex-1"><div className="text-base font-semibold text-slate-100">Settings</div><div className="mono text-[10px] text-slate-500">NOVABOARD 3.0</div></div>
+          <div className="flex-1"><div className="text-base font-semibold text-slate-100">Settings</div><div className="mono text-[10px] text-slate-500">NOVABOARD 4.0</div></div>
           <button onClick={onClose} aria-label="Close settings" className="navdock-btn focus-ring"><IX size={16} /></button>
         </div>
         <div className="flex flex-wrap gap-1.5 px-5 pt-3">
@@ -8146,7 +8146,7 @@ function HeroGreeting() {
 }
 
 
-/* ============================== NOVABOARD 3.0 : NEW SMART TOOLS ============================== */
+/* ============================== NOVABOARD 4.0 : NEW SMART TOOLS ============================== */
 
 const nbLS = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -9427,7 +9427,7 @@ function LiveViewer({ onClose }) {
   );
 }
 
-/* ---- Renders all 3.0 tools; mounted inside the board stage ---- */
+/* ---- Renders all 4.0 tools; mounted inside the board stage ---- */
 function NovaTools3({ widgets, closeWidget, toggleMinimize, boundsRef, viewportRef, addGeneratedDeck, updateGeneratedSlide }) {
   const base = { boundsRef, close: closeWidget, mini: toggleMinimize };
   return (<>
@@ -9462,7 +9462,7 @@ const NB_NEW_TOOLS = [
 ];
 
 
-/* ============================== 3.0 : COLOUR CANVAS + GRID MENU ============================== */
+/* ============================== 4.0 : COLOUR CANVAS + GRID MENU ============================== */
 function nbHexToHsv(hex) {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); const n = parseInt(m ? m[1] : 'ffffff', 16);
   const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
