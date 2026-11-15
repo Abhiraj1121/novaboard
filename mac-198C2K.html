@@ -689,8 +689,18 @@ function loadSessions() {
 }
 
 function saveSessions(sessions) {
+  /* `sessions` is the active profile's list; entries of other profiles already in storage are kept untouched.
+     A board that is brand new (not stored yet, no owner, just updated) is claimed by the active profile. */
   try {
-    window.localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+    const o = nbOwnersRead(), me = nbActiveProfile;
+    let raw = [];
+    try { const r = JSON.parse(window.localStorage.getItem(SESSIONS_KEY)); if (Array.isArray(r)) raw = r; } catch (e) { /* ignore */ }
+    const known = new Set(raw.map((x) => x.id)); let dirty = false;
+    sessions.forEach((x) => { if (!o[x.id] && !known.has(x.id) && Date.now() - (x.updatedAt || 0) < 60000) { o[x.id] = me; dirty = true; } });
+    if (dirty) nbOwnersWrite(o);
+    const mine = sessions.filter((x) => (o[x.id] || 'global') === me);
+    const rest = raw.filter((x) => (o[x.id] || 'global') !== me);
+    window.localStorage.setItem(SESSIONS_KEY, JSON.stringify([...mine, ...rest]));
   } catch (e) {
     /* storage unavailable — fail silently, session list just won't persist */
   }
@@ -834,8 +844,10 @@ const NBStore = {
 
 /* Keep the recents list at NB_MAX_BOARDS, deleting the stored data of boards that fall off the end. */
 function nbCapSessions(list) {
-  list.slice(NB_MAX_BOARDS).forEach((sess) => { NBStore.deleteBoard(sess.id).catch(() => {}); });
-  return list.slice(0, NB_MAX_BOARDS);
+  const o = nbOwnersRead(), me = nbActiveProfile;
+  const mine = list.filter((x) => (o[x.id] || 'global') === me), rest = list.filter((x) => (o[x.id] || 'global') !== me);
+  mine.slice(NB_MAX_BOARDS).forEach((sess) => { NBStore.deleteBoard(sess.id).catch(() => {}); });
+  return [...mine.slice(0, NB_MAX_BOARDS), ...rest];
 }
 
 /* Build one save batch. `shouldWrite(slide)` picks the pages that changed; the big PDF page
@@ -1454,6 +1466,7 @@ function HomeScreen({ onEnterCanvas, sessions, setSessions, onOpenFile, recovery
     <div className="track-in relative h-full overflow-y-auto">
       <div className="max-w-5xl mx-auto px-6 sm:px-10 pt-16 pb-20">
         <div className="flex items-start justify-between gap-4"><HeroGreeting /><HomeBar /></div>
+        <ProfileStrip />
 
         {recoverySession && (
           <div
@@ -1514,7 +1527,7 @@ function HomeScreen({ onEnterCanvas, sessions, setSessions, onOpenFile, recovery
           <ActionCard
             icon={ILive}
             title="Join live board"
-            desc="Watch a teacher's board with a passcode."
+            desc="Watch someone's board live with a passcode."
             onClick={() => setLiveOpen(true)}
             accent="cyan"
           />
@@ -2131,6 +2144,387 @@ function buildVariableWidthPath(points, widths) {
   }
   d += ' Z';
   return d;
+}
+
+/* ==========================================================================
+   Freehand shape snapping — recognizes a rough circle/ellipse, rectangle,
+   triangle or straight line from the raw stroke points and, if confident,
+   returns a spec to replace the hand-drawn path with a perfect shape.
+   Pure geometry, no Fabric/canvas dependency, so it's easy to reason about
+   and to disable without touching anything else.
+   ========================================================================== */
+function nbPolylineLength(pts) {
+  let len = 0;
+  for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+  return len;
+}
+
+/* Douglas-Peucker simplification: collapses near-collinear runs so corner
+   detection below isn't fooled by hand jitter, while keeping real corners. */
+function nbSimplifyPath(pts, eps) {
+  if (pts.length < 3) return pts.slice();
+  const sqDistToSeg = (p, a, b) => {
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len2 = dx * dx + dy * dy;
+    if (len2 === 0) return (p.x - a.x) ** 2 + (p.y - a.y) ** 2;
+    let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2;
+    t = Math.max(0, Math.min(1, t));
+    const px = a.x + t * dx, py = a.y + t * dy;
+    return (p.x - px) ** 2 + (p.y - py) ** 2;
+  };
+  const rdp = (arr) => {
+    if (arr.length < 3) return arr;
+    let maxD = -1, idx = 0;
+    for (let i = 1; i < arr.length - 1; i++) {
+      const d = sqDistToSeg(arr[i], arr[0], arr[arr.length - 1]);
+      if (d > maxD) { maxD = d; idx = i; }
+    }
+    if (maxD > eps * eps) {
+      const left = rdp(arr.slice(0, idx + 1));
+      const right = rdp(arr.slice(idx));
+      return left.slice(0, -1).concat(right);
+    }
+    return [arr[0], arr[arr.length - 1]];
+  };
+  return rdp(pts);
+}
+
+/* Angle (radians, 0..PI) at vertex b formed by a-b-c. */
+function nbCornerAngle(a, b, c) {
+  const v1x = a.x - b.x, v1y = a.y - b.y, v2x = c.x - b.x, v2y = c.y - b.y;
+  const l1 = Math.hypot(v1x, v1y) || 1, l2 = Math.hypot(v2x, v2y) || 1;
+  const cos = Math.max(-1, Math.min(1, (v1x * v2x + v1y * v2y) / (l1 * l2)));
+  return Math.acos(cos);
+}
+
+/*
+ * Try to recognize a rough freehand stroke as a clean shape.
+ * Returns null (leave the ink as-is) or a spec:
+ *   { kind: 'ellipse'|'rect'|'triangle'|'line', ...geometry }
+ * Deliberately conservative: when in doubt, returns null so a genuine
+ * doodle is never force-fit into a shape the person didn't intend.
+ */
+/* Tilt-tolerant ellipse/circle fit (principal axes of evenly resampled points). Handles sloppy,
+   overshooting or not-quite-closed loops that a strict "end meets start" test rejects.
+   Returns an ellipse spec or null. Corner shapes (rect/triangle/diamond/star) fit poorly and fall through. */
+function nbFitEllipse(pts, diag) {
+  const n = pts.length, L = nbPolylineLength(pts);
+  if (n < 8 || L < 60) return null;
+  const N = 72, step = L / N, rs = [pts[0]];
+  let acc = 0, target = 0;
+  for (let i = 1; i < n && rs.length < N; i++) {
+    const seg = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+    while (seg > 0 && acc + seg >= target + step && rs.length < N) {
+      target += step; const t = (target - acc) / seg;
+      rs.push({ x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * t, y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * t });
+    }
+    acc += seg;
+  }
+  if (rs.length < N * 0.8) return null;
+  let mx = 0, my = 0;
+  for (const p of rs) { mx += p.x; my += p.y; }
+  mx /= rs.length; my /= rs.length;
+  let sxx = 0, sxy = 0, syy = 0;
+  for (const p of rs) { const dx = p.x - mx, dy = p.y - my; sxx += dx * dx; sxy += dx * dy; syy += dy * dy; }
+  sxx /= rs.length; sxy /= rs.length; syy /= rs.length;
+  const th = 0.5 * Math.atan2(2 * sxy, sxx - syy), co = Math.cos(th), si = Math.sin(th);
+  const tr = (sxx + syy) / 2, df = Math.sqrt(((sxx - syy) / 2) ** 2 + sxy * sxy);
+  let rx = Math.sqrt(2 * (tr + df)), ry = Math.sqrt(2 * Math.max(1e-6, tr - df));
+  if (ry / rx > 0.88) rx = ry = (rx + ry) / 2;                 // near-circle -> true circle
+  if (Math.min(rx, ry) * 2 < 24) return null;
+  let eE = 0; const bins = new Array(12).fill(0);
+  for (const p of rs) {
+    const dx = p.x - mx, dy = p.y - my;
+    eE += Math.abs(Math.hypot((dx * co + dy * si) / rx, (-dx * si + dy * co) / ry) - 1);
+    bins[Math.min(11, Math.floor((Math.atan2(dy, dx) + Math.PI) / (Math.PI / 6)))] = 1;
+  }
+  eE /= rs.length;
+  if (eE > 0.082 || bins.reduce((a, b) => a + b, 0) < 11) return null;   // not round, or not a full loop
+  const circle = rx === ry;
+  return { kind: 'ellipse', left: mx - rx, top: my - ry, w: rx * 2, h: ry * 2, angle: circle ? 0 : th * 180 / Math.PI };
+}
+
+/* Dominant harmonic (3..8) of the radial profile around the centre, in an ellipse-normalised frame.
+   n-gons show a strong harmonic at n (hexagon -> 6); circles/ellipses and sloppy loops do not. */
+function nbRadialHarmonic(pts) {
+  const n = pts.length, L = nbPolylineLength(pts);
+  if (n < 8 || L < 60) return { k: 0, amp: 0 };
+  const N = 96, step = L / N, rs = [pts[0]];
+  let acc = 0, target = 0;
+  for (let i = 1; i < n && rs.length < N; i++) {
+    const seg = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+    while (seg > 0 && acc + seg >= target + step && rs.length < N) {
+      target += step; const t = (target - acc) / seg;
+      rs.push({ x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * t, y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * t });
+    }
+    acc += seg;
+  }
+  if (rs.length < N * 0.8) return { k: 0, amp: 0 };
+  let mx = 0, my = 0;
+  for (const p of rs) { mx += p.x; my += p.y; }
+  mx /= rs.length; my /= rs.length;
+  let sxx = 0, sxy = 0, syy = 0;
+  for (const p of rs) { const dx = p.x - mx, dy = p.y - my; sxx += dx * dx; sxy += dx * dy; syy += dy * dy; }
+  sxx /= rs.length; sxy /= rs.length; syy /= rs.length;
+  const th = 0.5 * Math.atan2(2 * sxy, sxx - syy), co = Math.cos(th), si = Math.sin(th);
+  const tr = (sxx + syy) / 2, df = Math.sqrt(((sxx - syy) / 2) ** 2 + sxy * sxy);
+  const rx = Math.sqrt(2 * (tr + df)), ry = Math.sqrt(2 * Math.max(1e-6, tr - df));
+  const B = 48, sum = new Array(B).fill(0), cnt = new Array(B).fill(0);
+  for (const p of rs) {
+    const dx = p.x - mx, dy = p.y - my, u = (dx * co + dy * si) / rx, v = (-dx * si + dy * co) / ry;
+    const b = Math.min(B - 1, Math.floor((Math.atan2(v, u) + Math.PI) / (2 * Math.PI) * B));
+    sum[b] += Math.hypot(u, v); cnt[b]++;
+  }
+  if (cnt.filter((c) => c === 0).length > 3) return { k: 0, amp: 0 };    // not a full loop
+  const r = sum.map((s, i) => (cnt[i] ? s / cnt[i] : null));
+  for (let i = 0; i < B; i++) if (r[i] === null) { let a = i, b = i; while (r[a % B] === null) a--; while (r[b % B] === null) b++; r[i] = (r[(a + B) % B] + r[b % B]) / 2; }
+  const m = r.reduce((a, b) => a + b, 0) / B;
+  let best = { k: 0, amp: 0 };
+  for (let k = 3; k <= 8; k++) {
+    let c = 0, s = 0;
+    for (let i = 0; i < B; i++) { const ph = (i + 0.5) / B * 2 * Math.PI * k; c += (r[i] - m) * Math.cos(ph); s += (r[i] - m) * Math.sin(ph); }
+    const amp = (2 / B) * Math.hypot(c, s);
+    if (amp > best.amp) best = { k, amp };
+  }
+  return best;
+}
+
+function nbRecognizeShape(rawPts) {
+  if (!rawPts || rawPts.length < 6) return null;
+  const pts = rawPts;
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const bw = maxX - minX, bh = maxY - minY;
+  const diag = Math.hypot(bw, bh);
+  if (diag < 24) return null; // too small to confidently classify vs. a dot/short mark
+
+  const first = pts[0], last = pts[pts.length - 1];
+  const gap = Math.hypot(last.x - first.x, last.y - first.y);
+  const pathLen = nbPolylineLength(pts) || 1;
+  const closed = gap < Math.max(18, diag * 0.12);
+
+  // ---------- Straight line (works open or "closed" by a short back-stroke) ----------
+  // Fit a line through the raw points and measure max perpendicular deviation.
+  {
+    const n = pts.length;
+    const mx = xs.reduce((a, b) => a + b, 0) / n, my = ys.reduce((a, b) => a + b, 0) / n;
+    let sxx = 0, sxy = 0, syy = 0;
+    for (const p of pts) { const dx = p.x - mx, dy = p.y - my; sxx += dx * dx; sxy += dx * dy; syy += dy * dy; }
+    const theta = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+    const nx = -Math.sin(theta), ny = Math.cos(theta); // unit normal to the fitted line
+    let maxDev = 0;
+    for (const p of pts) maxDev = Math.max(maxDev, Math.abs((p.x - mx) * nx + (p.y - my) * ny));
+    if (!closed && diag > 40 && maxDev < Math.max(6, diag * 0.045)) {
+      // project endpoints onto the line direction for clean start/end
+      const dirx = Math.cos(theta), diry = Math.sin(theta);
+      const proj = (p) => (p.x - mx) * dirx + (p.y - my) * diry;
+      let a = pts[0], b = pts[0], aT = proj(pts[0]), bT = aT;
+      for (const p of pts) { const t = proj(p); if (t < aT) { aT = t; a = p; } if (t > bT) { bT = t; b = p; } }
+      const x0 = mx + aT * dirx, y0 = my + aT * diry, x1 = mx + bT * dirx, y1 = my + bT * diry;
+      return { kind: 'line', x0, y0, x1, y1 };
+    }
+  }
+
+  // ---------- Arrow: drawn as shaft, then flick-back-flick-out for the head
+  // (how most people draw a single-line arrow freehand: out along the shaft,
+  // back out to one barb, partway back toward the tip, out again to the other
+  // barb). That is a 5-point simplified signature: start -> tip -> barb1 ->
+  // (point near the tip again) -> barb2. Deliberately strict — needs a real
+  // double-back near one endpoint, not just a bend — so ordinary letterforms
+  // (V, L, Z, a checkmark) never trigger this, since none of them revisit a
+  // point they already passed through near an endpoint the way a drawn
+  // arrowhead does. ----------
+  if (!closed && diag > 50) {
+    const simp = nbSimplifyPath(pts, Math.max(3, diag * 0.025));
+    if (simp.length === 5) {
+      const segLen = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
+      const shaft = segLen(simp[0], simp[1]);
+      const tip = simp[1];
+      const toBarb1 = segLen(tip, simp[2]);
+      const backNearTip = segLen(simp[2], simp[3]);
+      const toBarb2 = segLen(simp[3], simp[4]);
+      // The two head strokes (tip->barb1 and the return leg into barb2) should be
+      // short relative to the shaft and roughly equal in length to each other,
+      // and the "back" point must actually land close to the tip again.
+      const barbsShort = toBarb1 < shaft * 0.55 && toBarb2 < shaft * 0.55;
+      const barbsSimilar = Math.abs(toBarb1 - toBarb2) < Math.max(toBarb1, toBarb2) * 0.55 + 5;
+      const returnsToTip = backNearTip < toBarb1 * 0.7 + 6; // simp[3] sits near the tip, not out near barb1
+      if (shaft > diag * 0.3 && barbsShort && barbsSimilar && returnsToTip) {
+        return { kind: 'arrow', x0: simp[0].x, y0: simp[0].y, x1: tip.x, y1: tip.y };
+      }
+    }
+  }
+
+  // 5-8 sided polygons (pentagon, hexagon...) are not supported shapes: leave them as ink instead of
+  // forcing them into the nearest circle or rectangle. (Stars have a far stronger harmonic and are kept.)
+  const hm = (closed || gap < diag * 0.6) ? nbRadialHarmonic(pts) : { k: 0, amp: 0 };
+  if (hm.k >= 5 && hm.amp >= 0.022 && hm.amp < 0.2) return null;
+  const hm4 = hm.k === 4 && hm.amp >= 0.05;   // genuinely four-sided outline
+  // Round loops first (sloppy/overshooting circles are common); tiny loops are left as handwriting.
+  if (diag >= 48 && gap < diag * 0.6) { const ell = nbFitEllipse(pts, diag); if (ell) return ell; }
+  if (!closed) return null; // rect/ellipse/triangle must be drawn as a closed loop
+  if (diag < 48) return null; // too small for a corner shape: far more likely a letter or doodle
+
+  // ---------- Corner detection on a simplified polyline ----------
+  const simplified = nbSimplifyPath(pts, Math.max(3, diag * 0.02));
+  // simplified[0] and simplified[last] are the same stroke endpoint pair (open chain);
+  // walk it as a loop for corner-angle purposes.
+  const loop = simplified.slice(0, -1);
+  const corners = [];
+  const cornerAngleMax = 2.35; // ~135°: sharper than this counts as a "corner"
+  for (let i = 0; i < loop.length; i++) {
+    const a = loop[(i - 1 + loop.length) % loop.length];
+    const b = loop[i];
+    const c = loop[(i + 1) % loop.length];
+    const ang = nbCornerAngle(a, b, c);
+    if (ang < cornerAngleMax) corners.push({ pt: b, ang });
+  }
+
+  // Shared helper: enclosed area of the simplified loop via the shoelace formula,
+  // used by every corner-count-based shape below to confirm the stroke isn't just
+  // a thin zig-zag that happens to produce the right number of corners.
+  const loopArea = () => {
+    let shoelace = 0;
+    for (let i = 0; i < loop.length; i++) {
+      const p = loop[i], q = loop[(i + 1) % loop.length];
+      shoelace += p.x * q.y - q.x * p.y;
+    }
+    return Math.abs(shoelace) / 2;
+  };
+
+  // ---------- Rectangle: ~4 corners, each close to 90°, bbox mostly filled ----------
+  if (hm4 && corners.length >= 4 && corners.length <= 6) {
+    const near90 = corners.filter(c => Math.abs(c.ang - Math.PI / 2) < 0.5).length;
+    if (near90 >= 4) {
+      const area = bw * bh;
+      const enclosed = loopArea();
+      if (area > 0 && enclosed / area > 0.65 && bw > 14 && bh > 14) {
+        return { kind: 'rect', left: minX, top: minY, w: bw, h: bh };
+      }
+    }
+  }
+
+  // ---------- Rounded rectangle: boxy outline (flat sides with only gently
+  // rounded corners) but too soft to pass the sharp-rectangle check above. The
+  // key discriminator vs. a true circle/ellipse is on the SIMPLIFIED loop, not
+  // the raw points: Douglas-Peucker collapses a genuinely straight run of raw
+  // points into a single long simplified edge, but can only collapse a
+  // continuously-curving arc (a circle/ellipse's boundary, everywhere) into
+  // many short edges, because a single long chord would cut across the curve's
+  // interior/exterior by more than the simplifier's tolerance allows. So a
+  // rounded rectangle's simplified loop has a few edges covering most of its
+  // perimeter length, while a circle/ellipse's simplified loop stays made of
+  // many comparably-short edges. Checked before diamond/triangle/star so a
+  // softly rounded box can't be mis-simplified into one of their sharper
+  // signatures. ----------
+  if (hm4 && bw > 24 && bh > 24) {
+    const edgeLens = [];
+    for (let i = 0; i < loop.length; i++) edgeLens.push(Math.hypot(loop[(i + 1) % loop.length].x - loop[i].x, loop[(i + 1) % loop.length].y - loop[i].y));
+    const totalLen = edgeLens.reduce((a, b) => a + b, 0) || 1;
+    const longestEdgeFrac = Math.max(...edgeLens) / totalLen;
+    const area = bw * bh;
+    const enclosed = loopArea();
+    // A rounded rect's longest single simplified edge covers a large share of its
+    // perimeter (one full flat side); an ellipse's longest simplified edge is just
+    // one short chord among many similar ones. Also require the fill ratio to sit
+    // between a sharp rectangle's (~0.85+) and an ellipse's (~0.78) typical range.
+    if (longestEdgeFrac > 0.16 && corners.length <= 4 && area > 0 && enclosed / area > 0.72) {
+      return { kind: 'rectRound', left: minX, top: minY, w: bw, h: bh };
+    }
+  }
+
+  // ---------- Diamond/rhombus: ~4 corners, but sitting at the bbox's edge
+  // midpoints (top/right/bottom/left) rather than its corners like a rectangle. ----------
+  if (hm4 && corners.length >= 4 && corners.length <= 6 && bw > 20 && bh > 20) {
+    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    // Score each detected corner against the nearest of the 4 ideal diamond tips.
+    const tips = [{ x: cx, y: minY }, { x: maxX, y: cy }, { x: cx, y: maxY }, { x: minX, y: cy }];
+    const usedTip = new Set();
+    let totalErr = 0, matched = 0;
+    for (const c of corners) {
+      let best = -1, bestD = Infinity;
+      tips.forEach((t, i) => {
+        if (usedTip.has(i)) return;
+        const d = Math.hypot(c.pt.x - t.x, c.pt.y - t.y);
+        if (d < bestD) { bestD = d; best = i; }
+      });
+      if (best >= 0 && bestD < Math.max(bw, bh) * 0.28) { usedTip.add(best); matched++; totalErr += bestD; }
+    }
+    if (matched === 4) {
+      const area = bw * bh;
+      const enclosed = loopArea();
+      // A diamond's enclosed area is ~half its bbox; rectangles score much higher
+      // on loopArea/bbox, so this ratio is what tells the two apart.
+      if (area > 0 && enclosed / area > 0.32 && enclosed / area < 0.68) {
+        return { kind: 'diamond', left: minX, top: minY, w: bw, h: bh };
+      }
+    }
+  }
+
+  // ---------- Triangle: exactly 3 GENUINELY sharp corners (well under the generic
+  // 135° "is this a corner at all" gate above) — a rounded shape that happens to
+  // simplify to 3 loose bends in the 110-135° range is not a triangle and must not
+  // match here, so this re-checks with a stricter per-corner angle ceiling. ----------
+  if (corners.length === 3 && corners.every(c => c.ang < 1.9)) { // < ~109°: unambiguous triangle vertex
+    const [p0, p1, p2] = corners.map(c => c.pt);
+    const area = Math.abs((p1.x - p0.x) * (p2.y - p0.y) - (p2.x - p0.x) * (p1.y - p0.y)) / 2;
+    if (area > (bw * bh) * 0.12) {
+      return { kind: 'triangle', pts: [p0, p1, p2] };
+    }
+  }
+
+  // ---------- Star: a closed loop with exactly 10 corners alternating
+  // sharp (points) and shallow (inner notches) angles — a 5-point star's
+  // unmistakable signature. Strict on alternation so it never fires on
+  // ordinary messy loops, which rarely land on exactly 10 corners anyway. ----------
+  if (corners.length === 10 && bw > 30 && bh > 30) {
+    const angles = corners.map(c => c.ang);
+    const sharp = angles.filter(a => a < 1.05).length;   // star tips: ~36°, generously < 60°
+    const shallow = angles.filter(a => a > 1.8).length;   // inner notches: wide reflex-ish angle
+    // Require them to alternate sharp/shallow around the loop, not just appear anywhere.
+    let alternating = true;
+    for (let i = 0; i < angles.length; i++) {
+      const isSharp = angles[i] < 1.05;
+      const nextIsSharp = angles[(i + 1) % angles.length] < 1.05;
+      if (isSharp === nextIsSharp) { alternating = false; break; }
+    }
+    if (sharp >= 4 && shallow >= 4 && alternating) {
+      const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+      const outerR = Math.max(bw, bh) / 2;
+      return { kind: 'star', cx, cy, outerR };
+    }
+  }
+
+  // ---------- Circle/ellipse: no sharp corners, roughly constant radial distance ----------
+  // A high-aspect-ratio ellipse's tightest curvature (near the ends of the major axis)
+  // can look like a single shallow "corner" to the generic corner detector above, so
+  // allow one such point through rather than only an exact zero-corner loop.
+  const sharpCorners = corners.filter(c => c.ang < 1.75).length; // < ~100°: a real corner, not just ellipse curvature
+  // Size floor raised above the rect/triangle/diamond floor on purpose: a small round
+  // loop this size is as likely to be a handwritten "o", "O" or "0" as an intended
+  // circle, so require a bit more size before committing to a confident snap here.
+  if (sharpCorners === 0 && bw > 26 && bh > 26) {
+    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    const rx = bw / 2, ry = bh / 2;
+    let devSum = 0, devMax = 0;
+    for (const p of pts) {
+      // normalize onto a unit circle given the bbox's aspect ratio, then measure
+      // deviation of that normalized radius from 1
+      const nxp = (p.x - cx) / (rx || 1), nyp = (p.y - cy) / (ry || 1);
+      const r = Math.hypot(nxp, nyp);
+      const dev = Math.abs(r - 1);
+      devSum += dev; devMax = Math.max(devMax, dev);
+    }
+    const devAvg = devSum / pts.length;
+    // Guard against a near-straight squiggle masquerading as a 0-corner loop.
+    const roundness = pathLen > 0 ? (Math.PI * (rx + ry)) / pathLen : 0;
+    if (devAvg < 0.18 && devMax < 0.42 && roundness > 0.55) {
+      return { kind: 'ellipse', left: minX, top: minY, w: bw, h: bh };
+    }
+  }
+
+  return null;
 }
 
 /* ---------- Phase 5: safe calculator expression evaluator (no eval) ---------- */
@@ -4199,7 +4593,7 @@ function WidgetDock({ open, onToggle, active, onLaunch, dropUp, dropSide }) {
     { id: 'dice', label: 'Dice & Random', icon: IDiceIcon },
     { id: 'ruler', label: 'Ruler', icon: IRulerIcon },
     { id: 'spotlight', label: 'Spotlight', icon: ISpotlightIcon },
-    ...NB_NEW_TOOLS.map((x) => ({ ...x, isNew: true })),
+    ...NB_NEW_TOOLS,
     { id: 'image', label: 'Image Upload', icon: IImageIcon, action: true },
     { id: 'sticky', label: 'Sticky Note', icon: IStickyIcon, action: true },
     { id: 'table', label: 'Table', icon: ITableIcon, action: true },
@@ -4231,7 +4625,6 @@ function WidgetDock({ open, onToggle, active, onLaunch, dropUp, dropSide }) {
             >
               <it.icon size={15} className={active[it.id] ? 'text-cyan-300' : 'text-slate-500'} />
               {it.label}
-              {it.isNew && <span className="mono text-[8px] px-1 rounded bg-cyan-500/20 text-cyan-300">NEW</span>}
               {active[it.id] && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400" />}
               {it.action && <span className="ml-auto mono text-[10px] text-slate-600">add</span>}
             </button>
@@ -4384,6 +4777,8 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
   const { s: nbSet } = useSettings();
   const palmRef = useRef({ on: true, min: 72 });
   palmRef.current = { on: nbSet.palmErase !== false, min: nbClampNum(nbSet.palmSize, 40, 160, 72) };
+  const shapeSnapRef = useRef(true);
+  shapeSnapRef.current = nbSet.shapeSnap !== false;
 
   const pickShape = useCallback((id) => {
     setActiveShape(id);
@@ -4677,6 +5072,77 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
       livePath = makeLivePath();
       canvas.add(livePath);
       canvas.requestRenderAll();
+    };
+
+    /* Build a clean Fabric object from a nbRecognizeShape() spec, styled to match
+       the freehand stroke it's replacing (same pen colour/width/dash). Returns
+       null for an unsupported kind so the caller can fall back to the raw ink. */
+    const shapeFromSnapSpec = (spec, srcPath) => {
+      const stroke = (srcPath && srcPath.stroke) || colorRef.current;
+      const strokeWidth = (srcPath && srcPath.strokeWidth) || widthRef.current;
+      const dashArray = (srcPath && srcPath.strokeDashArray) || null;
+      const common = {
+        fill: 'transparent', stroke, strokeWidth, strokeDashArray: dashArray,
+        strokeUniform: true, strokeLineJoin: 'round', strokeLineCap: 'round',
+        objectCaching: false, selectable: false, evented: false,
+        nbSnapped: true, // marks the object as snap-generated; purely informational
+      };
+      if (spec.kind === 'line') {
+        return new fabric.Line([spec.x0, spec.y0, spec.x1, spec.y1], { ...common, nbKind: 'line' });
+      }
+      if (spec.kind === 'rect') {
+        return new fabric.Rect({ ...common, left: spec.left, top: spec.top, width: spec.w, height: spec.h, nbKind: 'rect' });
+      }
+      if (spec.kind === 'ellipse') {
+        const cx = spec.left + spec.w / 2, cy = spec.top + spec.h / 2;
+        return new fabric.Ellipse({ ...common, left: cx, top: cy, originX: 'center', originY: 'center', rx: spec.w / 2, ry: spec.h / 2, angle: spec.angle || 0, nbKind: 'ellipse' });
+      }
+      if (spec.kind === 'triangle') {
+        const d = `M ${spec.pts[0].x} ${spec.pts[0].y} L ${spec.pts[1].x} ${spec.pts[1].y} L ${spec.pts[2].x} ${spec.pts[2].y} Z`;
+        return new fabric.Path(d, { ...common, nbKind: 'triangle2' });
+      }
+      if (spec.kind === 'rectRound') {
+        const r = Math.min(spec.w, spec.h) * 0.14; // matches the look of the drag-to-draw rounded rect
+        return new fabric.Rect({ ...common, left: spec.left, top: spec.top, width: spec.w, height: spec.h, rx: r, ry: r, nbKind: 'rectRound' });
+      }
+      if (spec.kind === 'diamond') {
+        const { left, top, w, h } = spec;
+        const d = 'M ' + NB_POLY_SHAPES.diamond.map(([px, py]) => `${left + px * w} ${top + py * h}`).join(' L ') + ' Z';
+        return new fabric.Path(d, { ...common, nbKind: 'diamond' });
+      }
+      if (spec.kind === 'star') {
+        const outerR = spec.outerR;
+        const starPts = buildStarPoints(0, 0, outerR, outerR * 0.42);
+        const d = 'M ' + starPts.map(p => `${p.x} ${p.y}`).join(' L ') + ' Z';
+        return new fabric.Path(d, { ...common, nbKind: 'star', left: spec.cx, top: spec.cy, originX: 'center', originY: 'center' });
+      }
+      if (spec.kind === 'arrow') {
+        const size = Math.max(10, strokeWidth * 2.2);
+        const d = `M ${spec.x0} ${spec.y0} L ${spec.x1} ${spec.y1} ${makeArrowHeadPath(spec.x0, spec.y0, spec.x1, spec.y1, size).slice(1)}`;
+        return new fabric.Path(d, { ...common, fill: null, nbKind: 'arrow' });
+      }
+      return null;
+    };
+
+    /* Brief outward "snap" flash so the swap from ink to perfect shape reads as
+       an intentional, pleasant correction rather than a silent substitution. */
+    const flashSnap = (obj) => {
+      if (!obj) return;
+      const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduceMotion) return;
+      const t0 = performance.now();
+      const dur = 260;
+      const baseW = obj.strokeWidth;
+      const tick = (t) => {
+        const k = Math.min(1, (t - t0) / dur);
+        const bump = Math.sin(k * Math.PI) * baseW * 0.9;
+        obj.set('strokeWidth', baseW + bump);
+        canvas.requestRenderAll();
+        if (k < 1) requestAnimationFrame(tick);
+        else obj.set('strokeWidth', baseW);
+        canvas.requestRenderAll();
+      };
+      requestAnimationFrame(tick);
     };
 
     const startNeonPulse = (pathObj) => {
@@ -5101,14 +5567,33 @@ const CanvasViewport = React.forwardRef(function CanvasViewport({ initialBg, onC
           return;
         }
         if (livePath) {
-          // freeze finished stroke: make it selectable for the Select tool
-          livePath.set({ selectable: true, evented: true, objectCaching: true });
-          livePath.setCoords();
-          const finished = livePath;
+          // Shape snapping: a rough circle/rectangle/rounded-rectangle/diamond/triangle/
+          // star/arrow (closed loop) or a near-straight line/arrow (open stroke), drawn
+          // with a plain pen (ballpoint/dashed), locks into a clean shape.
+          // Conservative by design — anything that isn't a confident match is left as
+          // ordinary ink, so normal doodles and handwriting are never touched.
+          const snapEligible = shapeSnapRef.current
+            && (livePath.nbKind === 'ballpoint' || livePath.nbKind === 'dashed')
+            && pts.length >= 6;
+          const spec = snapEligible ? nbRecognizeShape(pts) : null;
+          const snapped = spec ? shapeFromSnapSpec(spec, livePath) : null;
+
+          let finished;
+          if (snapped) {
+            canvas.remove(livePath);
+            canvas.add(snapped);
+            finished = snapped;
+          } else {
+            finished = livePath;
+          }
           livePath = null;
           pts = []; widths = [];
+          // freeze finished stroke/shape: make it selectable for the Select tool
+          finished.set({ selectable: true, evented: true, objectCaching: true });
+          finished.setCoords();
           canvas.requestRenderAll();
           if (finished.nbKind === 'neon') startNeonPulse(finished);
+          if (snapped) flashSnap(finished);
           pushHistory();
         }
       }
@@ -6848,6 +7333,238 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
   );
 }
 
+/* ============================== PROFILES: UI ============================== */
+const ProfileCtx = React.createContext(null);
+const nbProfInput = 'w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-100 text-sm outline-none focus:border-cyan-400/60';
+const nbProfBtn = 'px-4 py-2 text-sm rounded-lg font-medium bg-gradient-to-r from-cyan-500 to-indigo-500 text-slate-950 hover:brightness-110 transition-all focus-ring disabled:opacity-50';
+const nbProfBtn2 = 'px-4 py-2 text-sm rounded-lg bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 transition-all focus-ring';
+const nbProfBtnDanger = 'px-4 py-2 text-sm rounded-lg font-medium bg-red-500/90 text-white hover:bg-red-500 transition-all focus-ring disabled:opacity-50';
+
+function NBProfAvatar({ p, size = 28 }) {
+  return (
+    <span aria-hidden="true" className="inline-flex items-center justify-center rounded-full font-semibold text-slate-950 flex-shrink-0"
+      style={{ width: size, height: size, background: p.color, fontSize: Math.round(size * 0.46) }}>
+      {(p.name || '?').trim().slice(0, 1).toUpperCase()}
+    </span>
+  );
+}
+
+function ProfileStrip() {
+  const P = React.useContext(ProfileCtx);
+  const [dlg, setDlg] = useState(null);
+  if (!P) return null;
+  const tap = (p) => {
+    if (p.id === P.activeId) return;
+    if (p.pw) setDlg({ mode: 'unlock', target: p.id }); else P.activate(p.id);   // one tap for unlocked profiles
+  };
+  return (
+    <div className="mt-6">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Profiles">
+        {P.list.map((p) => {
+          const on = p.id === P.activeId;
+          return (
+            <button key={p.id} role="tab" aria-selected={on} onClick={() => tap(p)}
+              title={p.pw ? p.name + ' (password protected)' : p.name}
+              className={'focus-ring flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 rounded-full border text-sm whitespace-nowrap transition-all ' +
+                (on ? 'border-cyan-400/60 bg-cyan-400/10 text-slate-50' : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10')}>
+              <NBProfAvatar p={p} size={26} />
+              <span className="max-w-[9rem] truncate">{p.name}</span>
+              {p.pw && <span aria-hidden="true" className="text-[11px]">🔒</span>}
+            </button>
+          );
+        })}
+        {P.personal.length < NB_MAX_PROFILES && (
+          <button onClick={() => setDlg({ mode: 'create' })} aria-label="Add profile" title="Add profile"
+            className="focus-ring flex items-center justify-center w-9 h-9 rounded-full border border-dashed border-white/20 text-slate-300 hover:bg-white/10 flex-shrink-0">
+            <IPlus size={14} />
+          </button>
+        )}
+        <button onClick={() => setDlg({ mode: 'manage' })} className="focus-ring ml-1 px-3 py-1.5 rounded-full text-xs text-slate-400 hover:text-slate-100 hover:bg-white/5 whitespace-nowrap">
+          Manage profile
+        </button>
+      </div>
+      {dlg && <NBProfDialog key={dlg.mode + (dlg.target || '')} dlg={dlg} onClose={() => setDlg(null)} />}
+    </div>
+  );
+}
+
+function NBTitle({ children, sub }) { return (<div className="mb-4"><div className="text-lg font-semibold text-slate-50">{children}</div>{sub && <div className="text-xs text-slate-400 mt-1 leading-relaxed">{sub}</div>}</div>); }
+function NBPw({ v, set, label, ac, onEnter }) {
+  return (
+    <label className="block mb-3"><span className="text-xs text-slate-400">{label}</span>
+      <input type="password" value={v} onChange={(e) => set(e.target.value)} autoComplete={ac || 'off'} className={nbProfInput + ' mt-1'}
+        onKeyDown={(e) => { if (e.key === 'Enter' && onEnter) onEnter(); }} /></label>);
+}
+function NBMsg({ err, note }) { return (<>{err && <div role="alert" className="text-sm text-red-400 mb-3">{err}</div>}{note && <div role="status" className="text-sm text-emerald-400 mb-3">{note}</div>}</>); }
+function NBSwatches({ color, setColor }) {
+  return (
+    <div className="flex flex-wrap gap-2 mb-4" role="radiogroup" aria-label="Profile colour">
+      {NB_PROF_COLORS.map((c) => (
+        <button key={c} role="radio" aria-checked={color === c} aria-label={c} onClick={() => setColor(c)}
+          className={'w-7 h-7 rounded-full focus-ring ' + (color === c ? 'ring-2 ring-offset-2 ring-offset-slate-900 ring-white' : '')} style={{ background: c }} />
+      ))}
+    </div>);
+}
+function NBNameField({ name, setName }) {
+  return (
+    <label className="block mb-3"><span className="text-xs text-slate-400">Name</span>
+      <input value={name} onChange={(e) => setName(e.target.value)} maxLength={20} autoFocus className={nbProfInput + ' mt-1'} placeholder="e.g. Mr Jon" /></label>);
+}
+
+function NBProfDialog({ dlg, onClose }) {
+  const P = React.useContext(ProfileCtx);
+  const S = React.useContext(SettingsCtx);
+  const [mode, setMode] = useState(dlg.mode);
+  const target = P.list.find((p) => p.id === (dlg.target || P.activeId)) || P.active;
+  const isGlobal = target.id === 'global';
+  const [name, setName] = useState(dlg.mode === 'create' ? '' : target.name);
+  const [color, setColor] = useState(dlg.mode === 'create' ? NB_PROF_COLORS[P.personal.length % NB_PROF_COLORS.length] : target.color);
+  const [pw, setPw] = useState(''); const [pw2, setPw2] = useState(''); const [cur, setCur] = useState(''); const [rk, setRk] = useState('');
+  const [err, setErr] = useState(''); const [busy, setBusy] = useState(false); const [note, setNote] = useState('');
+  const [shownKey, setShownKey] = useState(null);
+  const fileRef = useRef(null);
+
+  useEffect(() => {
+    const h = (e) => { if (e.key === 'Escape' && mode !== 'key') onClose(); };
+    window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h);
+  }, [onClose, mode]);
+
+  const go = (m) => { setMode(m); setErr(''); setNote(''); setPw(''); setPw2(''); setCur(''); setRk(''); };
+  const run = async (fn) => { setBusy(true); setErr(''); try { await fn(); } catch (e) { setErr((e && e.message) || 'Something went wrong.'); } setBusy(false); };
+  const badName = () => {
+    const n = name.trim();
+    if (!n) return 'Enter a name.';
+    if (n.length > 20) return 'Keep the name to 20 characters.';
+    if (P.list.some((p) => p.id !== target.id && p.name.toLowerCase() === n.toLowerCase())) return 'That name is already used.';
+    return '';
+  };
+  const badPw = () => (pw.length < 4 ? 'Use at least 4 characters.' : pw !== pw2 ? 'The two passwords do not match.' : '');
+  const showKey = (k, thenClose) => { if (k) { setShownKey(k); setMode('key'); } else if (thenClose) onClose(); };
+
+  const doUnlock = () => run(async () => {
+    if (await P.verify(target.id, pw)) { P.activate(target.id); onClose(); } else setErr('Wrong password.');
+  });
+  const doCreate = () => run(async () => {
+    const e = badName() || (pw || pw2 ? badPw() : ''); if (e) { setErr(e); return; }
+    const r = await P.create({ name: name.trim(), color, pw }); P.activate(r.id); showKey(r.recoveryKey, true);
+  });
+  const doSave = () => run(async () => { const e = badName(); if (e) { setErr(e); return; } P.update(target.id, { name: name.trim(), color }); onClose(); });
+  const doSetPw = () => run(async () => {
+    if (target.pw && !(await P.verify(target.id, cur))) { setErr('Current password is wrong.'); return; }
+    const e = badPw(); if (e) { setErr(e); return; }
+    showKey(await P.setPassword(target.id, pw), true);
+  });
+  const doRemovePw = () => run(async () => {
+    if (!(await P.verify(target.id, cur))) { setErr('Current password is wrong.'); return; }
+    P.removePassword(target.id); onClose();
+  });
+  const doForgot = () => run(async () => {
+    const e = badPw(); if (e) { setErr(e); return; }
+    const k = await P.recover(target.id, rk, pw);
+    if (!k) { setErr('That recovery key is not correct.'); return; }
+    P.activate(target.id); showKey(k, true);
+  });
+  const doReset = () => run(async () => { await P.reset(target.id); P.activate(target.id); onClose(); });
+  const doDelete = () => run(async () => { await P.remove(target.id); onClose(); });
+
+  const exportProfile = () => {
+    const { aiKeyGemini, aiKeyGroq, aiKeyOpenrouter, aiProvider, aiModel, turnCred, ...safe } = S.s; // keys never leave this browser
+    const blob = new Blob([JSON.stringify({ nbProfile: 1, name: target.name, color: target.color, settings: safe }, null, 1)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'novaboard-profile-' + target.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '.json'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+  const importProfile = (f) => {
+    if (!f) return; const r = new FileReader();
+    r.onload = () => {
+      try {
+        const o = JSON.parse(r.result);
+        if (!o || o.nbProfile !== 1 || !o.settings || typeof o.settings !== 'object') throw new Error('bad');
+        const patch = { ...NB_DEFAULTS };
+        NB_AI_FIELDS.concat(['turnUrl', 'turnUser', 'turnCred']).forEach((k) => { delete patch[k]; });   // shared setup stays as it is
+        Object.keys(o.settings).forEach((k) => { if (k in patch) patch[k] = o.settings[k]; });
+        S.set(patch); setErr(''); setNote('Settings imported into this profile.');
+      } catch (e) { setErr('That is not a NovaBoard profile file.'); }
+    };
+    r.readAsText(f);
+  };
+
+  let body = null;
+  if (mode === 'unlock') body = (<>
+    <NBTitle sub="Enter the password to open this profile and its boards.">{'Unlock ' + target.name}</NBTitle>
+    <NBPw v={pw} set={setPw} label="Password" ac="current-password" onEnter={doUnlock} /><NBMsg err={err} note={note} />
+    <div className="flex items-center gap-2"><button className={nbProfBtn} disabled={busy || !pw} onClick={doUnlock}>Unlock</button>
+      <button className={nbProfBtn2} onClick={onClose}>Cancel</button>
+      <button className="ml-auto text-xs text-cyan-300 hover:underline focus-ring" onClick={() => go('forgot')}>Forgot password?</button></div>
+  </>);
+  else if (mode === 'create') body = (<>
+    <NBTitle sub={'Your own boards and settings. A password is optional. ' + (NB_MAX_PROFILES - P.personal.length) + ' of ' + NB_MAX_PROFILES + ' profile slots left.'}>New profile</NBTitle>
+    <NBNameField name={name} setName={setName} /><NBSwatches color={color} setColor={setColor} />
+    <NBPw v={pw} set={setPw} label="Password (optional)" ac="new-password" />
+    {pw && <NBPw v={pw2} set={setPw2} label="Repeat password" ac="new-password" onEnter={doCreate} />}
+    <NBMsg err={err} note={note} /><div className="flex gap-2"><button className={nbProfBtn} disabled={busy} onClick={doCreate}>Create profile</button><button className={nbProfBtn2} onClick={onClose}>Cancel</button></div>
+  </>);
+  else if (mode === 'manage') body = (<>
+    <NBTitle sub={isGlobal ? 'The Global profile is open to everyone and cannot be locked or deleted.' : 'Settings below apply to this profile only. The AI key is shared by all profiles.'}>
+      {target.name + ' profile'}</NBTitle>
+    {!isGlobal && (<><NBNameField name={name} setName={setName} /><NBSwatches color={color} setColor={setColor} /></>)}
+    <div className="flex flex-wrap gap-2 mb-4">
+      {!isGlobal && <button className={nbProfBtn} disabled={busy} onClick={doSave}>Save</button>}
+      <button className={nbProfBtn2} onClick={exportProfile}>Export settings</button>
+      <button className={nbProfBtn2} onClick={() => fileRef.current && fileRef.current.click()}>Import settings</button>
+      <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => { importProfile(e.target.files && e.target.files[0]); e.target.value = ''; }} />
+    </div>
+    {!isGlobal && (<div className="border-t border-white/10 pt-4 mb-1">
+      <div className="text-sm text-slate-200 mb-1">Password</div>
+      <div className="text-xs text-slate-400 mb-3">{target.pw ? 'This profile is locked. Anyone switching to it needs the password.' : 'No password set. Anyone can open this profile.'}</div>
+      <div className="flex flex-wrap gap-2">
+        <button className={nbProfBtn2} onClick={() => go('setpw')}>{target.pw ? 'Change password' : 'Set a password'}</button>
+        {target.pw && <button className={nbProfBtn2} onClick={() => go('removepw')}>Remove password</button>}
+        <button className="px-4 py-2 text-sm rounded-lg text-red-400 hover:bg-red-500/10 focus-ring ml-auto" onClick={() => go('delete')}>Delete profile</button>
+      </div></div>)}
+    <NBMsg err={err} note={note} /><div className="mt-3"><button className={nbProfBtn2} onClick={onClose}>Close</button></div>
+  </>);
+  else if (mode === 'setpw') body = (<>
+    <NBTitle sub="This lock keeps other people out of the profile inside NovaBoard. It does not encrypt the data stored in this browser.">{target.pw ? 'Change password' : 'Set a password'}</NBTitle>
+    {target.pw && <NBPw v={cur} set={setCur} label="Current password" ac="current-password" />}
+    <NBPw v={pw} set={setPw} label="New password" ac="new-password" /><NBPw v={pw2} set={setPw2} label="Repeat new password" ac="new-password" onEnter={doSetPw} />
+    <NBMsg err={err} note={note} /><div className="flex gap-2"><button className={nbProfBtn} disabled={busy} onClick={doSetPw}>Save password</button><button className={nbProfBtn2} onClick={() => go('manage')}>Back</button></div>
+  </>);
+  else if (mode === 'removepw') body = (<>
+    <NBTitle sub="The profile and its boards will be open to anyone again.">Remove password</NBTitle>
+    <NBPw v={cur} set={setCur} label="Current password" ac="current-password" onEnter={doRemovePw} /><NBMsg err={err} note={note} />
+    <div className="flex gap-2"><button className={nbProfBtn} disabled={busy || !cur} onClick={doRemovePw}>Remove password</button><button className={nbProfBtn2} onClick={() => go('manage')}>Back</button></div>
+  </>);
+  else if (mode === 'forgot') body = (<>
+    <NBTitle sub="Enter the recovery key you were shown when you set the password, then choose a new password.">{'Reset password for ' + target.name}</NBTitle>
+    <label className="block mb-3"><span className="text-xs text-slate-400">Recovery key</span>
+      <input value={rk} onChange={(e) => setRk(e.target.value)} autoCapitalize="characters" spellCheck={false} className={nbProfInput + ' mt-1 tracking-widest'} placeholder="XXXX-XXXX-XXXX" /></label>
+    <NBPw v={pw} set={setPw} label="New password" ac="new-password" /><NBPw v={pw2} set={setPw2} label="Repeat new password" ac="new-password" onEnter={doForgot} /><NBMsg err={err} note={note} />
+    <div className="flex items-center gap-2"><button className={nbProfBtn} disabled={busy || !rk} onClick={doForgot}>Reset password</button><button className={nbProfBtn2} onClick={onClose}>Cancel</button>
+      <button className="ml-auto text-xs text-red-300 hover:underline focus-ring" onClick={() => go('reset')}>No recovery key?</button></div>
+  </>);
+  else if (mode === 'reset') body = (<>
+    <NBTitle sub="Without the password or recovery key the only option is to wipe this profile. All of its boards and settings are permanently deleted, and the password is removed. The name stays.">{'Reset ' + target.name + '?'}</NBTitle>
+    <NBMsg err={err} note={note} /><div className="flex gap-2"><button className={nbProfBtnDanger} disabled={busy} onClick={doReset}>Delete its boards and reset</button><button className={nbProfBtn2} onClick={() => go('forgot')}>Back</button></div>
+  </>);
+  else if (mode === 'delete') body = (<>
+    <NBTitle sub="The profile, its settings and all of its boards are permanently deleted. Other profiles are not affected.">{'Delete ' + target.name + '?'}</NBTitle>
+    <NBMsg err={err} note={note} /><div className="flex gap-2"><button className={nbProfBtnDanger} disabled={busy} onClick={doDelete}>Delete profile</button><button className={nbProfBtn2} onClick={() => go('manage')}>Cancel</button></div>
+  </>);
+  else if (mode === 'key') body = (<>
+    <NBTitle sub="Write this down or save it somewhere safe. It is shown only once and is the only way to reset a forgotten password.">Your recovery key</NBTitle>
+    <div className="select-all text-center text-2xl font-mono tracking-widest text-cyan-300 bg-white/5 border border-white/10 rounded-xl py-4 mb-4" aria-live="polite">{shownKey}</div>
+    <div className="flex gap-2"><button className={nbProfBtn2} onClick={() => { try { navigator.clipboard.writeText(shownKey); setNote('Copied.'); } catch (e) { /* ignore */ } }}>Copy</button>
+      <button className={nbProfBtn} onClick={onClose}>I have saved it</button></div>{note && <div className="text-sm text-emerald-400 mt-3">{note}</div>}
+  </>);
+
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/60" onPointerDown={(e) => { if (e.target === e.currentTarget && mode !== 'key') onClose(); }}>
+      <div role="dialog" aria-modal="true" className="glass-strong w-full max-w-sm rounded-2xl border border-white/10 p-5 max-h-[90vh] overflow-y-auto">{body}</div>
+    </div>
+  );
+}
+
 /* ============================== APP ROOT ============================== */
 const VIEWS = { SPLASH: 'VIEW_SPLASH', HOME: 'VIEW_HOME', CANVAS: 'VIEW_CANVAS' };
 function App() {
@@ -6864,6 +7581,70 @@ function App() {
   const [view, setView] = useState(() => (nbLoadSettings().splash === false ? VIEWS.HOME : VIEWS.SPLASH));
   const [activeSession, setActiveSession] = useState(null);
   const [sessions, setSessions] = useState(() => loadSessions());
+  const [prof, setProf] = useState(() => ({ ...nbProfRead(), active: nbActiveProfile }));
+  const commitProf = useCallback((fn) => setProf((p) => { const n = fn(p); nbProfWrite(n); return n; }), []);
+  const activateProfile = useCallback((id) => {
+    nbActiveProfile = id;                         // set first: settings load/save below use it
+    commitProf((p) => ({ ...p, active: id }));
+    setSettingsState(nbLoadSettings());
+    setRecovery(null);
+  }, [commitProf]);
+  /* Each profile only sees (and edits) its own boards; other profiles' boards are never touched. */
+  const visibleSessions = useMemo(() => { const o = nbOwnersRead(); return sessions.filter((x) => nbOwnerOf(x.id, o) === prof.active); }, [sessions, prof.active]);
+  const scopedSetSessions = useCallback((upd) => setSessions((prev) => {
+    const me = nbActiveProfile, o1 = nbOwnersRead();
+    const mine = prev.filter((x) => nbOwnerOf(x.id, o1) === me);
+    const nextMine = typeof upd === 'function' ? upd(mine) : upd;
+    const o2 = nbOwnersRead();                    // saveSessions may have just registered new boards
+    return [...nextMine.filter((x) => nbOwnerOf(x.id, o2) === me), ...prev.filter((x) => nbOwnerOf(x.id, o2) !== me)];
+  }), []);
+  const wipeProfileData = useCallback((id) => {
+    const o = nbOwnersRead();
+    const ids = new Set(Object.keys(o).filter((k) => o[k] === id));
+    ids.forEach((k) => { NBStore.deleteBoard(k).catch(() => {}); delete o[k]; });
+    nbOwnersWrite(o);
+    setSessions((prev) => {
+      const next = prev.filter((x) => !ids.has(x.id));
+      try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(next.map(nbSlimSession))); } catch (e) { /* ignore */ }
+      return next;
+    });
+    try { localStorage.removeItem(nbSettingsKey(id)); } catch (e) { /* ignore */ }
+  }, []);
+  const profApi = useMemo(() => {
+    const list = [NB_GLOBAL_PROFILE, ...prof.list];
+    const active = list.find((p) => p.id === prof.active) || NB_GLOBAL_PROFILE;
+    const find = (id) => nbProfRead().list.find((x) => x.id === id);
+    const mapOne = (id, fn) => commitProf((p) => ({ ...p, list: p.list.map((x) => (x.id === id ? fn(x) : x)) }));
+    const lockWith = async (id, pw) => { const l = await nbMakeLock(pw); mapOne(id, (x) => ({ ...x, pw: l.pw, rk: l.rk })); return l.recoveryKey; };
+    return {
+      list, personal: prof.list, active, activeId: active.id,
+      activate: activateProfile,
+      verify: async (id, secret) => { const e = find(id); return !!e && nbLockCheck(e.pw, secret); },
+      create: async ({ name, color, pw }) => {
+        const id = 'p' + uid(); const entry = { id, name, color, pw: null, rk: null, created: Date.now() }; let recoveryKey = null;
+        if (pw) { const l = await nbMakeLock(pw); entry.pw = l.pw; entry.rk = l.rk; recoveryKey = l.recoveryKey; }
+        try { localStorage.setItem(nbSettingsKey(id), JSON.stringify({ userName: name })); } catch (e) { /* ignore */ }
+        commitProf((p) => ({ ...p, list: [...p.list, entry] }));
+        return { id, recoveryKey };
+      },
+      update: (id, patch) => {
+        const old = find(id); mapOne(id, (x) => ({ ...x, ...patch }));
+        if (old && patch.name && id === nbActiveProfile) setSettingsState((p) => (p.userName === old.name ? { ...p, userName: patch.name } : p));
+      },
+      setPassword: lockWith,
+      removePassword: (id) => mapOne(id, (x) => ({ ...x, pw: null, rk: null })),
+      recover: async (id, key, newPw) => { const e = find(id); if (!e || !(await nbLockCheck(e.rk, nbNormKey(key)))) return null; return lockWith(id, newPw); },
+      reset: async (id) => {
+        const e = find(id); wipeProfileData(id);
+        try { localStorage.setItem(nbSettingsKey(id), JSON.stringify({ userName: e ? e.name : '' })); } catch (e2) { /* ignore */ }
+        mapOne(id, (x) => ({ ...x, pw: null, rk: null }));
+      },
+      remove: async (id) => {
+        wipeProfileData(id); commitProf((p) => ({ ...p, list: p.list.filter((x) => x.id !== id) }));
+        if (nbActiveProfile === id) activateProfile('global');
+      },
+    };
+  }, [prof, commitProf, activateProfile, wipeProfileData]);
   // Set when the PREVIOUS page session did not close cleanly (power loss, crash, killed tab).
   const [recovery, setRecovery] = useState(() => (NB_BOOT_SESSION && NB_BOOT_SESSION.clean === false ? NB_BOOT_SESSION : null));
   const enterCanvas = useCallback((session) => {
@@ -6897,6 +7678,7 @@ function App() {
 
   return (
     <SettingsCtx.Provider value={ctxVal}>
+    <ProfileCtx.Provider value={profApi}>
     <div className="h-full w-full relative">
       {settings.aurora && view === VIEWS.HOME && <div className="nb-aurora" aria-hidden="true"><i /><i /><i /></div>}
       {panel && <SettingsPanel tab={panel} onClose={() => setPanel(null)} />}
@@ -6906,8 +7688,8 @@ function App() {
       {view === VIEWS.HOME && (
         <HomeScreen
           onEnterCanvas={enterCanvas}
-          sessions={sessions}
-          setSessions={setSessions}
+          sessions={visibleSessions}
+          setSessions={scopedSetSessions}
           onOpenFile={openNovaboardFile}
           recovery={recovery}
           onDismissRecovery={() => setRecovery(null)}
@@ -6923,11 +7705,76 @@ function App() {
         />
       )}
     </div>
+    </ProfileCtx.Provider>
     </SettingsCtx.Provider>
   );
 }
 
 /* ============================== NOVABOARD 3.0 : SETTINGS + THEMES ============================== */
+
+/* ============================== PROFILES ==============================
+   Up to 8 personal profiles + the built-in Global profile (always open, no password).
+   - Boards: every board has an owner (nb.owners.v1). A board with no record belongs to Global, so
+     everything created before profiles existed simply stays in Global. Each profile only sees its own.
+   - Settings: Global keeps the original 'nb3_settings' key; others use 'nb3_settings:<id>'.
+   - AI provider + API keys + model are GLOBAL (nb3_ai_global): enter them once, every profile uses them.
+   - Password is optional. It is a privacy lock for the UI (salted PBKDF2 hash, or a weaker fallback hash
+     where Web Crypto is unavailable), not encryption of the data stored in the browser. */
+const NB_PROF_KEY = 'nb.profiles.v1';
+const NB_OWN_KEY = 'nb.owners.v1';
+const NB_AI_KEY = 'nb3_ai_global';
+const NB_AI_FIELDS = ['aiProvider', 'aiKeyGemini', 'aiKeyGroq', 'aiKeyOpenrouter', 'aiModel'];
+const NB_MAX_PROFILES = 8;
+const NB_PROF_COLORS = ['#22d3ee', '#818cf8', '#f472b6', '#fb923c', '#34d399', '#facc15', '#f87171', '#a78bfa'];
+const NB_GLOBAL_PROFILE = { id: 'global', name: 'Global', color: '#94a3b8', pw: null, rk: null };
+
+function nbProfRead() {
+  try { const p = JSON.parse(localStorage.getItem(NB_PROF_KEY)); if (p && Array.isArray(p.list)) return p; } catch (e) { /* fresh */ }
+  return { v: 1, list: [], active: 'global' };
+}
+function nbProfWrite(p) { try { localStorage.setItem(NB_PROF_KEY, JSON.stringify(p)); } catch (e) { /* ignore */ } }
+function nbOwnersRead() { try { return JSON.parse(localStorage.getItem(NB_OWN_KEY)) || {}; } catch (e) { return {}; } }
+function nbOwnersWrite(o) { try { localStorage.setItem(NB_OWN_KEY, JSON.stringify(o)); } catch (e) { /* ignore */ } }
+const nbOwnerOf = (id, o) => (o || nbOwnersRead())[id] || 'global';
+
+/* Active profile at boot: the last one used, unless it is password-locked (then Global until unlocked). */
+let nbActiveProfile = (() => {
+  const p = nbProfRead(); const a = p.list.find((x) => x.id === p.active);
+  return a && !a.pw ? a.id : 'global';
+})();
+const nbSettingsKey = (id) => ((id || nbActiveProfile) === 'global' ? 'nb3_settings' : 'nb3_settings:' + (id || nbActiveProfile));
+
+const nbHex = (buf) => Array.from(new Uint8Array(buf)).map((x) => x.toString(16).padStart(2, '0')).join('');
+const nbRandHex = (n) => { const a = new Uint8Array(n); crypto.getRandomValues(a); return nbHex(a); };
+async function nbHash(secret, salt, method) {
+  if (method !== 'f' && window.crypto && crypto.subtle) {
+    try {
+      const enc = new TextEncoder();
+      const key = await crypto.subtle.importKey('raw', enc.encode(secret), 'PBKDF2', false, ['deriveBits']);
+      const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: enc.encode(salt), iterations: 120000, hash: 'SHA-256' }, key, 256);
+      return { h: nbHex(bits), m: 'p' };
+    } catch (e) { /* fall through */ }
+  }
+  if (method === 'p') return { h: '', m: 'p' }; // was stored with PBKDF2 but Web Crypto is unavailable now
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57; const s = salt + '|' + secret;
+  for (let r = 0; r < 3000; r++) for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
+  return { h: (h1 >>> 0).toString(16) + (h2 >>> 0).toString(16), m: 'f' };
+}
+const nbNormKey = (k) => String(k || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+async function nbLockCheck(lock, secret) {
+  if (!lock || !lock.h) return false;
+  const r = await nbHash(secret, lock.s, lock.m);
+  return !!r.h && r.h === lock.h;
+}
+/* New lock: password hash + a one-time recovery key (shown once, only its hash is kept). */
+async function nbMakeLock(pw) {
+  const alpha = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const rnd = new Uint8Array(12); crypto.getRandomValues(rnd);
+  const raw = Array.from(rnd).map((b) => alpha[b % alpha.length]).join('');
+  const recoveryKey = raw.slice(0, 4) + '-' + raw.slice(4, 8) + '-' + raw.slice(8, 12);
+  const ps = nbRandHex(8), rs = nbRandHex(8);
+  const a = await nbHash(pw, ps), b = await nbHash(nbNormKey(recoveryKey), rs, a.m);
+  return { pw: { s: ps, h: a.h, m: a.m }, rk: { s: rs, h: b.h, m: b.m }, recoveryKey };
+}
 
 const NB_SET_KEY = 'nb3_settings';
 const NB_THEMES = [
@@ -6948,18 +7795,33 @@ const NB_DEFAULTS = {
   aiProvider: 'gemini', aiKeyGemini: '', aiKeyGroq: '', aiKeyOpenrouter: '', aiModel: '',
   turnUrl: '', turnUser: '', turnCred: '',
   showClock: true, showSave: true, showSaveStatus: true, showAvatarCanvas: true,
-  palmErase: true, palmSize: 72,
+  palmErase: true, palmSize: 72, shapeSnap: true,
 };
 const nbClampNum = (v, lo, hi, d) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, Math.round(n))) : d; };
 function nbLoadSettings() {
-  try { return { ...NB_DEFAULTS, ...(JSON.parse(localStorage.getItem(NB_SET_KEY)) || {}) }; } catch (e) { return { ...NB_DEFAULTS }; }
+  try {
+    const base = JSON.parse(localStorage.getItem(nbSettingsKey())) || {};
+    let ai = JSON.parse(localStorage.getItem(NB_AI_KEY));
+    if (!ai) { // first run after upgrade: lift the AI setup out of the old single settings blob
+      const old = JSON.parse(localStorage.getItem(NB_SET_KEY)) || {}; ai = {};
+      NB_AI_FIELDS.forEach((k) => { if (old[k] !== undefined) ai[k] = old[k]; });
+    }
+    return { ...NB_DEFAULTS, ...base, ...ai };
+  } catch (e) { return { ...NB_DEFAULTS }; }
 }
 const NB_AI_PROVIDERS = ['gemini', 'groq', 'openrouter'];
 const NB_AI_LINKS = { gemini: 'https://aistudio.google.com/apikey', groq: 'https://console.groq.com/keys', openrouter: 'https://openrouter.ai/keys' };
 const nbAiProv = (s) => (NB_AI_PROVIDERS.includes(s.aiProvider) ? s.aiProvider : 'gemini');
 const nbAiKeyField = (s) => ({ groq: 'aiKeyGroq', openrouter: 'aiKeyOpenrouter' }[nbAiProv(s)] || 'aiKeyGemini');
 const nbAiKey = (s) => s[nbAiKeyField(s)] || '';
-function nbSaveSettings(s) { try { localStorage.setItem(NB_SET_KEY, JSON.stringify(s)); } catch (e) { /* quota: ignore */ } }
+function nbSaveSettings(s) {
+  try {
+    const ai = {}, rest = {};
+    Object.keys(s).forEach((k) => { if (NB_AI_FIELDS.includes(k)) ai[k] = s[k]; else rest[k] = s[k]; });
+    localStorage.setItem(NB_AI_KEY, JSON.stringify(ai));          // AI setup is global: set once, every profile uses it
+    localStorage.setItem(nbSettingsKey(), JSON.stringify(rest));  // everything else belongs to the active profile
+  } catch (e) { /* quota: ignore */ }
+}
 /* PeerJS options: free Google STUN by default, plus the user's own TURN relay (BYOK) when saved in Settings. */
 function nbPeerOpts() {
   const iceServers = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
@@ -7115,7 +7977,7 @@ function SettingsPanel({ tab: startTab, onClose }) {
   };
   const importSettings = (f) => {
     if (!f) return; const r = new FileReader();
-    r.onload = () => { try { const { aiKeyGemini, aiKeyGroq, aiKeyOpenrouter, turnCred, ...inc } = JSON.parse(r.result); set({ ...NB_DEFAULTS, aiKeyGemini: s.aiKeyGemini, aiKeyGroq: s.aiKeyGroq, aiKeyOpenrouter: s.aiKeyOpenrouter, turnCred: s.turnCred, ...inc }); setErr(''); } catch (e) { setErr('Invalid settings file.'); } };
+    r.onload = () => { try { const { aiKeyGemini, aiKeyGroq, aiKeyOpenrouter, turnCred, ...inc } = JSON.parse(r.result); set({ ...NB_DEFAULTS, aiProvider: s.aiProvider, aiModel: s.aiModel, aiKeyGemini: s.aiKeyGemini, aiKeyGroq: s.aiKeyGroq, aiKeyOpenrouter: s.aiKeyOpenrouter, turnCred: s.turnCred, ...inc }); setErr(''); } catch (e) { setErr('Invalid settings file.'); } };
     r.readAsText(f);
   };
   return (
@@ -7142,12 +8004,12 @@ function SettingsPanel({ tab: startTab, onClose }) {
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; pickAvatar(f); }} />
             </div>
             <SRow label="Show picture on board" hint={s.avatar ? 'Top-right corner of the canvas' : 'Upload a picture above first'}><STog k="showAvatarCanvas" /></SRow>
-            <label className="block text-xs text-slate-400 mb-1 mt-2">Organiser / school name</label>
-            <input className="nb-in" maxLength={60} value={s.org} placeholder="e.g. Greenwood High School" onChange={(e) => set({ org: e.target.value })} />
+            <label className="block text-xs text-slate-400 mb-1 mt-2">Organiser / organisation name</label>
+            <input className="nb-in" maxLength={60} value={s.org} placeholder="e.g. Acme Inc." onChange={(e) => set({ org: e.target.value })} />
             <label className="block text-xs text-slate-400 mt-3 mb-1">Your name (greeting)</label>
-            <input className="nb-in" maxLength={40} value={s.userName} placeholder="e.g. Ms. Rao" onChange={(e) => set({ userName: e.target.value })} />
+            <input className="nb-in" maxLength={40} value={s.userName} placeholder="e.g. Priya Rao" onChange={(e) => set({ userName: e.target.value })} />
             <label className="block text-xs text-slate-400 mt-3 mb-1">Tagline (optional)</label>
-            <input className="nb-in" maxLength={80} value={s.tagline} placeholder="e.g. Grade 8 · Mathematics" onChange={(e) => set({ tagline: e.target.value })} />
+            <input className="nb-in" maxLength={80} value={s.tagline} placeholder="e.g. Q3 Planning" onChange={(e) => set({ tagline: e.target.value })} />
             <p className="text-[11px] text-slate-500 pt-2">Stored only on this device.</p>
           </>)}
 
@@ -7205,6 +8067,8 @@ function SettingsPanel({ tab: startTab, onClose }) {
             <div className="py-3"><div className="flex justify-between text-sm text-slate-100"><span>Guide spacing</span><span className="mono text-xs text-slate-500">{s.gridSize}px</span></div><input type="range" min="16" max="80" step="4" value={s.gridSize} onChange={(e) => set({ gridSize: +e.target.value })} className="nb-range" /></div>
             <div className="text-xs text-slate-400 mt-2 mb-1">Touch screen</div>
             <SRow label="Palm eraser" hint="Wipe with your palm to erase. A resting palm does nothing"><STog k="palmErase" /></SRow>
+            <div className="text-xs text-slate-400 mt-2 mb-1">Freehand</div>
+            <SRow label="Shape snapping" hint="A rough circle, rectangle, rounded rectangle, diamond, triangle, star, arrow or line drawn with the Ballpoint/Dashed pen locks into a perfect shape"><STog k="shapeSnap" /></SRow>
             <div className="py-2"><div className="flex justify-between text-sm text-slate-100"><span>Palm detection size</span><span className="mono text-xs text-slate-500">{s.palmSize}px</span></div><input type="range" min="40" max="160" step="4" value={s.palmSize} onChange={(e) => set({ palmSize: +e.target.value })} className="nb-range" /><p className="text-[11px] text-slate-500 pt-1">Only touches wider than this count as a palm. Lower it if your palm is not detected; raise it if a finger or thumb erases by mistake.</p></div>
           </>)}
 
@@ -7371,11 +8235,11 @@ function ScoreTool() {
   </>);
 }
 
-/* ---- Name picker (shares the class list with Group maker) ---- */
+/* ---- Name picker (shares the name list with Group maker) ---- */
 function NamesBox() {
   const [txt, setTxt] = useStored('nb3_names', '');
   return [txt, setTxt, (
-    <textarea className="nb-in" rows={4} value={txt} onChange={(e) => setTxt(e.target.value)} placeholder="One name per line (or comma separated)" aria-label="Class list" />
+    <textarea className="nb-in" rows={4} value={txt} onChange={(e) => setTxt(e.target.value)} placeholder="One name per line (or comma separated)" aria-label="Name list" />
   )];
 }
 function PickerTool() {
@@ -7437,6 +8301,10 @@ function GroupTool() {
 /* ---- Noise meter (microphone level, nothing recorded or stored) ---- */
 function NoiseTool() {
   const [lvl, setLvl] = useState(0);
+  // Highest level seen so far — persists across Start/Stop so the presenter can glance back after
+  // group work and see how loud it got, not just the live number. No audio is ever recorded or
+  // stored; this is just a running max of the same 0–100 loudness reading shown live above.
+  const [peak, setPeak] = useState(0);
   const [limit, setLimit] = useState(60);
   const [state, setState] = useState('idle'); // idle | on | denied
   const stopRef = useRef(null);
@@ -7450,23 +8318,35 @@ function NoiseTool() {
         an.getByteTimeDomainData(buf); let sum = 0;
         for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v; }
         const rms = Math.sqrt(sum / buf.length); const target = Math.min(100, Math.round(Math.pow(rms * 6, 0.8) * 100));
-        sm = sm * 0.8 + target * 0.2; setLvl(Math.round(sm)); raf = requestAnimationFrame(loop);
+        sm = sm * 0.8 + target * 0.2; const rounded = Math.round(sm);
+        setLvl(rounded);
+        setPeak((p) => (rounded > p ? rounded : p));
+        raf = requestAnimationFrame(loop);
       };
       loop(); setState('on');
       stopRef.current = () => { cancelAnimationFrame(raf); stream.getTracks().forEach((t) => t.stop()); ctx.close(); };
     } catch (e) { setState('denied'); }
   };
   const stop = () => { stopRef.current && stopRef.current(); stopRef.current = null; setState('idle'); setLvl(0); };
+  const resetPeak = () => setPeak(0);
   useEffect(() => () => { stopRef.current && stopRef.current(); }, []);
   const over = lvl > limit; const col = over ? '#f43f5e' : lvl > limit * 0.7 ? '#fbbf24' : '#34d399';
+  const peakCol = peak > limit ? '#f43f5e' : peak > limit * 0.7 ? '#fbbf24' : '#34d399';
   return (<>
     <div className="rounded-xl py-3 text-center" style={{ background: `${col}22` }}>
       <div className="text-3xl font-semibold mono tabular-nums" style={{ color: col }}>{lvl}</div>
       <div className="text-xs" style={{ color: col }}>{state !== 'on' ? 'Microphone off' : over ? 'Too loud — quiet please!' : lvl > limit * 0.7 ? 'Getting noisy' : 'Nice and quiet'}</div>
     </div>
     <div className="h-2 rounded-full bg-slate-700/40 overflow-hidden relative"><div className="h-full rounded-full" style={{ width: `${lvl}%`, background: col, transition: 'width .1s linear' }} /><div className="absolute top-0 bottom-0 w-0.5 bg-slate-200/70" style={{ left: `${limit}%` }} /></div>
+    <div className="flex items-center justify-between text-xs px-0.5">
+      <span className="text-slate-400">Peak this session</span>
+      <span className="mono font-semibold tabular-nums" style={{ color: peakCol }}>{peak}</span>
+    </div>
     <div className="flex items-center gap-2 text-xs text-slate-400">Limit <input type="range" min="20" max="95" value={limit} onChange={(e) => setLimit(+e.target.value)} className="nb-range" /></div>
-    <button className={`nb-btn w-full ${state === 'on' ? 'sec' : 'pri'}`} onClick={state === 'on' ? stop : start}>{state === 'on' ? 'Stop' : 'Start listening'}</button>
+    <div className="flex gap-1.5">
+      <button className={`nb-btn flex-1 ${state === 'on' ? 'sec' : 'pri'}`} onClick={state === 'on' ? stop : start}>{state === 'on' ? 'Stop' : 'Start listening'}</button>
+      <button className="nb-btn sec" onClick={resetPeak} disabled={!peak} title="Clear the recorded peak">Reset peak</button>
+    </div>
     {state === 'denied' && <div className="text-[11px] text-rose-400">Microphone blocked. Allow access in your browser. Audio is never recorded.</div>}
   </>);
 }
@@ -7496,7 +8376,7 @@ function AgendaTool() {
   const add = () => { if (t.trim()) { setItems((p) => [...p, { t: t.trim(), d: false }]); setT(''); } };
   const done = items.filter((i) => i.d).length;
   return (<>
-    <div className="flex gap-1.5"><input className="nb-in" value={t} placeholder="Add a lesson step…" onChange={(e) => setT(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} /><button className="nb-btn" onClick={add}>Add</button></div>
+    <div className="flex gap-1.5"><input className="nb-in" value={t} placeholder="Add an agenda step…" onChange={(e) => setT(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} /><button className="nb-btn" onClick={add}>Add</button></div>
     <div className="max-h-52 overflow-y-auto space-y-1">
       {items.map((it, i) => (
         <div key={i} className="flex items-center gap-2 group rounded-lg px-1.5 py-1 hover:bg-slate-800/40">
@@ -7505,7 +8385,7 @@ function AgendaTool() {
           <button className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400" onClick={() => setItems((p) => p.filter((_, j) => j !== i))} aria-label="Delete"><IX size={12} /></button>
         </div>
       ))}
-      {!items.length && <div className="text-xs text-slate-500 text-center py-3">Plan your lesson steps and tick them off.</div>}
+      {!items.length && <div className="text-xs text-slate-500 text-center py-3">Plan your agenda steps and tick them off.</div>}
     </div>
     <div className="flex items-center gap-2"><div className="h-1.5 flex-1 rounded-full bg-slate-700/40 overflow-hidden"><div className="h-full" style={{ width: items.length ? `${(done / items.length) * 100}%` : 0, background: 'linear-gradient(90deg, rgb(var(--a-400)), rgb(var(--b-400)))' }} /></div><span className="mono text-[11px] text-slate-500">{done}/{items.length}</span>{done > 0 && <button className="nb-btn sec" onClick={() => setItems((p) => p.filter((i) => !i.d))}>Clear done</button>}</div>
   </>);
@@ -7698,10 +8578,10 @@ async function nbAiCall({ provider = 'gemini', key, model, system, messages, max
   return text;
 }
 
-const NB_AI_SYSTEM = 'You are a concise, friendly teaching assistant inside NovaBoard, a classroom whiteboard app. Keep answers short and clear, suitable for projecting on a board. Use plain text (no markdown tables).';
+const NB_AI_SYSTEM = 'You are a concise, friendly assistant inside NovaBoard, a collaborative whiteboard app used for both classrooms and work meetings. Keep answers short and clear, suitable for projecting on a board. Use plain text (no markdown tables).';
 const NB_AI_KINDS = [
   ['quiz', 'Quiz questions', 'Write 5 short quiz questions about'],
-  ['outline', 'Lesson outline', 'Write a 5-step lesson outline for'],
+  ['outline', 'Outline', 'Write a 5-step outline for'],
   ['terms', 'Key terms', 'List 6 key terms with one-line definitions for'],
   ['discuss', 'Discussion prompts', 'Write 5 open discussion prompts about'],
 ];
@@ -7722,7 +8602,7 @@ const NB_IMAGINE_STYLES = [
   ['sketch', 'Sketch', 'pencil sketch, hand drawn, black and white, crosshatching'],
 ];
 const NB_IMAGINE_SIZES = [['1:1', 1024, 1024], ['4:3', 1024, 768], ['16:9', 1152, 648], ['3:4', 768, 1024]];
-/* Builds a Pollinations URL. No key/signup required; nologo keeps the board classroom-friendly. */
+/* Builds a Pollinations URL. No key/signup required; nologo keeps the board clean for presenting. */
 function nbImagineUrl(prompt, { styleHint, width, height, seed } = {}) {
   const full = styleHint ? `${prompt.trim()}, ${styleHint}` : prompt.trim();
   const encoded = encodeURIComponent(full);
@@ -7820,11 +8700,11 @@ const NB_SLIDE_THEMES = [
   ['amber', 'Amber', { bg: '#1c1407', panel: 'rgba(251,191,36,.16)', quoteTint: 'rgba(251,191,36,.35)', accent: '#fbbf24', text: '#fff7e6', muted: '#c9b592' }],
   ['forest', 'Forest', { bg: '#07160f', panel: 'rgba(74,222,128,.14)', quoteTint: 'rgba(74,222,128,.35)', accent: '#4ade80', text: '#eafff2', muted: '#8fb39f' }],
 ];
-const NB_SLIDE_LEVELS = ['Elementary', 'Middle school', 'High school', 'Adult'];
+const NB_SLIDE_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Professional'];
 const NB_SLIDE_LAYOUTS = ['title', 'bullets', 'twoColumn', 'bigStat', 'quote', 'imageFocus'];
-const NB_SLIDES_SYSTEM = 'You design classroom slide decks. Reply with ONLY a raw JSON array, no markdown, no backticks, no commentary before or after it.';
+const NB_SLIDES_SYSTEM = 'You design slide decks for classrooms and work presentations alike. Reply with ONLY a raw JSON array, no markdown, no backticks, no commentary before or after it.';
 function nbSlidesPrompt(topic, count, level) {
-  return `Create a ${count}-slide classroom deck about: ${topic.trim()}. Audience: ${level}.\nReturn ONLY a JSON array of exactly ${count} objects, one per slide, each shaped like:\n{"layout":"title|bullets|twoColumn|bigStat|quote|imageFocus","title":"short title","subtitle":"short subtitle (title layout only)","bullets":["point", "..."] (max 4, bullets layout),"left":["point","..."] (max 3, twoColumn),"right":["point","..."] (max 3, twoColumn),"stat":"a big number or short phrase (bigStat)","statLabel":"what the stat means (bigStat)","caption":"short caption (bigStat or imageFocus)","quote":"short quote (quote layout)","attribution":"who said it (quote layout)","imagePrompt":"short visual description for an illustration, no text in the image (imageFocus only)","notes":"one sentence of speaker notes"}\nOnly include the fields that layout needs; omit the rest. Make slide 1 "title". Vary the other layouts — do not repeat "bullets" for every slide, and use "imageFocus" at most twice. Keep every piece of text short enough to read on a projector from across a room. Output nothing but the JSON array.`;
+  return `Create a ${count}-slide deck about: ${topic.trim()}. Audience: ${level}.\nReturn ONLY a JSON array of exactly ${count} objects, one per slide, each shaped like:\n{"layout":"title|bullets|twoColumn|bigStat|quote|imageFocus","title":"short title","subtitle":"short subtitle (title layout only)","bullets":["point", "..."] (max 4, bullets layout),"left":["point","..."] (max 3, twoColumn),"right":["point","..."] (max 3, twoColumn),"stat":"a big number or short phrase (bigStat)","statLabel":"what the stat means (bigStat)","caption":"short caption (bigStat or imageFocus)","quote":"short quote (quote layout)","attribution":"who said it (quote layout)","imagePrompt":"short visual description for an illustration, no text in the image (imageFocus only)","notes":"one sentence of speaker notes"}\nOnly include the fields that layout needs; omit the rest. Make slide 1 "title". Vary the other layouts — do not repeat "bullets" for every slide, and use "imageFocus" at most twice. Keep every piece of text short enough to read on a projector from across a room. Output nothing but the JSON array.`;
 }
 function nbParseSlideJson(raw) {
   let text = String(raw || '').replace(/```json|```/gi, '').trim();
@@ -7846,7 +8726,7 @@ function nbParseSlideJson(raw) {
   return null;
 }
 function nbSingleSlidePrompt(topic, level, layout) {
-  return `Rewrite ONE classroom slide for a deck about: ${topic.trim()}. Audience: ${level}. The slide's layout must stay "${layout}".\nReturn ONLY one JSON object (no array, no markdown) using only the fields that layout needs, from: title, subtitle, bullets (max 4), left (max 3), right (max 3), stat, statLabel, caption, quote, attribution, imagePrompt, notes. Make it noticeably different from before, just as short and projector-readable, layout:"${layout}". Output nothing but the JSON object.`;
+  return `Rewrite ONE slide for a deck about: ${topic.trim()}. Audience: ${level}. The slide's layout must stay "${layout}".\nReturn ONLY one JSON object (no array, no markdown) using only the fields that layout needs, from: title, subtitle, bullets (max 4), left (max 3), right (max 3), stat, statLabel, caption, quote, attribution, imagePrompt, notes. Make it noticeably different from before, just as short and projector-readable, layout:"${layout}". Output nothing but the JSON object.`;
 }
 function nbParseSingleSlide(raw) {
   let text = String(raw || '').replace(/```json|```/gi, '').trim();
@@ -8031,7 +8911,7 @@ let nbImageCooldownUntil = 0;
 function SlidesTool({ viewportRef, addGeneratedDeck, updateGeneratedSlide }) {
   const { s } = useSettings();
   const [topic, setTopic] = useState('');
-  const [level, setLevel] = useState(NB_SLIDE_LEVELS[2]);
+  const [level, setLevel] = useState(NB_SLIDE_LEVELS[1]);
   const [count, setCount] = useState(6);
   const [theme, setTheme] = useState('nova');
   const [withImages, setWithImages] = useState(true);
@@ -8318,7 +9198,7 @@ function AiTool({ viewportRef }) {
       </>)}
       {tab === 'make' && (<>
         <div className="flex flex-wrap gap-1.5">{NB_AI_KINDS.map(([id, l]) => <button key={id} onClick={() => setKind(id)} className={`nb-chip ${kind === id ? 'on' : 'text-slate-400'}`}>{l}</button>)}</div>
-        <input className={box} value={topic} placeholder="Topic, e.g. Photosynthesis, grade 6" onChange={(e) => setTopic(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') generate(); }} />
+        <input className={box} value={topic} placeholder="Topic, e.g. Photosynthesis, or Q3 roadmap" onChange={(e) => setTopic(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') generate(); }} />
         <button className="nb-btn" disabled={busy || !topic.trim()} onClick={generate}>{busy ? 'Generating…' : 'Add to board as sticky notes'}</button>
       </>)}
       {tab === 'page' && (<>
@@ -8559,7 +9439,7 @@ function NovaTools3({ widgets, closeWidget, toggleMinimize, boundsRef, viewportR
     {widgets.groups && <Tool id="groups" title="Group Maker" icon={IUsers} width={300} pos={{ x: 420, y: 100 }} w={widgets.groups} {...base}><GroupTool /></Tool>}
     {widgets.noise && <Tool id="noise" title="Noise Meter" icon={IMic} pos={{ x: 460, y: 80 }} w={widgets.noise} {...base}><NoiseTool /></Tool>}
     {widgets.qr && <Tool id="qr" title="QR Code" icon={IQr} width={260} pos={{ x: 500, y: 70 }} w={widgets.qr} {...base}><QrTool /></Tool>}
-    {widgets.agenda && <Tool id="agenda" title="Lesson Agenda" icon={IChecklist} width={280} pos={{ x: 540, y: 90 }} w={widgets.agenda} {...base}><AgendaTool /></Tool>}
+    {widgets.agenda && <Tool id="agenda" title="Agenda" icon={IChecklist} width={280} pos={{ x: 540, y: 90 }} w={widgets.agenda} {...base}><AgendaTool /></Tool>}
     {widgets.convert && <Tool id="convert" title="Unit Converter" icon={IConvert} width={280} pos={{ x: 580, y: 110 }} w={widgets.convert} {...base}><ConvertTool /></Tool>}
     {widgets.live && <Tool id="live" title="Live Share" icon={ILive} width={280} pos={{ x: 160, y: 90 }} w={widgets.live} {...base} close={(id) => { nbLive.end(); closeWidget(id); }}><LiveShareTool viewportRef={viewportRef} /></Tool>}
     {widgets.ai && <Tool id="ai" title="AI Assistant" icon={ISparkle} width={340} pos={{ x: 120, y: 70 }} w={widgets.ai} {...base}><AiTool viewportRef={viewportRef} /></Tool>}
@@ -8571,7 +9451,7 @@ function NovaTools3({ widgets, closeWidget, toggleMinimize, boundsRef, viewportR
 const NB_NEW_TOOLS = [
   { id: 'poll', label: 'Live Poll', icon: IPoll }, { id: 'score', label: 'Scoreboard', icon: ITrophy },
   { id: 'picker', label: 'Name Picker', icon: IShuffle }, { id: 'groups', label: 'Group Maker', icon: IUsers },
-  { id: 'noise', label: 'Noise Meter', icon: IMic }, { id: 'agenda', label: 'Lesson Agenda', icon: IChecklist },
+  { id: 'noise', label: 'Noise Meter', icon: IMic }, { id: 'agenda', label: 'Agenda', icon: IChecklist },
   { id: 'qr', label: 'QR Code', icon: IQr }, { id: 'convert', label: 'Unit Converter', icon: IConvert },
   { id: 'clock', label: 'Clock', icon: IClockFace }, { id: 'protractor', label: 'Protractor', icon: IProtractor },
   { id: 'shade', label: 'Screen Shade', icon: IShade },
