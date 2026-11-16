@@ -1,1 +1,16 @@
-{}
+{
+  "id": "2026-12-feature-pptx",
+  "type": "update",
+  "title": "🎉 PPTX import is here",
+  "body": "Bring your PowerPoint slides straight onto the board.\n\nNo internet needed.",
+  "points": ["📂 Opens .pptx files", "✏️ Edit text and shapes", "⚡ Works offline"],
+  "color": "#7c3aed",
+  "icon": "🎉",
+  "image": "images/pptx-banner.png",
+  "imageAlt": "PowerPoint slides on the board",
+  "dismissLabel": "Maybe later",
+  "platforms": ["desktop", "android", "web"],
+  "minVersion": "4.0",
+  "expires": "2027-01-31",
+  "link": { "label": "See what’s new", "url": "https://github.com/Abhiraj1121/novaboard/releases/latest" }
+}
