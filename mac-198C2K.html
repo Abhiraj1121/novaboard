@@ -7795,7 +7795,7 @@ const NB_DEFAULTS = {
   aiProvider: 'gemini', aiKeyGemini: '', aiKeyGroq: '', aiKeyOpenrouter: '', aiModel: '',
   turnUrl: '', turnUser: '', turnCred: '',
   showClock: true, showSave: true, showSaveStatus: true, showAvatarCanvas: true,
-  palmErase: true, palmSize: 72, shapeSnap: true,
+  palmErase: true, palmSize: 72, shapeSnap: true, announce: true,
 };
 const nbClampNum = (v, lo, hi, d) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, Math.round(n))) : d; };
 function nbLoadSettings() {
@@ -8052,6 +8052,9 @@ function SettingsPanel({ tab: startTab, onClose }) {
             <SRow label="Animations" hint="Turn off for low-power boards"><STog k="motion" /></SRow>
             <SRow label="Launch animation" hint="Droplet intro when NovaBoard opens"><STog k="splash" /></SRow>
             <SRow label="Startup sound" hint="Plop and chime during the intro"><STog k="sound" /></SRow>
+            <div className="text-xs text-slate-400 mt-3 mb-1">News</div>
+            <SRow label="Announcements" hint="Check for important news when NovaBoard opens. Only a small public file is fetched; none of your boards or details are sent."><STog k="announce" /></SRow>
+            <SRow label="Latest announcement" hint="Show the current news again"><button className="px-3 py-1.5 text-xs rounded-lg bg-slate-700/70 hover:bg-slate-600/70 text-slate-100 focus-ring" onClick={() => window.nbAnnounce && window.nbAnnounce.manual()}>View</button></SRow>
           </>)}
 
           {tab === 'board' && (<>
@@ -9560,8 +9563,171 @@ function GridMenu({ anchorRef, mode, size, onMode, onSize, onClose, down }) {
   );
 }
 
+/* ====================== ANNOUNCEMENTS (in-app news popup) ======================
+   A moment after launch the app fetches ONE small public JSON file from the NovaBoard site (GitHub Pages) and, if it holds a
+   news item this device has not seen yet, shows it once. Works the same in the web, desktop and Android builds.
+   - Off switch: Settings > Appearance > News. No account, board or personal data is sent (it is a plain GET request).
+   - Offline or any error: silently nothing happens.
+   - Text only: the file can never inject HTML. Links must be https.
+   File format (all fields optional except id + title):
+   { "id": "2026-11-v4.0.1", "type": "important|update|info", "title": "...", "body": "...", "points": ["...", "..."],
+     "platforms": ["desktop","android","web"], "minVersion": "4.0", "maxVersion": "4.0.0", "expires": "2026-12-31",
+     "link": { "label": "Download update", "url": "https://..." } }
+   A new "id" shows again for everyone. {} (or no id) means "no announcement". */
+const NB_ANN_URL = 'https://abhiraj1121.github.io/novaboard/announcement.json';
+const NB_ANN_SEEN_KEY = 'nb.announce.seen';
+/* ANN:BEGIN (pure helpers, unit-tested in the desktop self-test) */
+const NB_ANN_TYPES = ['important', 'update', 'info'];
+const NB_ANN_PLATFORMS = ['desktop', 'android', 'web'];
+const nbAnnStr = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+function nbVerCmp(a, b) {
+  const pa = String(a || '0').replace(/^v/i, '').split('.'), pb = String(b || '0').replace(/^v/i, '').split('.');
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = parseInt(pa[i], 10) || 0, y = parseInt(pb[i], 10) || 0;
+    if (x !== y) return x < y ? -1 : 1;
+  }
+  return 0;
+}
+function nbAnnHttps(u) { try { const x = new URL(String(u)); return x.protocol === 'https:' ? x.href : ''; } catch (e) { return ''; } }
+function nbAnnClean(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const id = nbAnnStr(raw.id, 64), title = nbAnnStr(raw.title, 100);
+  if (!id || !title) return null;
+  const a = { id, title, body: nbAnnStr(raw.body, 800), type: NB_ANN_TYPES.includes(raw.type) ? raw.type : 'info' };
+  a.points = Array.isArray(raw.points) ? raw.points.map((p) => nbAnnStr(p, 200)).filter(Boolean).slice(0, 8) : [];
+  a.platforms = [];
+  if (Array.isArray(raw.platforms) && raw.platforms.length) {
+    a.platforms = raw.platforms.filter((p) => NB_ANN_PLATFORMS.includes(p));
+    if (!a.platforms.length) return null; // a typo like "windows" must not turn into "show to everyone"
+  }
+  a.minVersion = nbAnnStr(raw.minVersion, 20); a.maxVersion = nbAnnStr(raw.maxVersion, 20);
+  if (raw.expires != null && raw.expires !== '') {
+    const t = Date.parse(String(raw.expires).slice(0, 10) + 'T23:59:59Z');
+    if (!Number.isFinite(t)) return null;
+    a.expiresAt = t;
+  }
+  if (raw.link && typeof raw.link === 'object') {
+    const url = nbAnnHttps(raw.link.url);
+    if (url) a.link = { url, label: nbAnnStr(raw.link.label, 40) || 'Learn more' };
+  }
+  return a;
+}
+function nbAnnApplies(a, ctx) {
+  if (!a) return false;
+  if (a.platforms.length && !a.platforms.includes(ctx.platform)) return false;
+  if (a.minVersion && nbVerCmp(ctx.version, a.minVersion) < 0) return false;
+  if (a.maxVersion && nbVerCmp(ctx.version, a.maxVersion) > 0) return false;
+  if (a.expiresAt && ctx.now > a.expiresAt) return false;
+  return true;
+}
+/* ANN:END */
+function nbAnnCtx() {
+  const d = window.novaDesktop;
+  const platform = d && d.isDesktop ? 'desktop' : (/NovaBoardAndroid/.test(navigator.userAgent || '') ? 'android' : 'web');
+  return { platform, version: NB_VERSION, now: Date.now() };
+}
+const nbAnnSeen = () => { try { return localStorage.getItem(NB_ANN_SEEN_KEY) || ''; } catch (e) { return ''; } };
+const nbAnnMarkSeen = (id) => { try { localStorage.setItem(NB_ANN_SEEN_KEY, id); } catch (e) { /* ignore */ } };
+async function nbAnnFetch() {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 7000);
+  try {
+    // ?t= changes every 5 minutes so GitHub's cache never serves an old announcement for long
+    const res = await fetch(NB_ANN_URL + '?t=' + Math.floor(Date.now() / 300000), { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', signal: ctl.signal });
+    if (!res.ok) return { ok: false };
+    const text = await res.text();
+    if (text.length > 20000) return { ok: false };
+    return { ok: true, ann: nbAnnClean(JSON.parse(text)) };
+  } catch (e) { return { ok: false }; } finally { clearTimeout(timer); }
+}
+function nbAnnStyle() {
+  if (document.getElementById('nb-ann-css')) return;
+  const st = document.createElement('style');
+  st.id = 'nb-ann-css';
+  st.textContent = `
+  .nb-ann{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(2,6,14,.62);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:nb-ann-in .2s ease}
+  .nb-ann-card{--c:56 189 248;width:100%;max-width:460px;max-height:min(82vh,640px);overflow:auto;box-sizing:border-box;border-radius:18px;padding:22px 22px 18px;background:var(--bg-panel,#0f1420);color:rgb(var(--s-200,226 232 240));border:1px solid rgba(148,163,184,.28);border-top:3px solid rgb(var(--c));box-shadow:0 24px 70px rgba(0,0,0,.5);animation:nb-ann-up .25s cubic-bezier(.22,1,.36,1)}
+  .nb-ann-important{--c:244 63 94}.nb-ann-info{--c:148 163 184}
+  .nb-ann-badge{display:inline-block;font:600 10px/1 ui-monospace,Consolas,monospace;letter-spacing:.14em;padding:5px 9px;border-radius:999px;margin-bottom:10px;color:rgb(var(--c));background:rgb(var(--c) / .14)}
+  .nb-ann-card h2{margin:0 0 8px;font-size:18px;font-weight:600;line-height:1.3;color:rgb(var(--s-100,241 245 249))}
+  .nb-ann-card p{margin:0;font-size:14px;line-height:1.55;white-space:pre-line;color:rgb(var(--s-300,203 213 225))}
+  .nb-ann-card ul{margin:12px 0 0;padding-left:18px;font-size:14px;line-height:1.5;color:rgb(var(--s-300,203 213 225))}
+  .nb-ann-card li{margin:3px 0}
+  .nb-ann-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:18px}
+  .nb-ann-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border:0;border-radius:12px;font:600 14px system-ui,sans-serif;text-decoration:none;cursor:pointer;color:inherit;background:rgba(148,163,184,.16)}
+  .nb-ann-btn:hover{background:rgba(148,163,184,.26)}
+  .nb-ann-btn.main{color:#04121c;background:rgb(var(--c))}.nb-ann-btn.main:hover{filter:brightness(1.08);background:rgb(var(--c))}
+  .nb-ann-btn:focus-visible{outline:2px solid rgb(var(--c));outline-offset:2px}
+  @keyframes nb-ann-in{from{opacity:0}to{opacity:1}}@keyframes nb-ann-up{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+  html[data-motion="off"] .nb-ann,html[data-motion="off"] .nb-ann-card{animation:none}`;
+  document.head.appendChild(st);
+}
+function nbAnnShow(a, opts) {
+  nbAnnStyle();
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  const prevFocus = document.activeElement;
+  const wrap = el('div', 'nb-ann');
+  const card = el('div', 'nb-ann-card nb-ann-' + a.type);
+  card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true'); card.setAttribute('aria-labelledby', 'nb-ann-title');
+  card.appendChild(el('span', 'nb-ann-badge', { important: 'IMPORTANT', update: 'UPDATE', info: 'NEWS' }[a.type] || 'NEWS'));
+  const h = el('h2', '', a.title); h.id = 'nb-ann-title'; card.appendChild(h);
+  if (a.body) card.appendChild(el('p', '', a.body));
+  if (a.points && a.points.length) { const ul = el('ul'); a.points.forEach((p) => ul.appendChild(el('li', '', p))); card.appendChild(ul); }
+  const actions = el('div', 'nb-ann-actions');
+  const done = (opts && opts.preview) ? null : a.id;
+  const close = () => {
+    document.removeEventListener('keydown', onKey, true);
+    wrap.remove();
+    if (done) nbAnnMarkSeen(done);
+    try { if (prevFocus && prevFocus.focus) prevFocus.focus(); } catch (e) { /* ignore */ }
+  };
+  const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); close(); } };
+  let main = null;
+  if (a.link) {
+    const link = el('a', 'nb-ann-btn main', a.link.label);
+    link.href = a.link.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
+    link.addEventListener('click', () => setTimeout(close, 0));
+    main = link;
+  }
+  const ok = el('button', 'nb-ann-btn' + (main ? '' : ' main'), 'Got it');
+  ok.type = 'button'; ok.addEventListener('click', close);
+  actions.appendChild(ok); if (main) actions.appendChild(main);
+  card.appendChild(actions); wrap.appendChild(card);
+  wrap.addEventListener('pointerdown', (e) => { if (e.target === wrap) close(); });
+  document.addEventListener('keydown', onKey, true);
+  document.body.appendChild(wrap);
+  try { (main || ok).focus(); } catch (e) { /* ignore */ }
+}
+/* Wait for the intro/boot screens to finish so the popup never covers them. */
+const nbAnnWhenCalm = () => new Promise((resolve) => {
+  let n = 0;
+  const t = setInterval(() => { if ((!document.querySelector('.splash-bg, .post-bg') && !document.hidden) || ++n > 60) { clearInterval(t); resolve(); } }, 500);
+});
+let nbAnnBusy = false;
+async function nbAnnCheck() {
+  if (nbAnnBusy) return;
+  nbAnnBusy = true;
+  try {
+    if (nbLoadSettings().announce === false) return;
+    const r = await nbAnnFetch();
+    const a = r.ok ? r.ann : null;
+    if (!a || !nbAnnApplies(a, nbAnnCtx()) || nbAnnSeen() === a.id) return;
+    await nbAnnWhenCalm();
+    nbAnnShow(a);
+  } finally { nbAnnBusy = false; }
+}
+/* Settings > "View latest": always shows the current announcement, or says why there is none. */
+async function nbAnnManual() {
+  const r = await nbAnnFetch();
+  if (!r.ok) return nbAnnShow({ type: 'info', title: 'Couldn’t check right now', body: 'Check your internet connection and try again.', points: [] }, { preview: true });
+  if (!r.ann || !nbAnnApplies(r.ann, nbAnnCtx())) return nbAnnShow({ type: 'info', title: 'No announcements', body: 'You’re all caught up.', points: [] }, { preview: true });
+  nbAnnShow(r.ann);
+}
+window.nbAnnounce = { check: nbAnnCheck, manual: nbAnnManual };
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
+setTimeout(() => { nbAnnCheck().catch(() => {}); }, 1500); // announcements: after the first paint, never blocks startup
 </script>
 </body>
 </html>
