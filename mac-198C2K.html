@@ -9572,7 +9572,9 @@ function GridMenu({ anchorRef, mode, size, onMode, onSize, onClose, down }) {
    File format (all fields optional except id + title):
    { "id": "2026-11-v4.0.1", "type": "important|update|info", "title": "...", "body": "...", "points": ["...", "..."],
      "platforms": ["desktop","android","web"], "minVersion": "4.0", "maxVersion": "4.0.0", "expires": "2026-12-31",
-     "link": { "label": "Download update", "url": "https://..." } }
+     "link": { "label": "Download update", "url": "https://..." },
+     "icon": "🎉", "color": "#a855f7", "dismissLabel": "Awesome",
+     "image": "images/banner.png", "imageAlt": "..." }   (image: your own site only; it replaces the icon) 
    A new "id" shows again for everyone. {} (or no id) means "no announcement". */
 const NB_ANN_URL = 'https://abhiraj1121.github.io/novaboard/announcement.json';
 const NB_ANN_SEEN_KEY = 'nb.announce.seen';
@@ -9589,7 +9591,16 @@ function nbVerCmp(a, b) {
   return 0;
 }
 function nbAnnHttps(u) { try { const x = new URL(String(u)); return x.protocol === 'https:' ? x.href : ''; } catch (e) { return ''; } }
-function nbAnnClean(raw) {
+function nbAnnColor(hex) {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex || '').trim());
+  if (!m) return null;
+  let h = m[1]; if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  return { rgb: r + ' ' + g + ' ' + b, ink: L > 0.179 ? '#04121c' : '#ffffff' }; // readable button text on any accent
+}
+function nbAnnClean(raw, base) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const id = nbAnnStr(raw.id, 64), title = nbAnnStr(raw.title, 100);
   if (!id || !title) return null;
@@ -9609,6 +9620,13 @@ function nbAnnClean(raw) {
   if (raw.link && typeof raw.link === 'object') {
     const url = nbAnnHttps(raw.link.url);
     if (url) a.link = { url, label: nbAnnStr(raw.link.label, 40) || 'Learn more' };
+  }
+  const icon = typeof raw.icon === 'string' ? Array.from(raw.icon.trim()).slice(0, 8).join('') : '';
+  if (icon) a.icon = icon;
+  const col = nbAnnColor(raw.color); if (col) a.color = col; // cosmetic: a bad colour just falls back to the type colour
+  const dl = nbAnnStr(raw.dismissLabel, 24); if (dl) a.dismissLabel = dl;
+  if (raw.image && base) { // banner: https and the SAME site as the announcement file only (relative paths allowed)
+    try { const u = new URL(String(raw.image), base); if (u.protocol === 'https:' && u.origin === new URL(base).origin) { a.image = u.href; a.imageAlt = nbAnnStr(raw.imageAlt, 100); } } catch (e) { /* ignore */ }
   }
   return a;
 }
@@ -9637,7 +9655,7 @@ async function nbAnnFetch() {
     if (!res.ok) return { ok: false };
     const text = await res.text();
     if (text.length > 20000) return { ok: false };
-    return { ok: true, ann: nbAnnClean(JSON.parse(text)) };
+    return { ok: true, ann: nbAnnClean(JSON.parse(text), NB_ANN_URL) };
   } catch (e) { return { ok: false }; } finally { clearTimeout(timer); }
 }
 function nbAnnStyle() {
@@ -9648,7 +9666,7 @@ function nbAnnStyle() {
   .nb-ann{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(2,6,14,.62);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:nb-ann-in .2s ease}
   .nb-ann-card{--c:56 189 248;width:100%;max-width:460px;max-height:min(82vh,640px);overflow:auto;box-sizing:border-box;border-radius:18px;padding:22px 22px 18px;background:var(--bg-panel,#0f1420);color:rgb(var(--s-200,226 232 240));border:1px solid rgba(148,163,184,.28);border-top:3px solid rgb(var(--c));box-shadow:0 24px 70px rgba(0,0,0,.5);animation:nb-ann-up .25s cubic-bezier(.22,1,.36,1)}
   .nb-ann-important{--c:244 63 94}.nb-ann-info{--c:148 163 184}
-  .nb-ann-badge{display:inline-block;font:600 10px/1 ui-monospace,Consolas,monospace;letter-spacing:.14em;padding:5px 9px;border-radius:999px;margin-bottom:10px;color:rgb(var(--c));background:rgb(var(--c) / .14)}
+  .nb-ann-badge{display:inline-block;font:600 10px/1 ui-monospace,Consolas,monospace;letter-spacing:.14em;padding:5px 9px;border-radius:999px;margin-bottom:10px;color:rgb(var(--c));color:color-mix(in srgb,rgb(var(--c)) 62%,#fff);background:rgb(var(--c) / .16)}
   .nb-ann-card h2{margin:0 0 8px;font-size:18px;font-weight:600;line-height:1.3;color:rgb(var(--s-100,241 245 249))}
   .nb-ann-card p{margin:0;font-size:14px;line-height:1.55;white-space:pre-line;color:rgb(var(--s-300,203 213 225))}
   .nb-ann-card ul{margin:12px 0 0;padding-left:18px;font-size:14px;line-height:1.5;color:rgb(var(--s-300,203 213 225))}
@@ -9656,8 +9674,10 @@ function nbAnnStyle() {
   .nb-ann-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:18px}
   .nb-ann-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border:0;border-radius:12px;font:600 14px system-ui,sans-serif;text-decoration:none;cursor:pointer;color:inherit;background:rgba(148,163,184,.16)}
   .nb-ann-btn:hover{background:rgba(148,163,184,.26)}
-  .nb-ann-btn.main{color:#04121c;background:rgb(var(--c))}.nb-ann-btn.main:hover{filter:brightness(1.08);background:rgb(var(--c))}
+  .nb-ann-btn.main{color:var(--ink,#04121c);background:rgb(var(--c))}.nb-ann-btn.main:hover{filter:brightness(1.08);background:rgb(var(--c))}
   .nb-ann-btn:focus-visible{outline:2px solid rgb(var(--c));outline-offset:2px}
+  .nb-ann-icon{font-size:40px;line-height:1;margin:0 0 10px}
+  .nb-ann-img{display:block;width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin:0 0 14px}
   @keyframes nb-ann-in{from{opacity:0}to{opacity:1}}@keyframes nb-ann-up{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
   html[data-motion="off"] .nb-ann,html[data-motion="off"] .nb-ann-card{animation:none}`;
   document.head.appendChild(st);
@@ -9669,6 +9689,12 @@ function nbAnnShow(a, opts) {
   const wrap = el('div', 'nb-ann');
   const card = el('div', 'nb-ann-card nb-ann-' + a.type);
   card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true'); card.setAttribute('aria-labelledby', 'nb-ann-title');
+  if (a.color) { card.style.setProperty('--c', a.color.rgb); card.style.setProperty('--ink', a.color.ink); }
+  if (a.image) {
+    const im = el('img', 'nb-ann-img'); im.alt = a.imageAlt || ''; im.decoding = 'async'; im.referrerPolicy = 'no-referrer'; im.src = a.image; card.appendChild(im);
+  } else if (a.icon) {
+    const ic = el('div', 'nb-ann-icon', a.icon); ic.setAttribute('aria-hidden', 'true'); card.appendChild(ic);
+  }
   card.appendChild(el('span', 'nb-ann-badge', { important: 'IMPORTANT', update: 'UPDATE', info: 'NEWS' }[a.type] || 'NEWS'));
   const h = el('h2', '', a.title); h.id = 'nb-ann-title'; card.appendChild(h);
   if (a.body) card.appendChild(el('p', '', a.body));
@@ -9689,7 +9715,7 @@ function nbAnnShow(a, opts) {
     link.addEventListener('click', () => setTimeout(close, 0));
     main = link;
   }
-  const ok = el('button', 'nb-ann-btn' + (main ? '' : ' main'), 'Got it');
+  const ok = el('button', 'nb-ann-btn' + (main ? '' : ' main'), a.dismissLabel || 'Got it');
   ok.type = 'button'; ok.addEventListener('click', close);
   actions.appendChild(ok); if (main) actions.appendChild(main);
   card.appendChild(actions); wrap.appendChild(card);
@@ -9698,6 +9724,14 @@ function nbAnnShow(a, opts) {
   document.body.appendChild(wrap);
   try { (main || ok).focus(); } catch (e) { /* ignore */ }
 }
+/* Load the banner first (max 4s) so the popup never jumps; if it cannot load, the popup simply shows without it. */
+const nbAnnPreload = (src) => new Promise((resolve) => {
+  const im = new Image(); const t = setTimeout(() => resolve(false), 4000);
+  im.onload = () => { clearTimeout(t); resolve(true); };
+  im.onerror = () => { clearTimeout(t); resolve(false); };
+  im.referrerPolicy = 'no-referrer'; im.src = src;
+});
+async function nbAnnPrepare(a) { if (a.image && !(await nbAnnPreload(a.image))) { delete a.image; delete a.imageAlt; } return a; }
 /* Wait for the intro/boot screens to finish so the popup never covers them. */
 const nbAnnWhenCalm = () => new Promise((resolve) => {
   let n = 0;
@@ -9712,7 +9746,7 @@ async function nbAnnCheck() {
     const r = await nbAnnFetch();
     const a = r.ok ? r.ann : null;
     if (!a || !nbAnnApplies(a, nbAnnCtx()) || nbAnnSeen() === a.id) return;
-    await nbAnnWhenCalm();
+    await Promise.all([nbAnnWhenCalm(), nbAnnPrepare(a)]);
     nbAnnShow(a);
   } finally { nbAnnBusy = false; }
 }
@@ -9721,7 +9755,7 @@ async function nbAnnManual() {
   const r = await nbAnnFetch();
   if (!r.ok) return nbAnnShow({ type: 'info', title: 'Couldn’t check right now', body: 'Check your internet connection and try again.', points: [] }, { preview: true });
   if (!r.ann || !nbAnnApplies(r.ann, nbAnnCtx())) return nbAnnShow({ type: 'info', title: 'No announcements', body: 'You’re all caught up.', points: [] }, { preview: true });
-  nbAnnShow(r.ann);
+  nbAnnShow(await nbAnnPrepare(r.ann));
 }
 window.nbAnnounce = { check: nbAnnCheck, manual: nbAnnManual };
 
