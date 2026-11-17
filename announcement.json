@@ -11,6 +11,7 @@
     "⬆️ Upgraded from 3.0.3 to 4.0"
   ],
   "icon": "🚀",
+  "image": "icon/announcement.png"
   "color": "#8b5cf6",
   "dismissLabel": "Let’s go",
   "expires": "2027-01-31",
