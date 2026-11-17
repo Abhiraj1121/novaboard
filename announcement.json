@@ -13,7 +13,6 @@
   "icon": "🚀",
   "color": "#8b5cf6",
   "dismissLabel": "Let’s go",
-  "minVersion": "4.0"
   "expires": "2027-01-31",
   "link": {
     "label": "See release notes",
