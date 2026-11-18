@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/banner.svg" alt="NovaBoard OS: an interactive smartboard in a single HTML file" width="100%">
+<img src="icon/banner.svg" alt="NovaBoard OS: an interactive smartboard in a single HTML file" width="100%">
 
 <br>
 
@@ -16,7 +16,7 @@
 
 </div>
 
-<img src="assets/divider.svg" alt="" width="100%">
+<img src="icon/divider.svg" alt="" width="100%">
 
 ## ✨ Why NovaBoard
 
@@ -26,7 +26,7 @@ NovaBoard is a smartboard-style whiteboard and presentation workspace that runs 
 | :--- | :--- | :--- | :--- |
 | Four pens, shapes in 2D and 3D, multi-page boards, widgets and 11 smart classroom tools | Import PDF and PowerPoint (`.pptx`), annotate, export back to PDF | Free AI chat, designed slide decks and image generation, with your own provider if you like | Everything stays on your device. No account, no uploads, no tracking |
 
-<img src="assets/divider.svg" alt="" width="100%">
+<img src="icon/divider.svg" alt="" width="100%">
 
 ## 🚀 Quick start
 
@@ -36,7 +36,7 @@ NovaBoard is a smartboard-style whiteboard and presentation workspace that runs 
 
 **Try it first.** No download needed: **<https://abhiraj1121.github.io/novaboard/>**
 
-<img src="assets/divider.svg" alt="" width="100%">
+<img src="icon/divider.svg" alt="" width="100%">
 
 ## 🆕 What's new
 
@@ -114,7 +114,7 @@ PDF **and** PowerPoint imports now show a live percentage and slide count with t
 
 </details>
 
-<img src="assets/divider.svg" alt="" width="100%">
+<img src="icon/divider.svg" alt="" width="100%">
 
 ## 🎨 Features
 
@@ -130,13 +130,13 @@ PDF **and** PowerPoint imports now show a live percentage and slide count with t
 
 ### Importing PDF and PowerPoint
 
-<img src="assets/chasing-squares.svg" alt="Chasing squares loading animation" width="64" align="left">
+<img src="icon/chasing-squares.svg" alt="Chasing squares loading animation" width="64" align="left">
 
 Use the **Import** button in the top toolbar and choose a `.pdf` or `.pptx` file. A progress card shows the percentage and the page or slide being built, then fades out once everything is on your board. PowerPoint text, shapes and pictures arrive as editable board objects.
 
 <br clear="left">
 
-<img src="assets/divider.svg" alt="" width="100%">
+<img src="icon/divider.svg" alt="" width="100%">
 
 ## 🤖 AI features (optional, free)
 
@@ -189,7 +189,7 @@ Press **Test** to preview a sample image. Image prompts go to whichever service 
 
 About four characters make one token. Higher values give fuller answers and longer sessions but use more of a free quota, and some free tiers reject very large values. Use **Reset** to return to the defaults. Slide decks size their own output automatically.
 
-<img src="assets/divider.svg" alt="" width="100%">
+<img src="icon/divider.svg" alt="" width="100%">
 
 ## 🫧 Themes & Liquid Glass
 
@@ -204,7 +204,7 @@ About four characters make one token. Higher values give fuller answers and long
 
 Your wallpaper is resized, stored only in this browser, and left out of settings and profile exports.
 
-<img src="assets/divider.svg" alt="" width="100%">
+<img src="icon/divider.svg" alt="" width="100%">
 
 ## 📡 Live Share (one-way, no server)
 
@@ -212,7 +212,7 @@ Open **Tools → Live Share → Start sharing** to get a 6-character passcode. O
 
 Boards travel directly between the two browsers (WebRTC via PeerJS); only the initial handshake uses PeerJS's free public broker, so both devices need internet. Some strict school or office networks block peer-to-peer connections. Anyone with the code can watch, so end the session when you are done.
 
-<img src="assets/divider.svg" alt="" width="100%">
+<img src="icon/divider.svg" alt="" width="100%">
 
 ## 🛠️ Tech stack
 
@@ -302,7 +302,7 @@ Issues and pull requests are welcome. Please open an issue first to discuss larg
 
 Released under the [MIT License](LICENSE).
 
-<img src="assets/divider.svg" alt="" width="100%">
+<img src="icon/divider.svg" alt="" width="100%">
 
 <div align="center">
 
