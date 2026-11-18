@@ -1,5 +1,5 @@
 {
-  "id": "2026-11-v4.0-launch",
+  "id": "2026-11-v4.0-launch.1",
   "type": "update",
   "title": "NovaBoard OS 4.0 is here",
   "body": "Thanks for updating! This is a big release with new tools and a lot of cleanup.",
@@ -10,7 +10,7 @@
     "🛠️ Several long-standing bugs fixed",
     "⬆️ Upgraded from 3.0.3 to 4.0"
   ],
-  "icon": "🚀",
+  "icon": "✅",
   "image": "icon/announcement.png",
   "color": "#8b5cf6",
   "dismissLabel": "Let’s go",
