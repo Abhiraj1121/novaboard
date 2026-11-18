@@ -5,7 +5,7 @@
 <br>
 
 [![Live demo](https://img.shields.io/badge/%E2%96%B6%20Live%20demo-open%20NovaBoard-38bdf8?style=for-the-badge&labelColor=0b1324)](https://abhiraj1121.github.io/novaboard/)
-[![Desktop app](https://img.shields.io/badge/Desktop%20app-Windows%20%2F%20Linux-818cf8?style=for-the-badge&labelColor=0b1324)](README-DESKTOP.md)
+[![Desktop app](https://img.shields.io/badge/Desktop%20app-Windows%20%2F%20Linux-818cf8?style=for-the-badge&labelColor=0b1324)](https://github.com/Abhiraj1121/novaboard/releases/tag/Novaboard) 
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-34d399?style=flat-square&labelColor=0b1324)
 ![Single file](https://img.shields.io/badge/runs%20from-one%20HTML%20file-fbbf24?style=flat-square&labelColor=0b1324)
