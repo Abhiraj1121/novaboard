@@ -216,7 +216,60 @@
     .nb-prog > i::after, .nb-prog.indet > i { animation: none !important; }
   }
 
-  /* ---- Phase 2: drawing engine ---- */
+  /* ---- Chasing squares loader: three rounded squares chase each other around a triangle ---- */
+  .nb-chase { --sz: 28px; position: relative; display: inline-block; width: var(--sz); height: var(--sz); flex-shrink: 0; vertical-align: middle; }
+  .nb-chase > i { position: absolute; left: 0; top: 0; width: calc(var(--sz) * .4); height: calc(var(--sz) * .4); border-radius: calc(var(--sz) * .1); animation: nb-chase 1.35s cubic-bezier(.45, 0, .25, 1) infinite; box-shadow: 0 0 calc(var(--sz) * .25) rgba(0, 0, 0, .25); }
+  .nb-chase > i:nth-child(1) { background: #ff5577; transform: translate(0, 0); }
+  .nb-chase > i:nth-child(2) { background: #c6ee3f; transform: translate(calc(var(--sz) * .6), calc(var(--sz) * .22)); animation-delay: -.45s; }
+  .nb-chase > i:nth-child(3) { background: #3fd8ff; transform: translate(calc(var(--sz) * .2), calc(var(--sz) * .6)); animation-delay: -.9s; }
+  @keyframes nb-chase {
+    0%   { transform: translate(0, 0); }
+    33%  { transform: translate(calc(var(--sz) * .6), calc(var(--sz) * .22)); }
+    66%  { transform: translate(calc(var(--sz) * .2), calc(var(--sz) * .6)); }
+    100% { transform: translate(0, 0); }
+  }
+  @keyframes nb-chase-soft { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+  @media (prefers-reduced-motion: reduce) { .nb-chase > i { animation: nb-chase-soft 1.4s ease-in-out infinite; } }
+  html[data-motion="off"] .nb-chase.nb-chase > i.nb-s { animation: nb-chase-soft 1.4s ease-in-out infinite !important; }
+
+  /* ================= Liquid Glass theme (html[data-theme="liquid"]) ================= */
+  html[data-theme="liquid"], html[data-theme="liquid"] body { background: transparent !important; }
+  html[data-theme="liquid"] .nb-aurora { display: none; }
+  .nb-wall { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: #070b16; }
+  .nb-wall-img { position: absolute; inset: -30px; background-size: cover; background-position: center; }
+  .nb-wall-dim { position: absolute; inset: 0; background: #000; }
+  .nb-wall > i { position: absolute; border-radius: 50%; filter: blur(70px); opacity: .8; animation: nb-float 16s ease-in-out infinite alternate; }
+  .nb-wall > i.b1 { width: 52vw; height: 52vw; left: -12vw; top: -14vw; background: #38bdf8; }
+  .nb-wall > i.b2 { width: 46vw; height: 46vw; right: -12vw; top: 6vh; background: #a78bfa; animation-delay: -6s; }
+  .nb-wall > i.b3 { width: 44vw; height: 44vw; left: 18vw; bottom: -20vw; background: #f472b6; animation-delay: -11s; opacity: .6; }
+  html[data-theme="liquid"] .glass, html[data-theme="liquid"] .glass-strong {
+    background: radial-gradient(130% 90% at 12% 0%, rgba(255,255,255,.30), rgba(255,255,255,0) 55%), linear-gradient(145deg, rgba(255,255,255,.17), rgba(255,255,255,.05));
+    backdrop-filter: blur(26px) saturate(1.9) brightness(1.1); -webkit-backdrop-filter: blur(26px) saturate(1.9) brightness(1.1);
+    border: 1px solid rgba(255,255,255,.30);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,.6), inset 0 -1px 1px rgba(255,255,255,.12), inset 0 0 26px rgba(255,255,255,.05), 0 12px 40px rgba(0,0,0,.28);
+    color: #f1f5f9;
+  }
+  html[data-theme="liquid"] .nb-btn, html[data-theme="liquid"] .nb-chip, html[data-theme="liquid"] .navdock-btn {
+    background: linear-gradient(160deg, rgba(255,255,255,.22), rgba(255,255,255,.07));
+    border-color: rgba(255,255,255,.32); color: #f1f5f9;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 4px 14px rgba(0,0,0,.18);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    transition: transform .28s cubic-bezier(.3,1.6,.5,1), box-shadow .25s ease, background .25s ease;
+  }
+  html[data-theme="liquid"] .nb-chip.on { background: linear-gradient(160deg, rgb(var(--a-300) / .50), rgb(var(--b-400) / .28)); border-color: rgba(255,255,255,.6); color: #fff; }
+  @media (hover: hover) {
+    html[data-theme="liquid"] .nb-btn:hover, html[data-theme="liquid"] .nb-chip:hover, html[data-theme="liquid"] .navdock-btn:hover { transform: translateY(-1px) scale(1.03); box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 8px 22px rgba(0,0,0,.25); }
+  }
+  html[data-theme="liquid"] .nb-btn:active, html[data-theme="liquid"] .nb-chip:active, html[data-theme="liquid"] .navdock-btn:active { transform: scale(.94); }
+  @keyframes nb-jelly { 0% { transform: scale(1); } 30% { transform: scale(.88, 1.08); } 55% { transform: scale(1.07, .94); } 78% { transform: scale(.98, 1.02); } 100% { transform: scale(1); } }
+  html[data-theme="liquid"] .nb-jelly { animation: nb-jelly .5s cubic-bezier(.3,1.4,.5,1); }
+  .nb-liq-rip { position: fixed; z-index: 2147483000; pointer-events: none; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.55), rgba(125,211,252,.28) 45%, rgba(196,181,253,0) 70%);
+    border: 1.5px solid rgba(255,255,255,.6); box-shadow: 0 0 24px rgba(125,211,252,.55), inset 0 0 12px rgba(255,255,255,.5);
+    animation: nb-liq-rip .75s cubic-bezier(.2,.7,.2,1) forwards; }
+  @keyframes nb-liq-rip { 0% { transform: scale(.3); opacity: .95; } 60% { opacity: .55; } 100% { transform: scale(11); opacity: 0; } }
+
+  /* ---- Phase 2: drawing engine ---- */  /* ---- Phase 2: drawing engine ---- */
   .canvas-stage { position: relative; }
   .canvas-stage .canvas-container { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; }
   .canvas-stage canvas { touch-action: none; }
@@ -1797,10 +1850,23 @@ function Toast({ notice }) {
   );
 }
 
-/* Glassmorphic PDF import progress: glowing bar + percentage, fades out once pages are on the board. */
+/* Chasing squares: a ring of squares lit one after another, clockwise. Used for PDF / PowerPoint import. */
+function ChasingSquares({ size = 28, decorative = false, label = 'Loading' }) {
+  const a11y = decorative ? { 'aria-hidden': true } : { role: 'img', 'aria-label': label };
+  return (
+    <span className="nb-chase" style={{ '--sz': `${size}px` }} {...a11y}>
+      {[0, 1, 2].map((i) => <i key={i} className="nb-s" />)}
+    </span>
+  );
+}
+
+/* Glassmorphic import progress (PDF or PowerPoint): chasing squares + percentage, fades out once pages are on the board. */
 function PdfImportOverlay({ state }) {
   if (!state) return null;
   const { phase, done, total, name } = state;
+  const kind = state.kind || 'PDF';
+  const isPpt = kind !== 'PDF';
+  const unit = isPpt ? 'slide' : 'page';
   const known = total > 0;
   const pct = phase === 'done' || phase === 'out' ? 100 : known ? Math.min(99, Math.round((done / total) * 100)) : 0;
   const out = phase === 'out';
@@ -1808,18 +1874,18 @@ function PdfImportOverlay({ state }) {
   return (
     <div
       className={`nb-ov fixed inset-0 z-[65] flex items-center justify-center p-4 ${out ? 'out' : ''}`}
-      role="status" aria-live="polite" aria-label="Importing PDF"
+      role="status" aria-live="polite" aria-label={`Importing ${kind}`}
     >
       <div
         className={`nb-ov-card glass-strong modal-in relative w-full max-w-sm rounded-2xl p-6 ${out ? 'out' : ''}`}
         style={{ boxShadow: '0 0 0 1px rgba(56,189,248,0.18), 0 20px 60px -10px rgba(56,189,248,0.25)' }}
       >
         <div className="flex items-center gap-3 mb-5">
-          <span className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-300 flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 0 20px rgba(56,189,248,0.25)' }}>
-            {finished ? <ICheck size={19} /> : <IFileText size={19} />}
+          <span className="w-11 h-11 rounded-xl bg-cyan-500/10 text-cyan-300 flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 0 20px rgba(56,189,248,0.25)' }}>
+            {finished ? <ICheck size={19} /> : <ChasingSquares size={28} decorative />}
           </span>
           <div className="min-w-0">
-            <div className="text-sm font-medium text-slate-100">{finished ? 'Document ready' : 'Importing PDF'}</div>
+            <div className="text-sm font-medium text-slate-100">{finished ? (isPpt ? 'Presentation ready' : 'Document ready') : `Importing ${kind}`}</div>
             <div className="text-xs text-slate-500 truncate">{name}</div>
           </div>
         </div>
@@ -1831,12 +1897,12 @@ function PdfImportOverlay({ state }) {
             {known || finished ? pct : '··'}<span className="text-lg text-cyan-300/80">{known || finished ? '%' : ''}</span>
           </span>
           <span className="mono text-[11px] text-slate-500 pb-1.5">
-            {finished ? `${total} page${total === 1 ? '' : 's'}` : known ? `page ${Math.min(done + 1, total)} / ${total}` : 'reading…'}
+            {finished ? `${total} ${unit}${total === 1 ? '' : 's'}` : known ? `${unit} ${Math.min(done + 1, total)} / ${total}` : 'reading…'}
           </span>
         </div>
         <div className={`nb-prog ${known || finished ? '' : 'indet'}`}><i style={{ width: `${pct}%` }} /></div>
         <div className="mono text-[11px] text-slate-500 mt-3">
-          {finished ? 'Pages are on your board.' : known ? 'Rendering pages in high quality…' : 'Opening document…'}
+          {finished ? (isPpt ? 'Slides are on your board.' : 'Pages are on your board.') : known ? (isPpt ? 'Building your slides…' : 'Rendering pages in high quality…') : 'Opening document…'}
         </div>
       </div>
     </div>
@@ -4665,7 +4731,7 @@ function ActionDock({ panelsHidden, onTogglePanels, onExportPng, onImport, impor
         title="Import a PDF or PowerPoint (.pptx) file"
         className="flex items-center gap-1.5 text-xs mono text-slate-400 hover:text-cyan-300 transition-colors focus-ring rounded-md px-2.5 py-1.5 border border-slate-700/60 hover:border-cyan-500/40 disabled:opacity-50"
       >
-        {importing ? <ILoader size={13} /> : <IUpload size={13} />}
+        {importing ? <ChasingSquares size={14} decorative /> : <IUpload size={13} />}
         {importing ? 'Importing…' : 'Import'}
       </button>
       <input ref={pdfInputRef} type="file" accept="application/pdf,.pptx,.pdf" className="hidden"
@@ -6971,7 +7037,7 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
     setImportError(null);
     setImporting(true);
     if (ovTimerRef.current) { clearTimeout(ovTimerRef.current); ovTimerRef.current = null; }
-    setPdfOverlay({ phase: 'working', done: 0, total: 0, name: file.name || 'document.pdf' });
+    setPdfOverlay({ phase: 'working', done: 0, total: 0, name: file.name || 'document.pdf', kind: 'PDF' });
     try {
       const pages = await rasterizePdfPages(file, (done, total) => {
         setPdfOverlay((o) => (o ? { ...o, done, total } : o));
@@ -7032,6 +7098,8 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
     if (!window.pptxtojson) { setImportError('The PPTX import module is still loading (or failed to load). Wait a moment and try again, or check your connection.'); return; }
     setImportError(null);
     setImporting(true);
+    if (ovTimerRef.current) { clearTimeout(ovTimerRef.current); ovTimerRef.current = null; }
+    setPdfOverlay({ phase: 'working', done: 0, total: 0, name: file.name || 'presentation.pptx', kind: 'PowerPoint' });
     try {
       const vp = viewportRef.current;
       if (!vp) throw new Error('Open a board first.');
@@ -7042,10 +7110,21 @@ function CanvasScreen({ session, onBackHome, onNewBoard, onOpenFile }) {
       const { W, H } = vp.getStageSize();
       const themeObj = NB_SLIDE_THEMES[0][2];
       const specs = pptxSlides.map((sl) => nbPptxSlideToSpec(sl, parsed.size));
+      setPdfOverlay((o) => (o ? { ...o, total: specs.length } : o));
       const records = [];
-      for (const spec of specs) records.push(await nbRenderFreeformSlideRecord(spec, themeObj, W, H));
+      for (let i = 0; i < specs.length; i++) {
+        records.push(await nbRenderFreeformSlideRecord(specs[i], themeObj, W, H));
+        setPdfOverlay((o) => (o ? { ...o, done: i + 1 } : o));
+        await new Promise((r) => setTimeout(r, 0)); // let the progress overlay repaint between slides
+      }
       addGeneratedDeck(records.map((r) => ({ ...r, id: uid() })));
+      setPdfOverlay((o) => (o ? { ...o, phase: 'done', done: records.length, total: records.length } : o));
+      ovTimerRef.current = setTimeout(() => {
+        setPdfOverlay((o) => (o ? { ...o, phase: 'out' } : o));
+        ovTimerRef.current = setTimeout(() => { setPdfOverlay(null); ovTimerRef.current = null; }, 520);
+      }, 700);
     } catch (err) {
+      setPdfOverlay(null);
       setImportError(err.message || 'Could not read that PowerPoint file.');
     } finally {
       setImporting(false);
@@ -7468,7 +7547,7 @@ function NBProfDialog({ dlg, onClose }) {
   const doDelete = () => run(async () => { await P.remove(target.id); onClose(); });
 
   const exportProfile = () => {
-    const { aiKeyGemini, aiKeyGroq, aiKeyOpenrouter, aiProvider, aiModel, turnCred, ...safe } = S.s; // keys never leave this browser
+    const safe = { ...S.s }; NB_AI_FIELDS.concat(['turnCred', 'wallpaper']).forEach((k) => { delete safe[k]; }); // AI setup and keys never leave this browser
     const blob = new Blob([JSON.stringify({ nbProfile: 1, name: target.name, color: target.color, settings: safe }, null, 1)], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
     a.download = 'novaboard-profile-' + target.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '.json'; a.click();
@@ -7481,7 +7560,7 @@ function NBProfDialog({ dlg, onClose }) {
         const o = JSON.parse(r.result);
         if (!o || o.nbProfile !== 1 || !o.settings || typeof o.settings !== 'object') throw new Error('bad');
         const patch = { ...NB_DEFAULTS };
-        NB_AI_FIELDS.concat(['turnUrl', 'turnUser', 'turnCred']).forEach((k) => { delete patch[k]; });   // shared setup stays as it is
+        NB_AI_FIELDS.concat(['turnUrl', 'turnUser', 'turnCred', 'wallpaper']).forEach((k) => { delete patch[k]; });   // shared setup stays as it is
         Object.keys(o.settings).forEach((k) => { if (k in patch) patch[k] = o.settings[k]; });
         S.set(patch); setErr(''); setNote('Settings imported into this profile.');
       } catch (e) { setErr('That is not a NovaBoard profile file.'); }
@@ -7572,6 +7651,20 @@ function App() {
   const [panel, setPanel] = useState(null); // null | tab id
   const setSettings = useCallback((patch) => setSettingsState((p) => ({ ...p, ...patch })), []);
   useEffect(() => { nbApplyTheme(settings); nbSaveSettings(settings); }, [settings]);
+  /* Liquid Glass click animation: a glass ripple where you tap, and a jelly squish on the pressed control. */
+  useEffect(() => {
+    if (settings.theme !== 'liquid' || !settings.motion) return;
+    const onDown = (e) => {
+      const t = e.target; if (!t || !t.closest) return;
+      if (t.closest('canvas, .canvas-stage, .upper-canvas')) return; // never while drawing
+      const r = document.createElement('div'); r.className = 'nb-liq-rip'; r.style.left = e.clientX + 'px'; r.style.top = e.clientY + 'px';
+      document.body.appendChild(r); setTimeout(() => r.remove(), 800);
+      const b = t.closest('button, a, [role="button"], .nb-chip, .nb-btn');
+      if (b) { b.classList.remove('nb-jelly'); void b.offsetWidth; b.classList.add('nb-jelly'); setTimeout(() => b.classList.remove('nb-jelly'), 540); }
+    };
+    document.addEventListener('pointerdown', onDown, true);
+    return () => document.removeEventListener('pointerdown', onDown, true);
+  }, [settings.theme, settings.motion]);
   useEffect(() => {
     if (settings.mode !== 'auto' || !window.matchMedia) return;
     const mq = matchMedia('(prefers-color-scheme: light)'); const h = () => nbApplyTheme(settings);
@@ -7680,6 +7773,13 @@ function App() {
     <SettingsCtx.Provider value={ctxVal}>
     <ProfileCtx.Provider value={profApi}>
     <div className="h-full w-full relative">
+      {settings.theme === 'liquid' && (
+        <div className="nb-wall" aria-hidden="true">
+          {settings.wallpaper
+            ? <><div className="nb-wall-img" style={{ backgroundImage: `url("${settings.wallpaper}")`, filter: settings.wallBlur ? `blur(${settings.wallBlur}px)` : 'none' }} /><div className="nb-wall-dim" style={{ opacity: nbClampNum(settings.wallDim, 0, 70, 25) / 100 }} /></>
+            : <><i className="b1" /><i className="b2" /><i className="b3" /></>}
+        </div>
+      )}
       {settings.aurora && view === VIEWS.HOME && <div className="nb-aurora" aria-hidden="true"><i /><i /><i /></div>}
       {panel && <SettingsPanel tab={panel} onClose={() => setPanel(null)} />}
       {view === VIEWS.SPLASH && (
@@ -7723,7 +7823,12 @@ function App() {
 const NB_PROF_KEY = 'nb.profiles.v1';
 const NB_OWN_KEY = 'nb.owners.v1';
 const NB_AI_KEY = 'nb3_ai_global';
-const NB_AI_FIELDS = ['aiProvider', 'aiKeyGemini', 'aiKeyGroq', 'aiKeyOpenrouter', 'aiModel'];
+const NB_AI_FIELDS = ['aiProvider', 'aiKeyGemini', 'aiKeyGroq', 'aiKeyOpenrouter', 'aiModel',
+  'aiCustomName', 'aiCustomUrl', 'aiCustomKey', 'aiCustomFormat', 'aiCustomExact',
+  'aiMaxTokens', 'aiCtxTokens',
+  'aiImgProvider', 'aiImgFormat', 'aiImgUrl', 'aiImgKey', 'aiImgModel', 'aiImgSize'];
+/* Never written to exported settings files (keys, and URLs that may carry a token). */
+const NB_SECRET_FIELDS = ['wallpaper', 'aiKeyGemini', 'aiKeyGroq', 'aiKeyOpenrouter', 'aiCustomKey', 'aiCustomUrl', 'aiImgKey', 'aiImgUrl', 'turnCred'];
 const NB_MAX_PROFILES = 8;
 const NB_PROF_COLORS = ['#22d3ee', '#818cf8', '#f472b6', '#fb923c', '#34d399', '#facc15', '#f87171', '#a78bfa'];
 const NB_GLOBAL_PROFILE = { id: 'global', name: 'Global', color: '#94a3b8', pw: null, rk: null };
@@ -7786,6 +7891,7 @@ const NB_THEMES = [
   { id: 'forest', label: 'Forest', a: '#84cc16', b: '#10b981' },
   { id: 'gold',   label: 'Gold',   a: '#fbbf24', b: '#f97316' },
   { id: 'steel',  label: 'Steel',  a: '#94a3b8', b: '#cbd5e1' },
+  { id: 'liquid', label: 'Liquid', a: '#7dd3fc', b: '#c4b5fd' }, // Liquid Glass: frosted panels, click ripples, custom wallpaper
 ];
 const NB_DEFAULTS = {
   org: '', tagline: '', userName: '', avatar: null,
@@ -7793,6 +7899,10 @@ const NB_DEFAULTS = {
   blur: 14, radius: 1, fontScale: 1, motion: true, aurora: true, sound: true,
   splash: true, font: 'default', glow: true, penColor: '#ffffff', penWidth: 6, defGrid: 'off', gridSize: 32,
   aiProvider: 'gemini', aiKeyGemini: '', aiKeyGroq: '', aiKeyOpenrouter: '', aiModel: '',
+  aiCustomName: '', aiCustomUrl: '', aiCustomKey: '', aiCustomFormat: 'openai', aiCustomExact: false,
+  aiMaxTokens: 1200, aiCtxTokens: 4000,
+  wallpaper: '', wallDim: 25, wallBlur: 0, // Liquid Glass wallpaper (the image itself is stored under its own key)
+  aiImgProvider: 'pollinations', aiImgFormat: 'openai', aiImgUrl: '', aiImgKey: '', aiImgModel: '', aiImgSize: '',
   turnUrl: '', turnUser: '', turnCred: '',
   showClock: true, showSave: true, showSaveStatus: true, showAvatarCanvas: true,
   palmErase: true, palmSize: 72, shapeSnap: true, announce: true,
@@ -7806,18 +7916,38 @@ function nbLoadSettings() {
       const old = JSON.parse(localStorage.getItem(NB_SET_KEY)) || {}; ai = {};
       NB_AI_FIELDS.forEach((k) => { if (old[k] !== undefined) ai[k] = old[k]; });
     }
-    return { ...NB_DEFAULTS, ...base, ...ai };
+    let wall = ''; try { wall = localStorage.getItem('nb3_wall') || ''; } catch (e) { /* ignore */ }
+    return { ...NB_DEFAULTS, ...base, ...ai, wallpaper: wall };
   } catch (e) { return { ...NB_DEFAULTS }; }
 }
-const NB_AI_PROVIDERS = ['gemini', 'groq', 'openrouter'];
+const NB_AI_PROVIDERS = ['gemini', 'groq', 'openrouter', 'custom'];
 const NB_AI_LINKS = { gemini: 'https://aistudio.google.com/apikey', groq: 'https://console.groq.com/keys', openrouter: 'https://openrouter.ai/keys' };
 const nbAiProv = (s) => (NB_AI_PROVIDERS.includes(s.aiProvider) ? s.aiProvider : 'gemini');
-const nbAiKeyField = (s) => ({ groq: 'aiKeyGroq', openrouter: 'aiKeyOpenrouter' }[nbAiProv(s)] || 'aiKeyGemini');
+const nbAiKeyField = (s) => ({ groq: 'aiKeyGroq', openrouter: 'aiKeyOpenrouter', custom: 'aiCustomKey' }[nbAiProv(s)] || 'aiKeyGemini');
 const nbAiKey = (s) => s[nbAiKeyField(s)] || '';
+/* Custom AI needs an endpoint + model (the key is optional: local servers like Ollama or LM Studio have none). */
+const nbAiReady = (s) => (nbAiProv(s) === 'custom' ? !!(String(s.aiCustomUrl || '').trim() && String(s.aiModel || '').trim()) : !!nbAiKey(s));
+const nbAiBase = (s) => ({ provider: nbAiProv(s), key: nbAiKey(s), model: s.aiModel, custom: { name: s.aiCustomName, url: s.aiCustomUrl, format: s.aiCustomFormat === 'anthropic' ? 'anthropic' : 'openai', exact: !!s.aiCustomExact } });
+/* Token limits: max reply length, and how much earlier chat is re-sent with each message. */
+const nbAiMax = (s) => nbClampNum(s.aiMaxTokens, 256, 8192, 1200);
+const nbAiCtx = (s) => nbClampNum(s.aiCtxTokens, 1000, 32000, 4000);
+const nbEstTokens = (t) => Math.ceil(String(typeof t === 'string' ? t : JSON.stringify(t)).length / 4); // ~4 characters per token
+function nbTrimHistory(msgs, limit) {
+  const out = []; let used = 0;
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const c = nbEstTokens(msgs[i].content) + 4;
+    if (out.length && used + c > limit) break;
+    out.unshift(msgs[i]); used += c;
+    if (out.length >= 80) break;
+  }
+  while (out.length > 1 && out[0].role !== 'user') { used -= nbEstTokens(out[0].content) + 4; out.shift(); } // providers expect the first turn to be the user's
+  return { msgs: out, used };
+}
 function nbSaveSettings(s) {
   try {
     const ai = {}, rest = {};
-    Object.keys(s).forEach((k) => { if (NB_AI_FIELDS.includes(k)) ai[k] = s[k]; else rest[k] = s[k]; });
+    Object.keys(s).forEach((k) => { if (k === 'wallpaper') return; if (NB_AI_FIELDS.includes(k)) ai[k] = s[k]; else rest[k] = s[k]; });
+    try { if (s.wallpaper) localStorage.setItem('nb3_wall', s.wallpaper); else localStorage.removeItem('nb3_wall'); } catch (e) { /* too large for storage: lasts this session only */ }
     localStorage.setItem(NB_AI_KEY, JSON.stringify(ai));          // AI setup is global: set once, every profile uses it
     localStorage.setItem(nbSettingsKey(), JSON.stringify(rest));  // everything else belongs to the active profile
   } catch (e) { /* quota: ignore */ }
@@ -7857,11 +7987,12 @@ function nbIsDark(s) {
 }
 function nbApplyTheme(s) {
   const root = document.documentElement;
-  const dark = nbIsDark(s);
+  const th = NB_THEMES.find((t) => t.id === s.theme) || NB_THEMES[0];
+  const dark = nbIsDark(s) || th.id === 'liquid';
+  root.dataset.theme = th.id;
   root.dataset.mode = dark ? 'dark' : 'light';
   root.dataset.motion = s.motion ? 'on' : 'off';
   root.dataset.font = s.font || 'default'; root.dataset.glow = s.glow === false ? 'off' : 'on';
-  const th = NB_THEMES.find((t) => t.id === s.theme) || NB_THEMES[0];
   const a = s.accent || th.a;
   const b = s.accent ? '#' + nbMix(nbHex2rgb(a), nbHex2rgb('#818cf8'), .45).map((v) => v.toString(16).padStart(2, '0')).join('') : th.b;
   nbShades(a, 'a', root); nbShades(b, 'b', root);
@@ -7957,6 +8088,130 @@ function STog({ k }) {
   return <button role="switch" aria-checked={!!s[k]} onClick={() => set({ [k]: !s[k] })} className={`nb-toggle ${s[k] ? 'on' : ''}`} />;
 }
 
+/* Wallpaper picker (Liquid Glass only). The photo is scaled down and kept in this browser only. */
+function nbResizeWallpaper(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image(); const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const max = 1920, k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); resolve(c.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Not an image')); };
+    img.src = url;
+  });
+}
+function NBWallpaperSettings({ s, set }) {
+  const [err, setErr] = useState('');
+  const ref = useRef(null);
+  const pick = async (f) => {
+    if (!f) return; setErr('');
+    try { set({ wallpaper: await nbResizeWallpaper(f) }); } catch (e) { setErr('Could not read that image.'); }
+  };
+  return (
+    <div className="mb-3 p-3 rounded-xl border border-white/20 bg-white/5">
+      <div className="text-xs text-slate-300 font-semibold mb-1">Liquid Glass wallpaper</div>
+      <p className="text-[11px] text-slate-500 pb-2">Shown behind the frosted panels. Only used with this theme; other themes ignore it. Stays on this device.</p>
+      <div className="flex items-center gap-2">
+        {s.wallpaper && <img src={s.wallpaper} alt="Wallpaper preview" className="w-16 h-10 object-cover rounded-md border border-white/30" />}
+        <button className="nb-btn" onClick={() => ref.current && ref.current.click()}>{s.wallpaper ? 'Change' : 'Choose image'}</button>
+        {s.wallpaper && <button className="nb-btn sec" onClick={() => set({ wallpaper: '' })}>Remove</button>}
+        <input ref={ref} type="file" accept="image/*" className="hidden" onChange={(e) => { pick(e.target.files && e.target.files[0]); e.target.value = ''; }} />
+      </div>
+      {err && <div className="text-xs text-red-300 pt-1" role="alert">{err}</div>}
+      {s.wallpaper && (<>
+        <div className="pt-2"><div className="flex justify-between text-xs text-slate-300"><span>Darken</span><span className="mono text-slate-500">{nbClampNum(s.wallDim, 0, 70, 25)}%</span></div>
+          <input type="range" min="0" max="70" value={nbClampNum(s.wallDim, 0, 70, 25)} onChange={(e) => set({ wallDim: +e.target.value })} className="nb-range" aria-label="Wallpaper darkening" /></div>
+        <div className="pt-1"><div className="flex justify-between text-xs text-slate-300"><span>Blur</span><span className="mono text-slate-500">{s.wallBlur || 0}px</span></div>
+          <input type="range" min="0" max="24" value={s.wallBlur || 0} onChange={(e) => set({ wallBlur: +e.target.value })} className="nb-range" aria-label="Wallpaper blur" /></div>
+      </>)}
+    </div>
+  );
+}
+
+function NBAiSettings({ s, set }) {
+  const prov = nbAiProv(s); const img = nbImgCfg(s);
+  const [test, setTest] = useState(null);
+  const [imgTest, setImgTest] = useState(null);
+  const inp = 'w-44 px-2 py-1 rounded-md bg-slate-900/60 border border-slate-600/50 text-xs text-slate-100';
+  const wide = 'w-full mt-1 px-2 py-1.5 rounded-md bg-slate-900/60 border border-slate-600/50 text-xs text-slate-100 mono';
+  const runTest = async () => {
+    setTest({ busy: true });
+    try { const out = await nbAiCall({ ...nbAiBase(s), system: 'Reply with the single word OK.', messages: [{ role: 'user', content: 'ping' }], maxTokens: 30 }); setTest({ ok: true, msg: 'Connected. Reply: ' + out.slice(0, 60) }); }
+    catch (e) { setTest({ ok: false, msg: e.message || 'Test failed.' }); }
+  };
+  const runImgTest = async () => {
+    setImgTest({ busy: true });
+    try { const url = await nbImageGenerate('a small red apple on a white table', { width: 512, height: 512, seed: 1 }, img); setImgTest({ ok: true, url }); }
+    catch (e) { setImgTest({ ok: false, msg: e.message || 'Test failed.' }); }
+  };
+  const chip = (on) => `nb-chip ${on ? 'on' : 'text-slate-400'}`;
+  return (<>
+    <p className="text-[11px] text-slate-500 pb-1">Optional. The AI Assistant (Tools menu) needs a free API key from one of these providers, or your own AI endpoint. Free tiers are rate-limited and the provider may keep or learn from requests, so avoid private student data. Keys are stored only in this browser. When you use an AI feature, your prompt (and an image of the page for page tools) is sent to the provider you pick.</p>
+    <div className="text-xs text-slate-400 mt-1 mb-2">Provider</div>
+    <div className="flex flex-wrap gap-2 pb-2">
+      {[['gemini', 'Google Gemini'], ['groq', 'Groq'], ['openrouter', 'OpenRouter'], ['custom', 'Custom']].map(([id, l]) => <button key={id} onClick={() => set({ aiProvider: id, aiModel: '' })} className={chip(prov === id)}>{l}</button>)}
+    </div>
+    {prov !== 'custom' && (<>
+      <p className="text-[11px] text-slate-500 pb-1">{({ groq: 'Get a free key at console.groq.com/keys (no card).', openrouter: 'Get a free key at openrouter.ai/keys. Free models are rate-limited to about 20 requests a minute.' }[prov]) || 'Get a free key at aistudio.google.com/apikey (no card).'}</p>
+      <SRow label="Get a free key" hint="Opens the provider's page in a new tab">
+        <a href={NB_AI_LINKS[prov]} target="_blank" rel="noopener noreferrer" className={`nb-btn ${nbAiKey(s) ? 'sec' : ''} inline-block text-center no-underline`}>{nbAiKey(s) ? 'Open page' : 'Get API key'}</a>
+      </SRow>
+      <SRow label="API key" hint={({ groq: 'Starts with gsk_', openrouter: 'Starts with sk-or-' }[prov]) || 'Starts with AIza'}>
+        <input type="password" autoComplete="off" value={nbAiKey(s)} onChange={(e) => set({ [nbAiKeyField(s)]: e.target.value.trim() })} placeholder={({ groq: 'gsk_...', openrouter: 'sk-or-...' }[prov]) || 'AIza...'} className={inp} aria-label="API key" />
+      </SRow>
+      <SRow label="Model" hint="Leave empty for the default">
+        <input type="text" value={s.aiModel} onChange={(e) => set({ aiModel: e.target.value.trim() })} placeholder={NB_AI_MODELS[prov].text} className={inp + ' mono'} aria-label="Model name" />
+      </SRow>
+      {nbAiKey(s) && <SRow label="Remove key"><button className="nb-btn sec" onClick={() => set({ [nbAiKeyField(s)]: '' })}>Clear</button></SRow>}
+    </>)}
+    {prov === 'custom' && (<>
+      <p className="text-[11px] text-slate-500 pb-1">Connect any AI server: OpenAI, Together, Mistral, DeepSeek, or a local one such as Ollama or LM Studio. The server must allow browser (CORS) requests.</p>
+      <SRow label="Name" hint="Optional label"><input type="text" value={s.aiCustomName} onChange={(e) => set({ aiCustomName: e.target.value })} placeholder="My AI" className={inp} aria-label="Custom AI name" /></SRow>
+      <div className="py-2"><div className="text-sm text-slate-100">Endpoint URL</div><div className="text-[11px] text-slate-500">e.g. https://api.openai.com/v1 or http://localhost:11434/v1</div>
+        <input type="text" spellCheck="false" autoComplete="off" value={s.aiCustomUrl} onChange={(e) => set({ aiCustomUrl: e.target.value.trim() })} placeholder="https://host/v1" className={wide} aria-label="Custom AI endpoint URL" /></div>
+      <SRow label="Format" hint={s.aiCustomFormat === 'anthropic' ? 'Adds /messages' : 'Adds /chat/completions'}>
+        <span className="flex gap-2">{[['openai', 'OpenAI'], ['anthropic', 'Anthropic']].map(([id, l]) => <button key={id} onClick={() => set({ aiCustomFormat: id })} className={chip((s.aiCustomFormat === 'anthropic' ? 'anthropic' : 'openai') === id)}>{l}</button>)}</span>
+      </SRow>
+      <SRow label="Use URL exactly as typed" hint="Turn on if your path is different; nothing is appended"><STog k="aiCustomExact" /></SRow>
+      <SRow label="API key" hint="Leave empty for local servers"><input type="password" autoComplete="off" value={s.aiCustomKey} onChange={(e) => set({ aiCustomKey: e.target.value.trim() })} className={inp} aria-label="Custom AI API key" /></SRow>
+      <SRow label="Model name" hint="Required"><input type="text" spellCheck="false" value={s.aiModel} onChange={(e) => set({ aiModel: e.target.value.trim() })} placeholder="e.g. llama3.1" className={inp + ' mono'} aria-label="Custom AI model name" /></SRow>
+      <SRow label="Check it works"><button className="nb-btn sec" disabled={!nbAiReady(s) || (test && test.busy)} onClick={runTest}>{test && test.busy ? 'Testing…' : 'Test'}</button></SRow>
+      {test && !test.busy && <div className={`text-xs pb-1 ${test.ok ? 'text-emerald-300' : 'text-red-300'}`} role="status">{test.msg}</div>}
+    </>)}
+
+    <div className="text-xs text-slate-400 mt-4 mb-1">Token limits</div>
+    <div className="py-2"><div className="flex justify-between text-sm text-slate-100"><span>Max reply length</span><span className="mono text-xs text-slate-500">{nbAiMax(s)} tokens</span></div>
+      <input type="range" min="256" max="8192" step="64" value={nbAiMax(s)} onChange={(e) => set({ aiMaxTokens: +e.target.value })} className="nb-range" aria-label="Max reply length in tokens" />
+      <p className="text-[11px] text-slate-500 pt-1">Longest answer the assistant may write. About 4 characters per token. Higher means fuller answers but uses more of a free quota.</p></div>
+    <div className="py-2"><div className="flex justify-between text-sm text-slate-100"><span>Chat memory</span><span className="mono text-xs text-slate-500">{nbAiCtx(s)} tokens</span></div>
+      <input type="range" min="1000" max="32000" step="500" value={nbAiCtx(s)} onChange={(e) => set({ aiCtxTokens: +e.target.value })} className="nb-range" aria-label="Chat memory in tokens" />
+      <p className="text-[11px] text-slate-500 pt-1">How much of the earlier conversation is sent with each message. Raise it for longer sessions; the oldest messages drop out first. Free tiers may reject very large values.</p></div>
+    <SRow label="Reset token limits"><button className="nb-btn sec" onClick={() => set({ aiMaxTokens: 1200, aiCtxTokens: 4000 })}>Reset</button></SRow>
+
+    <div className="text-xs text-slate-400 mt-4 mb-2">Image generator</div>
+    <div className="flex flex-wrap gap-2 pb-2">
+      {[['pollinations', 'Pollinations (default)'], ['custom', 'Custom']].map(([id, l]) => <button key={id} onClick={() => { set({ aiImgProvider: id }); setImgTest(null); }} className={chip(img.provider === id)}>{l}</button>)}
+    </div>
+    {img.provider === 'pollinations' && <p className="text-[11px] text-slate-500 pb-1">Free, no key needed. Pollinations asks for a pause of about 45 seconds between slide images.</p>}
+    {img.provider === 'custom' && (<>
+      <SRow label="Format" hint={img.format === 'template' ? 'GET request to a URL you build' : 'POST to /images/generations'}>
+        <span className="flex gap-2">{[['openai', 'OpenAI'], ['template', 'URL template']].map(([id, l]) => <button key={id} onClick={() => set({ aiImgFormat: id })} className={chip(img.format === id)}>{l}</button>)}</span>
+      </SRow>
+      <div className="py-2"><div className="text-sm text-slate-100">{img.format === 'template' ? 'URL template' : 'Endpoint URL'}</div>
+        <div className="text-[11px] text-slate-500">{img.format === 'template' ? 'Use {prompt}, {width}, {height}, {seed}, {model}' : 'e.g. https://api.openai.com/v1'}</div>
+        <input type="text" spellCheck="false" autoComplete="off" value={s.aiImgUrl} onChange={(e) => set({ aiImgUrl: e.target.value.trim() })} placeholder={img.format === 'template' ? 'https://host/img?q={prompt}&w={width}&h={height}' : 'https://host/v1'} className={wide} aria-label="Image generator URL" /></div>
+      <SRow label="API key" hint="Optional"><input type="password" autoComplete="off" value={s.aiImgKey} onChange={(e) => set({ aiImgKey: e.target.value.trim() })} className={inp} aria-label="Image generator API key" /></SRow>
+      <SRow label="Model" hint="Optional"><input type="text" spellCheck="false" value={s.aiImgModel} onChange={(e) => set({ aiImgModel: e.target.value.trim() })} placeholder="e.g. dall-e-3" className={inp + ' mono'} aria-label="Image model" /></SRow>
+      {img.format === 'openai' && <SRow label="Image size" hint="Optional, e.g. 1024x1024"><input type="text" spellCheck="false" value={s.aiImgSize} onChange={(e) => set({ aiImgSize: e.target.value.trim() })} placeholder="model default" className={inp + ' mono'} aria-label="Image size" /></SRow>}
+      <SRow label="Check it works"><button className="nb-btn sec" disabled={!img.url || (imgTest && imgTest.busy)} onClick={runImgTest}>{imgTest && imgTest.busy ? 'Generating…' : 'Test'}</button></SRow>
+      {imgTest && !imgTest.busy && (imgTest.ok ? <img src={imgTest.url} alt="Test result" className="w-20 h-20 object-cover rounded-md border border-slate-600/50" /> : <div className="text-xs text-red-300" role="status">{imgTest.msg}</div>)}
+      <p className="text-[11px] text-slate-500 pt-1">Prompts are sent to this service. The server must allow browser (CORS) requests so images can be placed on slides.</p>
+    </>)}
+  </>);
+}
+
 function SettingsPanel({ tab: startTab, onClose }) {
   const { s, set } = useSettings();
   const [tab, setTab] = useState(startTab || 'appearance');
@@ -7970,14 +8225,20 @@ function SettingsPanel({ tab: startTab, onClose }) {
     try { set({ avatar: await nbResizeAvatar(f) }); } catch (e) { setErr('Could not read that image.'); }
   };
   const exportSettings = () => {
-    const { aiKeyGemini, aiKeyGroq, aiKeyOpenrouter, turnCred, ...safe } = s; // API keys and TURN credential never leave this browser
+    const safe = { ...s }; NB_SECRET_FIELDS.forEach((k) => { delete safe[k]; }); // API keys, private URLs and TURN credential never leave this browser
     const blob = new Blob([JSON.stringify(safe, null, 1)], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'novaboard-settings.json'; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   };
   const importSettings = (f) => {
     if (!f) return; const r = new FileReader();
-    r.onload = () => { try { const { aiKeyGemini, aiKeyGroq, aiKeyOpenrouter, turnCred, ...inc } = JSON.parse(r.result); set({ ...NB_DEFAULTS, aiProvider: s.aiProvider, aiModel: s.aiModel, aiKeyGemini: s.aiKeyGemini, aiKeyGroq: s.aiKeyGroq, aiKeyOpenrouter: s.aiKeyOpenrouter, turnCred: s.turnCred, ...inc }); setErr(''); } catch (e) { setErr('Invalid settings file.'); } };
+    r.onload = () => {
+      try {
+        const inc = JSON.parse(r.result); NB_SECRET_FIELDS.forEach((k) => { delete inc[k]; });
+        const keep = {}; NB_AI_FIELDS.forEach((k) => { keep[k] = s[k]; }); keep.turnCred = s.turnCred; keep.wallpaper = s.wallpaper; // this browser's AI setup stays
+        set({ ...NB_DEFAULTS, ...keep, ...inc }); setErr('');
+      } catch (e) { setErr('Invalid settings file.'); }
+    };
     r.readAsText(f);
   };
   return (
@@ -8027,6 +8288,7 @@ function SettingsPanel({ tab: startTab, onClose }) {
                 </button>
               ))}
             </div>
+            {s.theme === 'liquid' && <NBWallpaperSettings s={s} set={set} />}
             <SRow label="Custom accent colour" hint="Overrides the theme">
               <div className="flex items-center gap-2">
                 {s.accent && <button className="nb-btn sec" onClick={() => set({ accent: null })}>Reset</button>}
@@ -8075,24 +8337,7 @@ function SettingsPanel({ tab: startTab, onClose }) {
             <div className="py-2"><div className="flex justify-between text-sm text-slate-100"><span>Palm detection size</span><span className="mono text-xs text-slate-500">{s.palmSize}px</span></div><input type="range" min="40" max="160" step="4" value={s.palmSize} onChange={(e) => set({ palmSize: +e.target.value })} className="nb-range" /><p className="text-[11px] text-slate-500 pt-1">Only touches wider than this count as a palm. Lower it if your palm is not detected; raise it if a finger or thumb erases by mistake.</p></div>
           </>)}
 
-          {tab === 'ai' && (<>
-            <p className="text-[11px] text-slate-500 pb-1">Optional. The AI Assistant (Tools menu) needs a free API key from one of these providers. Free tiers are rate-limited and the provider may keep or learn from requests, so avoid private student data. Keys are stored only in this browser. When you use an AI feature, your prompt (and an image of the page for page tools) is sent to the provider you pick.</p>
-            <div className="text-xs text-slate-400 mt-1 mb-2">Provider</div>
-            <div className="flex flex-wrap gap-2 pb-2">
-              {[['gemini', 'Google Gemini'], ['groq', 'Groq'], ['openrouter', 'OpenRouter']].map(([id, l]) => <button key={id} onClick={() => set({ aiProvider: id, aiModel: '' })} className={`nb-chip ${nbAiProv(s) === id ? 'on' : 'text-slate-400'}`}>{l}</button>)}
-            </div>
-            <p className="text-[11px] text-slate-500 pb-1">{({ groq: 'Get a free key at console.groq.com/keys (no card).', openrouter: 'Get a free key at openrouter.ai/keys. Free models are rate-limited to about 20 requests a minute.' }[nbAiProv(s)]) || 'Get a free key at aistudio.google.com/apikey (no card).'}</p>
-            <SRow label="Get a free key" hint="Opens the provider's page in a new tab">
-              <a href={NB_AI_LINKS[nbAiProv(s)]} target="_blank" rel="noopener noreferrer" className={`nb-btn ${nbAiKey(s) ? 'sec' : ''} inline-block text-center no-underline`}>{nbAiKey(s) ? 'Open page' : 'Get API key'}</a>
-            </SRow>
-            <SRow label="API key" hint={({ groq: 'Starts with gsk_', openrouter: 'Starts with sk-or-' }[nbAiProv(s)]) || 'Starts with AIza'}>
-              <input type="password" autoComplete="off" value={nbAiKey(s)} onChange={(e) => set({ [nbAiKeyField(s)]: e.target.value.trim() })} placeholder={({ groq: 'gsk_...', openrouter: 'sk-or-...' }[nbAiProv(s)]) || 'AIza...'} className="w-44 px-2 py-1 rounded-md bg-slate-900/60 border border-slate-600/50 text-xs text-slate-100" aria-label="API key" />
-            </SRow>
-            <SRow label="Model" hint="Leave empty for the default">
-              <input type="text" value={s.aiModel} onChange={(e) => set({ aiModel: e.target.value.trim() })} placeholder={NB_AI_MODELS[nbAiProv(s)].text} className="w-44 px-2 py-1 rounded-md bg-slate-900/60 border border-slate-600/50 text-xs text-slate-100 mono" aria-label="Model name" />
-            </SRow>
-            {nbAiKey(s) && <SRow label="Remove key"><button className="nb-btn sec" onClick={() => set({ [nbAiKeyField(s)]: '' })}>Clear</button></SRow>}
-          </>)}
+          {tab === 'ai' && <NBAiSettings s={s} set={set} />}
 
           {tab === 'network' && (<>
             <div className="text-sm text-slate-100 font-semibold">Live Share Network / Custom TURN (Optional)</div>
@@ -8523,6 +8768,7 @@ const NB_AI_MODELS = {
   gemini: { text: 'gemini-2.5-flash', vision: 'gemini-2.5-flash' },
   groq: { text: 'llama-3.3-70b-versatile', vision: 'meta-llama/llama-4-scout-17b-16e-instruct' },
   openrouter: { text: 'openrouter/free', vision: 'openrouter/free' }, // router that picks a free model that fits the request
+  custom: { text: '', vision: '' }, // the person's own model name (Settings > AI)
 };
 /* Shrink a page snapshot so it stays under provider image-size limits. */
 function nbShrinkImage(dataUrl, max = 1280) {
@@ -8538,16 +8784,36 @@ function nbShrinkImage(dataUrl, max = 1280) {
     img.src = dataUrl;
   });
 }
-async function nbAiCall({ provider = 'gemini', key, model, system, messages, maxTokens = 1200, signal }) {
-  if (!key) throw new Error('Add your free API key in Settings > AI first.');
+/* Full URL for a custom endpoint: appends the standard path unless the person typed the exact one. */
+function nbCustomEndpoint(url, format, exact) {
+  const u = String(url || '').trim().replace(/\/+$/, '');
+  if (!u || exact) return u;
+  const tail = format === 'anthropic' ? '/messages' : '/chat/completions';
+  return u.toLowerCase().endsWith(tail) ? u : u + tail;
+}
+async function nbAiCall({ provider = 'gemini', key, model, custom, system, messages, maxTokens = 1200, signal, truncNote = false }) {
+  const isCustom = provider === 'custom';
+  const cfg = custom || {};
+  const fmt = isCustom && cfg.format === 'anthropic' ? 'anthropic' : 'openai';
+  if (!isCustom && !key) throw new Error('Add your free API key in Settings > AI first.');
+  if (isCustom && !String(cfg.url || '').trim()) throw new Error('Add your AI endpoint URL in Settings > AI first.');
   const hasImage = messages.some((x) => Array.isArray(x.content) && x.content.some((b) => b.type === 'image'));
   const defs = NB_AI_MODELS[provider] || NB_AI_MODELS.gemini;
   const m = model || (hasImage ? defs.vision : defs.text);
+  if (isCustom && !m) throw new Error('Enter the model name for your custom AI in Settings > AI.');
+  const label = isCustom ? (cfg.name || 'your custom AI') : 'the AI service';
   let url, headers, body;
-  if (provider === 'groq' || provider === 'openrouter') {
-    /* Groq and OpenRouter both speak the OpenAI-compatible chat completions format. */
-    url = provider === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
-    headers = { 'content-type': 'application/json', authorization: `Bearer ${key}` };
+  if (isCustom && fmt === 'anthropic') {
+    /* Anthropic Messages format (our message blocks already match it). */
+    url = nbCustomEndpoint(cfg.url, 'anthropic', cfg.exact);
+    headers = { 'content-type': 'application/json', 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' };
+    if (key) headers['x-api-key'] = key;
+    body = { model: m, max_tokens: maxTokens, system, messages: messages.map((x) => ({ role: x.role, content: x.content })) };
+  } else if (provider === 'groq' || provider === 'openrouter' || isCustom) {
+    /* Groq, OpenRouter and custom endpoints speak the OpenAI-compatible chat completions format. */
+    url = provider === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : provider === 'openrouter' ? 'https://openrouter.ai/api/v1/chat/completions' : nbCustomEndpoint(cfg.url, 'openai', cfg.exact);
+    headers = { 'content-type': 'application/json' };
+    if (key) headers.authorization = `Bearer ${key}`;
     if (provider === 'openrouter') headers['X-Title'] = 'NovaBoard';
     const content = (c) => (typeof c === 'string' ? c : c.map((b) => (b.type === 'image' ? { type: 'image_url', image_url: { url: `data:${b.source.media_type};base64,${b.source.data}` } } : { type: 'text', text: b.text })));
     body = { model: m, max_tokens: maxTokens, messages: [{ role: 'system', content: system }, ...messages.map((x) => ({ role: x.role, content: content(x.content) }))] };
@@ -8562,22 +8828,46 @@ async function nbAiCall({ provider = 'gemini', key, model, system, messages, max
       generationConfig: { maxOutputTokens: maxTokens * 4 }, // headroom: thinking tokens count against this
     };
   }
-  let res;
-  try { res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal }); }
-  catch (e) { if (e && e.name === 'AbortError') throw e; throw new Error('Could not reach the AI service. Check your internet connection.'); }
-  let data = null;
-  try { data = await res.json(); } catch (e) { /* non-JSON error body */ }
+  const send = async () => {
+    let res;
+    try { res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal }); }
+    catch (e) {
+      if (e && e.name === 'AbortError') throw e;
+      throw new Error(isCustom ? `Could not reach ${label}. Check the URL, that the server is running, and that it allows browser (CORS) requests.` : 'Could not reach the AI service. Check your internet connection.');
+    }
+    let data = null;
+    try { data = await res.json(); } catch (e) { /* non-JSON error body */ }
+    return { res, data };
+  };
+  let { res, data } = await send();
+  if (!res.ok && isCustom && fmt === 'openai' && body.max_tokens && /max_completion_tokens/i.test(JSON.stringify(data || ''))) {
+    body.max_completion_tokens = body.max_tokens; delete body.max_tokens; // newer OpenAI models use this name
+    ({ res, data } = await send());
+  }
   if (!res.ok) {
     if (res.status === 429) throw new Error('Free limit reached for now. Wait a minute and try again.');
-    if (res.status === 401 || res.status === 403) throw new Error('The API key was rejected. Check it in Settings > AI.');
-    throw new Error((data && data.error && data.error.message) || `AI request failed (${res.status}).`);
+    if (res.status === 401 || res.status === 403) throw new Error(isCustom ? `${label} rejected the API key. Check it in Settings > AI.` : 'The API key was rejected. Check it in Settings > AI.');
+    if (res.status === 404 && isCustom) throw new Error('Endpoint not found (404). Check the URL / path and model name in Settings > AI.');
+    const em = data && data.error && (data.error.message || (typeof data.error === 'string' ? data.error : ''));
+    throw new Error(em || `AI request failed (${res.status}).`);
   }
   if (!data) throw new Error('The AI service sent an unreadable response. Please try again.');
-  let text = '';
-  if (provider !== 'gemini') text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
-  else { const cand = data.candidates && data.candidates[0]; text = cand && cand.content && cand.content.parts ? cand.content.parts.map((x) => x.text || '').join('') : ''; }
+  let text = '', cut = false;
+  if (isCustom && fmt === 'anthropic') {
+    text = (data.content || []).map((b) => (b && b.type === 'text' ? b.text : '')).join('');
+    cut = data.stop_reason === 'max_tokens';
+  } else if (provider !== 'gemini') {
+    const ch = data.choices && data.choices[0]; const c = ch && ch.message && ch.message.content;
+    text = typeof c === 'string' ? c : Array.isArray(c) ? c.map((p) => (p && p.text) || '').join('') : '';
+    cut = !!ch && ch.finish_reason === 'length';
+  } else {
+    const cand = data.candidates && data.candidates[0];
+    text = cand && cand.content && cand.content.parts ? cand.content.parts.map((x) => x.text || '').join('') : '';
+    cut = !!cand && cand.finishReason === 'MAX_TOKENS';
+  }
   text = text.trim();
   if (!text) throw new Error('The AI returned no answer (it may have been blocked). Try rephrasing.');
+  if (cut && truncNote) text += '\n\n[Reply was cut off. Raise "Max reply length" in Settings > AI.]';
   return text;
 }
 
@@ -8631,7 +8921,60 @@ function nbImagineLoad(url, timeoutMs = 45000) {
   });
 }
 
+/* Image generator settings: Pollinations by default; optional custom endpoint (OpenAI-style POST, or a GET URL template). */
+const nbImgCfg = (s) => ({ provider: s.aiImgProvider === 'custom' ? 'custom' : 'pollinations', format: s.aiImgFormat === 'template' ? 'template' : 'openai', url: String(s.aiImgUrl || '').trim(), key: s.aiImgKey || '', model: String(s.aiImgModel || '').trim(), size: String(s.aiImgSize || '').trim() });
+const nbImgCooldownMs = (cfg) => (cfg && cfg.provider === 'custom' ? 2000 : NB_IMAGE_COOLDOWN_MS);
+const nbImgLabel = (cfg) => (cfg && cfg.provider === 'custom' ? 'Image generator' : 'Pollinations');
+function nbFetchImageDataUrlSafe(url) { return nbFetchImageDataUrl(url); }
+/* Returns a URL (https or data:) that has been confirmed to decode as an image. */
+async function nbImageGenerate(prompt, opts, cfg) {
+  opts = opts || {};
+  if (!cfg || cfg.provider !== 'custom') return nbImagineLoad(nbImagineUrl(prompt, opts));
+  if (!cfg.url) throw new Error('Add your image generator URL in Settings > AI, or switch back to Pollinations.');
+  const full = opts.styleHint ? `${prompt.trim()}, ${opts.styleHint}` : prompt.trim();
+  if (cfg.format === 'template') {
+    if (!/\{prompt\}/i.test(cfg.url)) throw new Error('Your image URL template must contain {prompt}.');
+    const seed = opts.seed != null ? opts.seed : Math.floor(Math.random() * 1e9);
+    const url = cfg.url.replace(/\{prompt\}/gi, encodeURIComponent(full)).replace(/\{width\}/gi, String(opts.width || 1024)).replace(/\{height\}/gi, String(opts.height || 1024)).replace(/\{seed\}/gi, String(seed)).replace(/\{model\}/gi, encodeURIComponent(cfg.model || ''));
+    return nbImagineLoad(url);
+  }
+  const base = cfg.url.replace(/\/+$/, '');
+  const endpoint = /\/images\/generations$/i.test(base) ? base : base + '/images/generations';
+  const headers = { 'content-type': 'application/json' };
+  if (cfg.key) headers.authorization = `Bearer ${cfg.key}`;
+  const body = { prompt: full, n: 1 };
+  if (cfg.model) body.model = cfg.model;
+  if (cfg.size) body.size = cfg.size;
+  const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 120000);
+  let res, data = null;
+  try { res = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body), signal: controller.signal }); }
+  catch (e) { throw new Error(e && e.name === 'AbortError' ? 'The image generator is taking too long. Try again.' : 'Could not reach your image generator. Check the URL and that it allows browser (CORS) requests.'); }
+  finally { clearTimeout(timer); }
+  try { data = await res.json(); } catch (e) { /* non-JSON */ }
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 403) throw new Error('Your image generator rejected the API key. Check it in Settings > AI.');
+    throw new Error((data && data.error && (data.error.message || data.error)) || `Image request failed (${res.status}).`);
+  }
+  const item = data && data.data && data.data[0];
+  if (item && item.b64_json) {
+    const b = item.b64_json; const mime = b.startsWith('/9j/') ? 'image/jpeg' : b.startsWith('UklGR') ? 'image/webp' : 'image/png';
+    return nbImagineLoad(`data:${mime};base64,${b}`);
+  }
+  if (item && item.url) {
+    try { return await nbImagineLoad(await nbFetchImageDataUrl(item.url)); }
+    catch (e) { return nbImagineLoad(item.url).catch(() => { throw new Error('The image was made but the server blocks the browser from loading it (CORS). Ask the provider for base64 output.'); }); }
+  }
+  throw new Error('Your image generator replied, but no image was in the response.');
+}
+/* Slides need the picture as a data URL so it can be embedded in the page. */
+async function nbSlideImage(prompt, cfg) {
+  const url = await nbImageGenerate(prompt, { styleHint: 'clean educational illustration, no text', width: 1024, height: 768, seed: Math.floor(Math.random() * 1e9) }, cfg);
+  return String(url).startsWith('data:') ? url : nbFetchImageDataUrl(url);
+}
+
 function ImagineTool({ viewportRef }) {
+  const { s } = useSettings();
+  const imgCfg = nbImgCfg(s);
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('photo');
   const [size, setSize] = useState('1:1');
@@ -8649,8 +8992,7 @@ function ImagineTool({ viewportRef }) {
     const [, w, h] = NB_IMAGINE_SIZES.find((x) => x[0] === size) || NB_IMAGINE_SIZES[0];
     const styleHint = (NB_IMAGINE_STYLES.find((x) => x[0] === style) || NB_IMAGINE_STYLES[0])[2];
     const nextSeed = reroll ? Math.floor(Math.random() * 1e9) : (seed != null ? seed : Math.floor(Math.random() * 1e9));
-    const url = nbImagineUrl(text, { styleHint, width: w, height: h, seed: nextSeed });
-    nbImagineLoad(url)
+    nbImageGenerate(text, { styleHint, width: w, height: h, seed: nextSeed }, imgCfg)
       .then((finalUrl) => { setSeed(nextSeed); setResultUrl(finalUrl); })
       .catch((e) => setErr(e.message || 'Something went wrong.'))
       .finally(() => setBusy(false));
@@ -8668,7 +9010,7 @@ function ImagineTool({ viewportRef }) {
   const box = 'w-full px-2 py-1.5 rounded-md bg-slate-900/60 border border-slate-600/50 text-xs text-slate-100';
   return (
     <div className="space-y-2" onPointerDown={stop}>
-      <p className="text-[11px] text-slate-500">Free AI image generation, powered by Pollinations.ai — no key needed.</p>
+      <p className="text-[11px] text-slate-500">{imgCfg.provider === 'custom' ? 'Using your custom image generator (change it in Settings > AI).' : 'Free AI image generation, powered by Pollinations.ai — no key needed.'}</p>
       <textarea
         className={`${box} resize-none`} rows={2} value={prompt} placeholder="Describe the image, e.g. a friendly cartoon sun over green hills"
         onChange={(e) => setPrompt(e.target.value)}
@@ -8698,16 +9040,30 @@ function ImagineTool({ viewportRef }) {
 const ISlides = (p) => <Svg {...p}><rect x="3.5" y="4.5" width="17" height="12" rx="1.5" /><path d="M8 20h8M12 16.5v3.5" /></Svg>;
 
 const NB_SLIDE_THEMES = [
-  ['nova', 'Nova', { bg: '#0b1324', panel: 'rgba(56,189,248,.14)', quoteTint: 'rgba(56,189,248,.35)', accent: '#38bdf8', text: '#eef2f7', muted: '#93a4bd' }],
-  ['indigo', 'Indigo', { bg: '#120f2b', panel: 'rgba(129,140,248,.16)', quoteTint: 'rgba(129,140,248,.35)', accent: '#818cf8', text: '#eef0ff', muted: '#a3a0c4' }],
-  ['amber', 'Amber', { bg: '#1c1407', panel: 'rgba(251,191,36,.16)', quoteTint: 'rgba(251,191,36,.35)', accent: '#fbbf24', text: '#fff7e6', muted: '#c9b592' }],
-  ['forest', 'Forest', { bg: '#07160f', panel: 'rgba(74,222,128,.14)', quoteTint: 'rgba(74,222,128,.35)', accent: '#4ade80', text: '#eafff2', muted: '#8fb39f' }],
+  ['nova', 'Nova', { bg: '#0b1324', bg2: '#15294f', panel: 'rgba(56,189,248,.14)', quoteTint: 'rgba(56,189,248,.35)', accent: '#38bdf8', accent2: '#818cf8', text: '#eef2f7', head: '#ffffff', muted: '#93a4bd', card: 'rgba(255,255,255,.055)', cardStroke: 'rgba(148,196,255,.16)', onAccent: '#06101f', light: false }],
+  ['indigo', 'Indigo', { bg: '#120f2b', bg2: '#271b57', panel: 'rgba(129,140,248,.16)', quoteTint: 'rgba(129,140,248,.35)', accent: '#818cf8', accent2: '#c084fc', text: '#eef0ff', head: '#ffffff', muted: '#a3a0c4', card: 'rgba(255,255,255,.055)', cardStroke: 'rgba(167,139,250,.18)', onAccent: '#0e0a24', light: false }],
+  ['amber', 'Amber', { bg: '#1c1407', bg2: '#3d2709', panel: 'rgba(251,191,36,.16)', quoteTint: 'rgba(251,191,36,.35)', accent: '#fbbf24', accent2: '#fb7185', text: '#fff7e6', head: '#ffffff', muted: '#c9b592', card: 'rgba(255,255,255,.055)', cardStroke: 'rgba(251,191,36,.18)', onAccent: '#201400', light: false }],
+  ['forest', 'Forest', { bg: '#07160f', bg2: '#0e3a29', panel: 'rgba(74,222,128,.14)', quoteTint: 'rgba(74,222,128,.35)', accent: '#4ade80', accent2: '#22d3ee', text: '#eafff2', head: '#ffffff', muted: '#8fb39f', card: 'rgba(255,255,255,.055)', cardStroke: 'rgba(74,222,128,.18)', onAccent: '#04130b', light: false }],
+  ['rose', 'Rose', { bg: '#1a0b14', bg2: '#3b1232', panel: 'rgba(251,113,133,.15)', quoteTint: 'rgba(251,113,133,.35)', accent: '#fb7185', accent2: '#f0abfc', text: '#fff0f4', head: '#ffffff', muted: '#c29aab', card: 'rgba(255,255,255,.055)', cardStroke: 'rgba(251,113,133,.18)', onAccent: '#1d0610', light: false }],
+  ['paper', 'Paper', { bg: '#f8fafc', bg2: '#e6edf8', panel: 'rgba(37,99,235,.08)', quoteTint: 'rgba(37,99,235,.30)', accent: '#2563eb', accent2: '#7c3aed', text: '#1e293b', head: '#0f172a', muted: '#475569', card: '#ffffff', cardStroke: 'rgba(15,23,42,.09)', onAccent: '#ffffff', light: true }],
+  ['sand', 'Sand', { bg: '#fffaf0', bg2: '#fbe8cc', panel: 'rgba(217,119,6,.10)', quoteTint: 'rgba(217,119,6,.32)', accent: '#d97706', accent2: '#dc2626', text: '#3a2a16', head: '#2b1d0e', muted: '#7a6248', card: '#ffffff', cardStroke: 'rgba(58,42,22,.10)', onAccent: '#ffffff', light: true }],
 ];
 const NB_SLIDE_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Professional'];
-const NB_SLIDE_LAYOUTS = ['title', 'bullets', 'twoColumn', 'bigStat', 'quote', 'imageFocus'];
+const NB_SLIDE_LAYOUTS = ['title', 'bullets', 'twoColumn', 'bigStat', 'quote', 'imageFocus', 'cards', 'timeline', 'section', 'closing'];
 const NB_SLIDES_SYSTEM = 'You design slide decks for classrooms and work presentations alike. Reply with ONLY a raw JSON array, no markdown, no backticks, no commentary before or after it.';
-function nbSlidesPrompt(topic, count, level) {
-  return `Create a ${count}-slide deck about: ${topic.trim()}. Audience: ${level}.\nReturn ONLY a JSON array of exactly ${count} objects, one per slide, each shaped like:\n{"layout":"title|bullets|twoColumn|bigStat|quote|imageFocus","title":"short title","subtitle":"short subtitle (title layout only)","bullets":["point", "..."] (max 4, bullets layout),"left":["point","..."] (max 3, twoColumn),"right":["point","..."] (max 3, twoColumn),"stat":"a big number or short phrase (bigStat)","statLabel":"what the stat means (bigStat)","caption":"short caption (bigStat or imageFocus)","quote":"short quote (quote layout)","attribution":"who said it (quote layout)","imagePrompt":"short visual description for an illustration, no text in the image (imageFocus only)","notes":"one sentence of speaker notes"}\nOnly include the fields that layout needs; omit the rest. Make slide 1 "title". Vary the other layouts — do not repeat "bullets" for every slide, and use "imageFocus" at most twice. Keep every piece of text short enough to read on a projector from across a room. Output nothing but the JSON array.`;
+function nbSlidesPrompt(topic, count, level, withImages) {
+  return `Create a ${count}-slide deck about: ${topic.trim()}. Audience: ${level}.
+Return ONLY a JSON array of exactly ${count} objects, one per slide. Each object has "layout" plus only the fields that layout needs:
+- "title": kicker (max 3 words, optional), title, subtitle. Slide 1 only.
+- "bullets": kicker, title, bullets (3-4 strings, under 12 words each).
+- "twoColumn": kicker, title, leftTitle, left (max 3 strings), rightTitle, right (max 3 strings). For comparisons, pros/cons, before/after.
+- "cards": kicker, title, cards (3-4 objects {"heading":"2-3 words","text":"under 14 words"}). For concepts, categories, features.
+- "timeline": kicker, title, steps (3-4 objects {"heading":"2-3 words","text":"under 12 words"}). For processes, history, stages.
+- "bigStat": title, stat (short number or phrase), statLabel, caption. One striking fact.
+- "quote": quote, attribution.
+${withImages ? '- "imageFocus": title, imagePrompt (visual description, no text in the image), caption.\n' : ''}- "section": number (like "01"), title, subtitle. A divider slide, only for decks of 8+ slides.
+- "closing": kicker, title, bullets (3-4 key takeaways), subtitle (short call to action). The final slide.
+Rules: slide 1 is "title"; the last slide is "closing" when there are 5 or more slides. Use a varied mix of layouts and never the same layout twice in a row${withImages ? '; use "imageFocus" at most twice' : ''}. Be specific and accurate, not generic. Keep all text short enough to read on a projector. Output nothing but the JSON array.`;
 }
 function nbParseSlideJson(raw) {
   let text = String(raw || '').replace(/```json|```/gi, '').trim();
@@ -8729,7 +9085,7 @@ function nbParseSlideJson(raw) {
   return null;
 }
 function nbSingleSlidePrompt(topic, level, layout) {
-  return `Rewrite ONE slide for a deck about: ${topic.trim()}. Audience: ${level}. The slide's layout must stay "${layout}".\nReturn ONLY one JSON object (no array, no markdown) using only the fields that layout needs, from: title, subtitle, bullets (max 4), left (max 3), right (max 3), stat, statLabel, caption, quote, attribution, imagePrompt, notes. Make it noticeably different from before, just as short and projector-readable, layout:"${layout}". Output nothing but the JSON object.`;
+  return `Rewrite ONE slide for a deck about: ${topic.trim()}. Audience: ${level}. The slide's layout must stay "${layout}".\nReturn ONLY one JSON object (no array, no markdown) using only the fields that layout needs, from: kicker, title, subtitle, bullets (3-4), leftTitle, left (max 3), rightTitle, right (max 3), cards or steps (3-4 objects {"heading","text"}), stat, statLabel, caption, quote, attribution, imagePrompt, number. Make it noticeably different from before, just as short and projector-readable, layout:"${layout}". Output nothing but the JSON object.`;
 }
 function nbParseSingleSlide(raw) {
   let text = String(raw || '').replace(/```json|```/gi, '').trim();
@@ -8755,76 +9111,282 @@ function nbSlideBg(theme, W, H) {
 function nbText(text, opts) {
   return new fabric.Textbox(String(text == null ? '' : text), { fontFamily: TEXT_FONT, selectable: true, evented: true, nbKind: 'text', ...opts });
 }
-function nbLayoutTitle(spec, theme, W, H) {
-  const o = nbSlideBg(theme, W, H);
-  o.push(nbText(spec.title || 'Untitled', { left: W / 2, top: H * 0.42, originX: 'center', originY: 'center', width: W * 0.8, textAlign: 'center', fontSize: nbFitFont(spec.title, W, W * 0.07, 22), fontWeight: '700', fill: theme.text }));
-  if (spec.subtitle) o.push(nbText(spec.subtitle, { left: W / 2, top: H * 0.58, originX: 'center', width: W * 0.7, textAlign: 'center', fontSize: Math.max(14, W * 0.022), fill: theme.muted }));
+/* ---------- AI Slides design system: gradient backgrounds, soft shapes, cards, numbered badges, progress footer ---------- */
+const nbShape = { selectable: false, evented: false };
+const nbAlpha = (hex, a) => {
+  const h = String(hex).replace('#', ''); const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+};
+const nbPad2 = (n) => String(n).padStart(2, '0');
+const nbStr = (v) => (v == null ? '' : String(v));
+const nbHeadC = (t) => t.head || t.text;
+function nbList(v, max) {
+  const a = Array.isArray(v) ? v : (typeof v === 'string' && v.trim() ? v.split(/\n|;/).filter(Boolean) : []);
+  return a.slice(0, max || 9).map((x) => (typeof x === 'string' ? x : (x && typeof x === 'object' ? [x.heading || x.title, x.text || x.description].filter(Boolean).join(': ') : String(x)))).map((x) => x.trim()).filter(Boolean);
+}
+function nbCardList(v, max) {
+  const a = Array.isArray(v) ? v : [];
+  return a.slice(0, max || 4).map((x) => {
+    if (typeof x === 'string') { const i = x.indexOf(':'); return i > 0 && i < 40 ? { heading: x.slice(0, i).trim(), text: x.slice(i + 1).trim() } : { heading: x.trim(), text: '' }; }
+    if (x && typeof x === 'object') return { heading: nbStr(x.heading || x.title || x.name), text: nbStr(x.text || x.description || x.body) };
+    return { heading: String(x), text: '' };
+  }).filter((c) => c.heading || c.text);
+}
+/* mode: 'h' left to right, 'v' top to bottom, 'd' diagonal. Coordinates are in the object's own pixels. */
+function nbGrad(c1, c2, w, h, mode) {
+  const coords = mode === 'v' ? { x1: 0, y1: 0, x2: 0, y2: h } : mode === 'd' ? { x1: 0, y1: 0, x2: w, y2: h } : { x1: 0, y1: 0, x2: w, y2: 0 };
+  return new fabric.Gradient({ type: 'linear', gradientUnits: 'pixels', coords, colorStops: [{ offset: 0, color: c1 }, { offset: 1, color: c2 }] });
+}
+function nbRRect(x, y, w, h, fill, o) {
+  o = o || {};
+  const r = o.r != null ? o.r : 12;
+  return new fabric.Rect({ left: x, top: y, width: w, height: h, rx: r, ry: r, fill, stroke: o.stroke, strokeWidth: o.sw || 0, shadow: o.shadow || null, ...nbShape, nbKind: 'shape' });
+}
+function nbCardRect(t, x, y, w, h, o) {
+  o = o || {};
+  const shadow = t.light ? new fabric.Shadow({ color: 'rgba(15,23,42,.10)', blur: 22, offsetX: 0, offsetY: 8 }) : null;
+  return nbRRect(x, y, w, h, t.card, { r: o.r != null ? o.r : 16, stroke: t.cardStroke, sw: 1.5, shadow });
+}
+function nbCircle(cx, cy, r, fill, o) {
+  o = o || {};
+  return new fabric.Circle({ left: cx, top: cy, originX: 'center', originY: 'center', radius: r, fill, stroke: o.stroke, strokeWidth: o.sw || 0, ...nbShape, nbKind: 'shape' });
+}
+function nbBadge(t, cx, cy, r, label, fill) {
+  return [
+    nbCircle(cx, cy, r, fill),
+    new fabric.Textbox(String(label), { left: cx, top: cy, originX: 'center', originY: 'center', width: r * 2, textAlign: 'center', fontFamily: TEXT_FONT, fontSize: Math.max(10, r * 1.05), fontWeight: '700', fill: t.onAccent, ...nbShape, nbKind: 'shape' }),
+  ];
+}
+/* Shrinks the font until the text fits in maxH (the AI sometimes writes more than a box can hold). */
+function nbFitText(text, opts, maxH, minFs) {
+  const tb = nbText(text, opts); let fs = opts.fontSize || 20;
+  while (tb.height > maxH && fs > (minFs || 10)) { fs -= 1; tb.set('fontSize', fs); }
+  return tb;
+}
+function nbBulletStack(items, p) {
+  const min = p.min || 11, start = Math.max(p.fs, min);
+  for (let fs = start; fs >= min; fs--) {
+    const ind = fs * 1.3, gap = fs * 0.6;
+    const texts = items.map((s) => nbText(s, { left: p.x + ind, top: 0, width: p.w - ind, fontSize: fs, fill: p.t.text, lineHeight: 1.25 }));
+    const total = texts.reduce((a, b) => a + b.height, 0) + gap * Math.max(0, items.length - 1);
+    if (total <= p.maxH || fs === min) {
+      const out = []; let y = p.y;
+      texts.forEach((tb) => { tb.set({ top: y }); out.push(nbCircle(p.x + fs * 0.2, y + fs * 0.62, fs * 0.2, p.dot)); out.push(tb); y += tb.height + gap; });
+      return out;
+    }
+  }
+  return [];
+}
+function nbFooter(t, W, H, m) {
+  const out = []; if (!m) return out;
+  const bh = Math.max(4, H * 0.008), sh = { ...nbShape, nbKind: 'slidebg' };
+  out.push(new fabric.Rect({ left: 0, top: H - bh, width: W, height: bh, fill: nbAlpha(t.accent, 0.18), ...sh }));
+  const fw = Math.max(8, W * Math.min(1, (m.i + 1) / Math.max(1, m.n)));
+  out.push(new fabric.Rect({ left: 0, top: H - bh, width: fw, height: bh, fill: nbGrad(t.accent, t.accent2 || t.accent, fw, bh, 'h'), ...sh }));
+  const fs = Math.max(10, W * 0.0105);
+  if (m.topic) out.push(new fabric.Text(String(m.topic).toUpperCase().slice(0, 56), { left: W * 0.09, top: H * 0.935, fontFamily: TEXT_FONT, fontSize: fs, fontWeight: '600', fill: t.muted, charSpacing: 140, opacity: 0.85, ...sh }));
+  out.push(new fabric.Text(`${nbPad2(m.i + 1)} / ${nbPad2(m.n)}`, { left: W * 0.91, top: H * 0.935, originX: 'right', fontFamily: TEXT_FONT, fontSize: fs, fontWeight: '700', fill: t.accent, charSpacing: 80, ...sh }));
+  return out;
+}
+function nbSlideBgPro(t, W, H, m, o) {
+  const sh = { ...nbShape, nbKind: 'slidebg' }, bw = Math.max(6, W * 0.012);
+  const out = [
+    new fabric.Rect({ left: 0, top: 0, width: W, height: H, fill: nbGrad(t.bg, t.bg2 || t.bg, W, H, 'd'), ...sh }),
+    new fabric.Circle({ left: W * 0.70, top: -H * 0.30, radius: H * 0.60, fill: nbAlpha(t.accent, 0.10), ...sh }),
+    new fabric.Circle({ left: -W * 0.07, top: H * 0.74, radius: H * 0.30, fill: nbAlpha(t.accent2 || t.accent, 0.09), ...sh }),
+    new fabric.Rect({ left: 0, top: 0, width: bw, height: H, fill: nbGrad(t.accent, t.accent2 || t.accent, bw, H, 'v'), ...sh }),
+  ];
+  if (!o || o.footer !== false) nbFooter(t, W, H, m).forEach((x) => out.push(x));
+  return out;
+}
+/* Kicker + title + accent bar. Returns the objects and the y where content can start. */
+function nbHeader(spec, t, W, H, o) {
+  o = o || {};
+  const mx = o.mx != null ? o.mx : W * 0.09, w = o.w != null ? o.w : W * 0.82, out = []; let y = H * 0.075;
+  const kick = nbStr(spec.kicker).trim();
+  if (kick) { const k = nbText(kick.toUpperCase(), { left: mx, top: y, width: w, fontSize: Math.max(11, W * 0.0135), fontWeight: '700', fill: t.accent, charSpacing: 260 }); out.push(k); y += k.height + H * 0.012; }
+  const ttl = nbText(nbStr(spec.title), { left: mx, top: y, width: w, fontSize: nbFitFont(spec.title, W, W * 0.042, 20), fontWeight: '800', fill: nbHeadC(t), lineHeight: 1.1 });
+  out.push(ttl); y += ttl.height + H * 0.022;
+  const bh = Math.max(4, H * 0.007), bw = W * 0.07;
+  out.push(new fabric.Rect({ left: mx, top: y, width: bw, height: bh, rx: 3, ry: 3, fill: nbGrad(t.accent, t.accent2 || t.accent, bw, bh, 'h'), ...nbShape, nbKind: 'shape' }));
+  return { objs: out, bottom: y + bh };
+}
+
+function nbLayoutTitle(spec, t, W, H, img, m) {
+  const o = nbSlideBgPro(t, W, H, m, { footer: false });
+  const cx = W * 0.80, cy = H * 0.5;
+  o.push(nbCircle(cx, cy, H * 0.40, 'rgba(0,0,0,0)', { stroke: nbAlpha(t.accent, 0.45), sw: 2 }));
+  o.push(nbCircle(cx, cy, H * 0.30, nbAlpha(t.accent, 0.14)));
+  const r = H * 0.17;
+  o.push(new fabric.Circle({ left: cx, top: cy, originX: 'center', originY: 'center', radius: r, fill: nbGrad(t.accent, t.accent2 || t.accent, r * 2, r * 2, 'd'), ...nbShape, nbKind: 'shape' }));
+  o.push(nbCircle(cx - H * 0.30, cy - H * 0.26, H * 0.022, t.accent2 || t.accent));
+  o.push(nbCircle(cx + H * 0.27, cy + H * 0.30, H * 0.014, t.accent));
+  const mx = W * 0.09; let y = H * 0.30;
+  const label = nbStr(spec.kicker || (m && m.level ? m.level + ' level' : '')).trim();
+  if (label) {
+    const lt = new fabric.Text(label.toUpperCase(), { left: mx + W * 0.016, top: y + H * 0.012, fontFamily: TEXT_FONT, fontSize: Math.max(11, W * 0.0125), fontWeight: '700', fill: t.accent, charSpacing: 240, ...nbShape });
+    o.push(nbRRect(mx, y, lt.width + W * 0.032, lt.height + H * 0.024, nbAlpha(t.accent, 0.14), { r: 30 })); o.push(lt);
+    y += lt.height + H * 0.024 + H * 0.035;
+  }
+  const ttl = nbText(nbStr(spec.title) || 'Untitled', { left: mx, top: y, width: W * 0.56, fontSize: nbFitFont(spec.title, W, W * 0.062, 28), fontWeight: '800', fill: nbHeadC(t), lineHeight: 1.05 });
+  o.push(ttl); y += ttl.height + H * 0.03;
+  const bw = W * 0.09, bh = Math.max(5, H * 0.009);
+  o.push(new fabric.Rect({ left: mx, top: y, width: bw, height: bh, rx: 3, ry: 3, fill: nbGrad(t.accent, t.accent2 || t.accent, bw, bh, 'h'), ...nbShape, nbKind: 'shape' }));
+  if (spec.subtitle) o.push(nbText(nbStr(spec.subtitle), { left: mx, top: y + bh + H * 0.035, width: W * 0.5, fontSize: Math.max(14, W * 0.022), fill: t.muted, lineHeight: 1.25 }));
   return o;
 }
-function nbLayoutBullets(spec, theme, W, H) {
-  const o = nbSlideBg(theme, W, H), mx = W * 0.09;
-  o.push(nbText(spec.title || '', { left: mx, top: H * 0.09, width: W * 0.82, fontSize: nbFitFont(spec.title, W, W * 0.04, 18), fontWeight: '700', fill: theme.text }));
-  o.push(new fabric.Rect({ left: mx, top: H * 0.21, width: W * 0.14, height: 4, fill: theme.accent, selectable: false, evented: false }));
-  const items = (spec.bullets || []).slice(0, 4), rowH = (H * 0.63) / Math.max(1, items.length);
-  items.forEach((t, i) => {
-    const y = H * 0.28 + i * rowH;
-    o.push(new fabric.Circle({ left: mx, top: y + rowH * 0.22, radius: 5, fill: theme.accent, selectable: false, evented: false }));
-    o.push(nbText(t, { left: mx + 26, top: y, width: W * 0.78, fontSize: Math.max(15, W * 0.024), fill: theme.text, lineHeight: 1.25 }));
+function nbLayoutBullets(spec, t, W, H, img, m) {
+  const o = nbSlideBgPro(t, W, H, m), mx = W * 0.09, cw = W * 0.82;
+  const hd = nbHeader(spec, t, W, H); hd.objs.forEach((x) => o.push(x));
+  let items = nbList(spec.bullets, 4);
+  if (!items.length) items = nbList(spec.left, 3).concat(nbList(spec.right, 3)).slice(0, 4);
+  if (!items.length) return o;
+  const top = hd.bottom + H * 0.045, bottom = H * 0.88, gap = H * 0.022;
+  const rowH = Math.min(H * 0.17, (bottom - top - gap * (items.length - 1)) / items.length);
+  const r = Math.min(rowH * 0.26, W * 0.022);
+  items.forEach((txt, i) => {
+    const y = top + i * (rowH + gap), col = i % 2 ? (t.accent2 || t.accent) : t.accent;
+    o.push(nbCardRect(t, mx, y, cw, rowH, { r: Math.min(18, rowH * 0.22) }));
+    nbBadge(t, mx + rowH * 0.5, y + rowH / 2, r, String(i + 1), col).forEach((x) => o.push(x));
+    const tx = mx + rowH * 0.5 + r + W * 0.022;
+    o.push(nbFitText(txt, { left: tx, top: y + rowH / 2, originY: 'center', width: mx + cw - tx - W * 0.025, fontSize: Math.max(15, W * 0.024), fill: t.text, lineHeight: 1.22 }, rowH * 0.84, 12));
   });
   return o;
 }
-function nbLayoutTwoColumn(spec, theme, W, H) {
-  const o = nbSlideBg(theme, W, H), mx = W * 0.09;
-  o.push(nbText(spec.title || '', { left: mx, top: H * 0.08, width: W * 0.82, fontSize: nbFitFont(spec.title, W, W * 0.038, 18), fontWeight: '700', fill: theme.text }));
-  const colW = W * 0.37, colY = H * 0.26, colH = H * 0.6;
-  [[spec.left, mx], [spec.right, W / 2 + W * 0.04]].forEach(([list, x]) => {
-    o.push(new fabric.Rect({ left: x, top: colY, width: colW, height: colH, rx: 10, ry: 10, fill: theme.panel, selectable: false, evented: false }));
-    const rows = (list || []).slice(0, 3), rh = colH / Math.max(1, rows.length);
-    rows.forEach((t, i) => o.push(nbText('• ' + t, { left: x + 16, top: colY + 14 + i * rh, width: colW - 32, fontSize: Math.max(13, W * 0.019), fill: theme.text, lineHeight: 1.25 })));
+function nbLayoutTwoColumn(spec, t, W, H, img, m) {
+  const o = nbSlideBgPro(t, W, H, m), mx = W * 0.09, cw = W * 0.82, gap = W * 0.03, pad = W * 0.022;
+  const hd = nbHeader(spec, t, W, H); hd.objs.forEach((x) => o.push(x));
+  const colW = (cw - gap) / 2, top = hd.bottom + H * 0.045, colH = H * 0.88 - top;
+  [[spec.left, spec.leftTitle, mx, t.accent], [spec.right, spec.rightTitle, mx + colW + gap, t.accent2 || t.accent]].forEach(([list, ttl, x, col]) => {
+    o.push(nbCardRect(t, x, top, colW, colH, { r: 18 }));
+    o.push(nbRRect(x + 14, top, colW - 28, Math.max(5, H * 0.009), col, { r: 4 }));
+    let y = top + colH * 0.07;
+    const head = nbStr(ttl).trim();
+    if (head) { const h = nbText(head, { left: x + pad, top: y, width: colW - 2 * pad, fontSize: Math.max(15, W * 0.022), fontWeight: '700', fill: col }); o.push(h); y += h.height + H * 0.025; }
+    nbBulletStack(nbList(list, 3), { x: x + pad, y, w: colW - 2 * pad, maxH: top + colH - y - colH * 0.06, fs: Math.max(13, W * 0.0195), t, dot: col }).forEach((z) => o.push(z));
   });
   return o;
 }
-function nbLayoutBigStat(spec, theme, W, H) {
-  const o = nbSlideBg(theme, W, H);
-  if (spec.title) o.push(nbText(spec.title, { left: W / 2, top: H * 0.14, originX: 'center', width: W * 0.8, textAlign: 'center', fontSize: Math.max(16, W * 0.03), fontWeight: '700', fill: theme.muted }));
-  o.push(nbText(spec.stat || '', { left: W / 2, top: H * 0.46, originX: 'center', originY: 'center', width: W * 0.8, textAlign: 'center', fontSize: Math.max(40, W * 0.13), fontWeight: '700', fill: theme.accent }));
-  if (spec.statLabel) o.push(nbText(spec.statLabel, { left: W / 2, top: H * 0.68, originX: 'center', width: W * 0.7, textAlign: 'center', fontSize: Math.max(16, W * 0.024), fill: theme.text }));
-  if (spec.caption) o.push(nbText(spec.caption, { left: W / 2, top: H * 0.82, originX: 'center', width: W * 0.7, textAlign: 'center', fontSize: Math.max(12, W * 0.016), fill: theme.muted, fontStyle: 'italic' }));
+function nbLayoutBigStat(spec, t, W, H, img, m) {
+  const o = nbSlideBgPro(t, W, H, m);
+  const cardW = W * 0.64, cardH = H * 0.50, x = (W - cardW) / 2, y = H * 0.22;
+  if (spec.title) o.push(nbText(nbStr(spec.title).toUpperCase(), { left: W / 2, top: H * 0.095, originX: 'center', width: W * 0.8, textAlign: 'center', fontSize: Math.max(13, W * 0.017), fontWeight: '700', fill: t.accent, charSpacing: 220 }));
+  o.push(nbCircle(W / 2, y + cardH / 2, cardH * 0.64, nbAlpha(t.accent, 0.12)));
+  o.push(nbCardRect(t, x, y, cardW, cardH, { r: 28 }));
+  o.push(nbRRect(x + cardW * 0.35, y, cardW * 0.30, Math.max(5, H * 0.009), t.accent, { r: 4 }));
+  const sl = nbStr(spec.stat).length, fs = sl <= 4 ? W * 0.15 : sl <= 7 ? W * 0.11 : sl <= 12 ? W * 0.075 : W * 0.05;
+  o.push(nbText(nbStr(spec.stat), { left: W / 2, top: y + cardH * 0.40, originX: 'center', originY: 'center', width: cardW * 0.9, textAlign: 'center', fontSize: fs, fontWeight: '800', fill: t.accent }));
+  if (spec.statLabel) o.push(nbFitText(nbStr(spec.statLabel), { left: W / 2, top: y + cardH * 0.76, originX: 'center', originY: 'center', width: cardW * 0.82, textAlign: 'center', fontSize: Math.max(16, W * 0.026), fontWeight: '600', fill: nbHeadC(t) }, cardH * 0.26, 12));
+  if (spec.caption) o.push(nbText(nbStr(spec.caption), { left: W / 2, top: y + cardH + H * 0.045, originX: 'center', width: W * 0.7, textAlign: 'center', fontSize: Math.max(12, W * 0.017), fill: t.muted, fontStyle: 'italic' }));
   return o;
 }
-function nbLayoutQuote(spec, theme, W, H) {
-  const o = nbSlideBg(theme, W, H);
-  o.push(nbText('\u201C', { left: W * 0.08, top: H * 0.1, fontSize: W * 0.12, fill: theme.quoteTint, fontWeight: '700' }));
-  o.push(nbText(spec.quote || '', { left: W / 2, top: H * 0.44, originX: 'center', originY: 'center', width: W * 0.72, textAlign: 'center', fontSize: Math.max(20, W * 0.036), fontStyle: 'italic', fill: theme.text }));
-  if (spec.attribution) o.push(nbText('— ' + spec.attribution, { left: W / 2, top: H * 0.7, originX: 'center', width: W * 0.6, textAlign: 'center', fontSize: Math.max(14, W * 0.02), fill: theme.muted }));
+function nbLayoutQuote(spec, t, W, H, img, m) {
+  const o = nbSlideBgPro(t, W, H, m);
+  const q = nbStr(spec.quote), fs = q.length > 160 ? W * 0.026 : q.length > 90 ? W * 0.031 : W * 0.038;
+  o.push(nbText('\u201C', { left: W * 0.09, top: H * 0.06, fontFamily: 'Georgia, serif', fontSize: W * 0.2, fontWeight: '700', fill: nbAlpha(t.accent, 0.55), ...nbShape }));
+  const qt = nbText(q, { left: W * 0.17, top: 0, width: W * 0.68, fontSize: fs, fontStyle: 'italic', fill: nbHeadC(t), lineHeight: 1.3 });
+  const qy = Math.max(H * 0.24, H * 0.46 - qt.height / 2); qt.set({ top: qy });
+  o.push(nbRRect(W * 0.145, qy, 5, qt.height, nbGrad(t.accent, t.accent2 || t.accent, 5, qt.height, 'v'), { r: 3 }));
+  o.push(qt);
+  if (spec.attribution) o.push(nbText('\u2014 ' + nbStr(spec.attribution), { left: W * 0.17, top: qy + qt.height + H * 0.045, width: W * 0.6, fontSize: Math.max(14, W * 0.02), fontWeight: '700', fill: t.accent }));
   return o;
 }
-function nbLayoutImageFocus(spec, theme, W, H, imageEl) {
-  const o = nbSlideBg(theme, W, H), mx = W * 0.08;
-  if (spec.title) o.push(nbText(spec.title, { left: mx, top: H * 0.08, width: W * 0.84, fontSize: nbFitFont(spec.title, W, W * 0.036, 18), fontWeight: '700', fill: theme.text }));
-  const bx = mx, by = H * 0.22, bw = W * 0.84, bh = H * 0.58;
+function nbLayoutImageFocus(spec, t, W, H, imageEl, m) {
+  const o = nbSlideBgPro(t, W, H, m), mx = W * 0.09;
+  const hd = nbHeader(spec, t, W, H); hd.objs.forEach((x) => o.push(x));
+  const bw = W * 0.82, top = hd.bottom + H * 0.04, bh = H * 0.88 - top - (spec.caption ? H * 0.07 : 0), pad = Math.min(bw, bh) * 0.025;
+  o.push(nbCardRect(t, mx, top, bw, bh, { r: 20 }));
   if (imageEl) {
-    const k = Math.min(bw / imageEl.width, bh / imageEl.height);
-    imageEl.set({ left: bx + bw / 2, top: by + bh / 2, originX: 'center', originY: 'center', scaleX: k, scaleY: k, nbKind: 'image' });
+    const k = Math.min((bw - 2 * pad) / imageEl.width, (bh - 2 * pad) / imageEl.height);
+    imageEl.set({ left: mx + bw / 2, top: top + bh / 2, originX: 'center', originY: 'center', scaleX: k, scaleY: k, nbKind: 'image' });
     o.push(imageEl);
   } else {
-    o.push(new fabric.Rect({ left: bx, top: by, width: bw, height: bh, rx: 14, ry: 14, fill: theme.panel, stroke: theme.accent, strokeDashArray: [6, 6], strokeWidth: 1.5, selectable: false, evented: false, nbKind: 'imgPlaceholder' }));
-    o.push(nbText('Image generating…', { left: bx + bw / 2, top: by + bh / 2, originX: 'center', originY: 'center', width: bw * 0.8, textAlign: 'center', fontSize: Math.max(13, W * 0.018), fill: theme.muted }));
+    o.push(new fabric.Rect({ left: mx + pad, top: top + pad, width: bw - 2 * pad, height: bh - 2 * pad, rx: 14, ry: 14, fill: t.panel, stroke: t.accent, strokeDashArray: [6, 6], strokeWidth: 1.5, ...nbShape, nbKind: 'imgPlaceholder' }));
+    o.push(nbText('Image generating\u2026', { left: mx + bw / 2, top: top + bh / 2, originX: 'center', originY: 'center', width: bw * 0.8, textAlign: 'center', fontSize: Math.max(13, W * 0.018), fill: t.muted }));
   }
-  if (spec.caption) o.push(nbText(spec.caption, { left: W / 2, top: H * 0.86, originX: 'center', width: W * 0.7, textAlign: 'center', fontSize: Math.max(12, W * 0.016), fill: theme.muted, fontStyle: 'italic' }));
+  if (spec.caption) o.push(nbText(nbStr(spec.caption), { left: W / 2, top: top + bh + H * 0.02, originX: 'center', width: W * 0.7, textAlign: 'center', fontSize: Math.max(12, W * 0.016), fill: t.muted, fontStyle: 'italic' }));
   return o;
 }
-const NB_SLIDE_BUILDERS = { title: nbLayoutTitle, bullets: nbLayoutBullets, twoColumn: nbLayoutTwoColumn, bigStat: nbLayoutBigStat, quote: nbLayoutQuote };
-function nbBuildSlideObjects(spec, theme, W, H, imageEl) {
+function nbLayoutCards(spec, t, W, H, img, m) {
+  const cards = nbCardList(spec.cards || spec.steps, 4);
+  if (!cards.length) return nbLayoutBullets(spec, t, W, H, img, m);
+  const o = nbSlideBgPro(t, W, H, m), mx = W * 0.09, cw = W * 0.82;
+  const hd = nbHeader(spec, t, W, H); hd.objs.forEach((x) => o.push(x));
+  const n = cards.length, gap = W * 0.025, w = (cw - gap * (n - 1)) / n, top = hd.bottom + H * 0.05, h = H * 0.87 - top, pad = w * 0.09;
+  cards.forEach((c, i) => {
+    const x = mx + i * (w + gap), col = i % 2 ? (t.accent2 || t.accent) : t.accent, r = Math.min(w * 0.11, H * 0.04);
+    o.push(nbCardRect(t, x, top, w, h, { r: 18 }));
+    o.push(nbRRect(x + 14, top, w - 28, Math.max(5, H * 0.009), col, { r: 4 }));
+    nbBadge(t, x + pad + r, top + pad * 1.4 + r, r, String(i + 1), col).forEach((z) => o.push(z));
+    let y = top + pad * 1.4 + r * 2 + H * 0.03;
+    const hdg = nbFitText(c.heading, { left: x + pad, top: y, width: w - 2 * pad, fontSize: Math.max(15, W * 0.0225), fontWeight: '700', fill: nbHeadC(t), lineHeight: 1.15 }, h * 0.28, 12);
+    o.push(hdg); y += hdg.height + H * 0.018;
+    if (c.text) o.push(nbFitText(c.text, { left: x + pad, top: y, width: w - 2 * pad, fontSize: Math.max(12, W * 0.0168), fill: t.text, opacity: 0.86, lineHeight: 1.3 }, top + h - y - pad, 10));
+  });
+  return o;
+}
+function nbLayoutTimeline(spec, t, W, H, img, m) {
+  const steps = nbCardList(spec.steps || spec.cards, 4);
+  if (!steps.length) return nbLayoutBullets(spec, t, W, H, img, m);
+  const o = nbSlideBgPro(t, W, H, m), mx = W * 0.09, cw = W * 0.82;
+  const hd = nbHeader(spec, t, W, H); hd.objs.forEach((x) => o.push(x));
+  const n = steps.length, slot = cw / n, r = Math.min(H * 0.055, slot * 0.18), lineY = hd.bottom + H * 0.12;
+  if (n > 1) o.push(nbRRect(mx + slot * 0.5, lineY - 2, slot * (n - 1), 4, nbAlpha(t.accent, 0.35), { r: 2 }));
+  steps.forEach((st, i) => {
+    const cx = mx + slot * (i + 0.5), col = i % 2 ? (t.accent2 || t.accent) : t.accent;
+    o.push(nbCircle(cx, lineY, r + 9, nbAlpha(col, 0.20)));
+    nbBadge(t, cx, lineY, r, String(i + 1), col).forEach((z) => o.push(z));
+    let y = lineY + r + H * 0.06;
+    const hdg = nbFitText(st.heading, { left: cx, top: y, originX: 'center', width: slot * 0.86, textAlign: 'center', fontSize: Math.max(15, W * 0.0225), fontWeight: '700', fill: nbHeadC(t), lineHeight: 1.15 }, H * 0.14, 12);
+    o.push(hdg); y += hdg.height + H * 0.018;
+    if (st.text) o.push(nbFitText(st.text, { left: cx, top: y, originX: 'center', width: slot * 0.86, textAlign: 'center', fontSize: Math.max(12, W * 0.0168), fill: t.text, opacity: 0.86, lineHeight: 1.3 }, H * 0.88 - y, 10));
+  });
+  return o;
+}
+function nbLayoutSection(spec, t, W, H, img, m) {
+  const o = nbSlideBgPro(t, W, H, m), mx = W * 0.09;
+  o.push(nbText(nbStr(spec.number || nbPad2((m ? m.i : 0) + 1)), { left: W * 0.06, top: H * 0.10, fontSize: H * 0.5, fontWeight: '800', fill: nbAlpha(t.accent, 0.20), ...nbShape }));
+  let y = H * 0.52;
+  o.push(nbText(nbStr(spec.kicker || 'Section').toUpperCase(), { left: mx, top: y, width: W * 0.7, fontSize: Math.max(11, W * 0.0135), fontWeight: '700', fill: t.accent, charSpacing: 260 }));
+  y += H * 0.06;
+  const ttl = nbText(nbStr(spec.title), { left: mx, top: y, width: W * 0.7, fontSize: nbFitFont(spec.title, W, W * 0.056, 24), fontWeight: '800', fill: nbHeadC(t), lineHeight: 1.08 });
+  o.push(ttl); y += ttl.height + H * 0.025;
+  if (spec.subtitle) o.push(nbText(nbStr(spec.subtitle), { left: mx, top: y, width: W * 0.6, fontSize: Math.max(14, W * 0.021), fill: t.muted, lineHeight: 1.25 }));
+  return o;
+}
+function nbLayoutClosing(spec, t, W, H, img, m) {
+  const o = nbSlideBgPro(t, W, H, m), mx = W * 0.09, leftW = W * 0.52;
+  const hd = nbHeader({ kicker: spec.kicker || 'Key takeaways', title: spec.title }, t, W, H, { w: leftW }); hd.objs.forEach((x) => o.push(x));
+  const items = nbList(spec.bullets, 4), top = hd.bottom + H * 0.05, gap = H * 0.02;
+  const rowH = items.length ? Math.min(H * 0.13, (H * 0.88 - top - gap * (items.length - 1)) / items.length) : 0, r = Math.min(rowH * 0.3, W * 0.017);
+  items.forEach((txt, i) => {
+    const cy = top + i * (rowH + gap) + rowH / 2, cx = mx + r;
+    o.push(nbCircle(cx, cy, r, i % 2 ? (t.accent2 || t.accent) : t.accent));
+    o.push(new fabric.Path(`M ${-r * 0.42} ${r * 0.02} L ${-r * 0.1} ${r * 0.36} L ${r * 0.46} ${-r * 0.32}`, { left: cx, top: cy, originX: 'center', originY: 'center', fill: '', stroke: t.onAccent, strokeWidth: Math.max(2, r * 0.26), strokeLineCap: 'round', strokeLineJoin: 'round', ...nbShape, nbKind: 'shape' }));
+    o.push(nbFitText(txt, { left: cx + r + W * 0.018, top: cy, originY: 'center', width: leftW - r * 2 - W * 0.018, fontSize: Math.max(14, W * 0.022), fill: t.text, lineHeight: 1.22 }, rowH, 11));
+  });
+  const px = W * 0.66, py = H * 0.18, pw = W * 0.25, ph = H * 0.62;
+  o.push(nbRRect(px, py, pw, ph, nbGrad(t.accent, t.accent2 || t.accent, pw, ph, 'd'), { r: 28 }));
+  o.push(nbCircle(px + pw * 0.82, py + ph * 0.14, pw * 0.34, 'rgba(255,255,255,.14)'));
+  o.push(nbCircle(px + pw * 0.14, py + ph * 0.9, pw * 0.22, 'rgba(255,255,255,.10)'));
+  const cta = nbStr(spec.subtitle) || 'Thank you';
+  o.push(nbText(cta, { left: px + pw / 2, top: py + ph / 2, originX: 'center', originY: 'center', width: pw * 0.78, textAlign: 'center', fontSize: nbFitFont(cta, W, W * 0.038, 18), fontWeight: '800', fill: t.onAccent, lineHeight: 1.15 }));
+  return o;
+}
+const NB_SLIDE_BUILDERS = { title: nbLayoutTitle, bullets: nbLayoutBullets, twoColumn: nbLayoutTwoColumn, bigStat: nbLayoutBigStat, quote: nbLayoutQuote, imageFocus: nbLayoutImageFocus, cards: nbLayoutCards, timeline: nbLayoutTimeline, section: nbLayoutSection, closing: nbLayoutClosing };
+function nbBuildSlideObjects(spec, theme, W, H, imageEl, meta) {
   const layout = NB_SLIDE_LAYOUTS.includes(spec.layout) ? spec.layout : 'bullets';
-  if (layout === 'imageFocus') return nbLayoutImageFocus(spec, theme, W, H, imageEl);
-  return (NB_SLIDE_BUILDERS[layout] || nbLayoutBullets)(spec, theme, W, H);
+  try { return (NB_SLIDE_BUILDERS[layout] || nbLayoutBullets)(spec, theme, W, H, imageEl, meta); }
+  catch (e) {
+    try { return nbLayoutBullets({ title: spec.title, bullets: nbList(spec.bullets, 4) }, theme, W, H, null, meta); }
+    catch (e2) { return nbSlideBg(theme, W, H); }
+  }
 }
 /* Renders one slide spec into a {bg, json, thumb} record using an offscreen canvas — never
    touches the live board canvas, so a whole deck can be built while the user keeps working. */
-function nbRenderSlideRecord(spec, theme, W, H, imageEl) {
+function nbRenderSlideRecord(spec, theme, W, H, imageEl, meta) {
   const canvas = new fabric.StaticCanvas(null, { width: W, height: H });
-  nbBuildSlideObjects(spec, theme, W, H, imageEl).forEach((o) => canvas.add(o));
+  nbBuildSlideObjects(spec, theme, W, H, imageEl, meta).forEach((o) => canvas.add(o));
   canvas.renderAll();
   const json = canvas.toJSON(NB_PROPS);
   const thumb = canvas.toDataURL({ format: 'jpeg', quality: 0.55, multiplier: Math.min(1, 220 / W) });
@@ -8913,6 +9475,9 @@ let nbImageCooldownUntil = 0;
 
 function SlidesTool({ viewportRef, addGeneratedDeck, updateGeneratedSlide }) {
   const { s } = useSettings();
+  const imgCfg = nbImgCfg(s);
+  const cdMs = nbImgCooldownMs(imgCfg);
+  const imgLabel = nbImgLabel(imgCfg);
   const [topic, setTopic] = useState('');
   const [level, setLevel] = useState(NB_SLIDE_LEVELS[1]);
   const [count, setCount] = useState(6);
@@ -8922,7 +9487,7 @@ function SlidesTool({ viewportRef, addGeneratedDeck, updateGeneratedSlide }) {
   const [err, setErr] = useState('');
   const [status, setStatus] = useState('');
   const [cooldownLeft, setCooldownLeft] = useState(0);
-  const [deck, setDeck] = useState([]);       // [{id, spec, thumb}] of the deck just created, for the row list
+  const [deck, setDeck] = useState([]);       // [{id, spec, thumb, meta}] of the deck just created, for the row list
   const [rowBusy, setRowBusy] = useState({}); // { [slideId]: true } while that one row is regenerating
   const deckRef = useRef([]);        // mirrors `deck`, read synchronously inside the image-fill loop
   const deckThemeRef = useRef(null); // theme object used for the current deck, reused by per-row regenerate
@@ -8936,8 +9501,7 @@ function SlidesTool({ viewportRef, addGeneratedDeck, updateGeneratedSlide }) {
     return () => clearInterval(t);
   }, []);
 
-  /* Waits `ms`, but wakes up early if the person hits Cancel, so a 45s cooldown wait doesn't
-     block the Cancel button from taking effect. */
+  /* Waits `ms`, but wakes up early if the person hits Cancel. */
   const sleepCancellable = (ms) => new Promise((resolve) => {
     const start = Date.now();
     const tick = () => { if (cancelRef.current || Date.now() - start >= ms) resolve(); else setTimeout(tick, 250); };
@@ -8945,9 +9509,9 @@ function SlidesTool({ viewportRef, addGeneratedDeck, updateGeneratedSlide }) {
   });
 
   const estimateLabel = () => {
-    if (!withImages) return 'Usually 10–20s to write.';
-    const maxImgs = Math.min(2, count);
-    return `Usually 10–20s to write, plus up to ~${maxImgs * 45}s for up to ${maxImgs} image${maxImgs > 1 ? 's' : ''} (one at a time).`;
+    if (!withImages) return 'Usually 10–25s to write.';
+    const maxImgs = Math.min(2, count), per = imgCfg.provider === 'custom' ? 15 : 45;
+    return `Usually 10–25s to write, plus up to ~${maxImgs * per}s for up to ${maxImgs} image${maxImgs > 1 ? 's' : ''} (one at a time).`;
   };
 
   const patchDeckThumb = (id, thumb) => {
@@ -8959,22 +9523,21 @@ function SlidesTool({ viewportRef, addGeneratedDeck, updateGeneratedSlide }) {
     const needing = deckRef.current.filter((d) => d.spec.layout === 'imageFocus' && d.spec.imagePrompt);
     for (let i = 0; i < needing.length; i++) {
       if (cancelRef.current) break;
-      const { id, spec } = needing[i];
+      const { id, spec, meta } = needing[i];
       const wait = nbImageCooldownUntil - Date.now();
-      if (wait > 0) { setStatus(`Image ${i + 1}/${needing.length} — waiting ${Math.ceil(wait / 1000)}s (Pollinations cooldown)…`); await sleepCancellable(wait); }
+      if (wait > 0) { setStatus(`Image ${i + 1}/${needing.length} — waiting ${Math.ceil(wait / 1000)}s (${imgLabel} cooldown)…`); await sleepCancellable(wait); }
       if (cancelRef.current) break;
       setStatus(`Generating image ${i + 1}/${needing.length}…`);
       try {
-        const url = nbImagineUrl(spec.imagePrompt, { styleHint: 'clean educational illustration, no text', width: 1024, height: 768 });
-        await nbImagineLoad(url);
-        const dataUrl = await nbFetchImageDataUrl(url);
-        nbImageCooldownUntil = Date.now() + NB_IMAGE_COOLDOWN_MS;
+        const dataUrl = await nbSlideImage(spec.imagePrompt, imgCfg);
+        nbImageCooldownUntil = Date.now() + cdMs;
         const imgEl = await nbLoadImageEl(dataUrl);
-        const record = nbRenderSlideRecord(spec, themeObj, W, H, imgEl);
+        const record = nbRenderSlideRecord(spec, themeObj, W, H, imgEl, meta);
         updateGeneratedSlide(id, record);
         patchDeckThumb(id, record.thumb);
       } catch (e) {
-        nbImageCooldownUntil = Date.now() + NB_IMAGE_COOLDOWN_MS; // still cooling down even on failure
+        nbImageCooldownUntil = Date.now() + cdMs; // still cooling down even on failure
+        setErr(e && e.message ? `Image ${i + 1}: ${e.message}` : '');
         // Leave that slide's placeholder in place; not fatal to the rest of the deck.
       }
     }
@@ -8996,29 +9559,31 @@ function SlidesTool({ viewportRef, addGeneratedDeck, updateGeneratedSlide }) {
     if (!vp) { setErr('Open a board first.'); setBusy(false); setStatus(''); return; }
     const { W, H } = vp.getStageSize();
     deckThemeRef.current = themeObj; deckWHRef.current = { W, H };
-    // Free-tier routed models (e.g. openrouter/free) can wrap the reply in prose, or get cut
-    // off mid-array before the closing bracket. Retry automatically — scaling the token budget
-    // to the slide count — instead of making the person click Generate again.
-    const tokenBudget = Math.min(4000, 500 + count * 260);
+    // Free-tier routed models can wrap the reply in prose or get cut off mid-array. Retry
+    // automatically, with a token budget that scales with the slide count.
+    const tokenBudget = Math.min(6000, 700 + count * 380);
     (async () => {
       try {
         let specsRaw = null, lastErr = null;
         for (let attempt = 0; attempt < 3 && !specsRaw && !cancelRef.current; attempt++) {
           if (attempt > 0) setStatus(`Writing your deck… (attempt ${attempt + 1} of 3)`);
           try {
-            const prompt = nbSlidesPrompt(topic, count, level) + (attempt > 0 ? '\nYour previous reply was not valid, complete JSON. Keep every field shorter so the whole array fits in one reply, and output nothing but the JSON array — no prose, no markdown fences.' : '');
+            const prompt = nbSlidesPrompt(topic, count, level, withImages) + (attempt > 0 ? '\nYour previous reply was not valid, complete JSON. Keep every field shorter so the whole array fits in one reply, and output nothing but the JSON array — no prose, no markdown fences.' : '');
             const controller = new AbortController(); abortRef.current = controller;
-            const out = await nbAiCall({ provider: nbAiProv(s), key: nbAiKey(s), model: s.aiModel, system: NB_SLIDES_SYSTEM, maxTokens: tokenBudget, messages: [{ role: 'user', content: prompt }], signal: controller.signal });
+            const out = await nbAiCall({ ...nbAiBase(s), system: NB_SLIDES_SYSTEM, maxTokens: tokenBudget, messages: [{ role: 'user', content: prompt }], signal: controller.signal });
             specsRaw = nbParseSlideJson(out);
           } catch (e) { lastErr = e; }
         }
         if (cancelRef.current) { setStatus(''); return; }
         if (!specsRaw) throw (lastErr || new Error('The AI reply could not be read as a deck after 3 tries. Try again, or switch providers in Settings > AI.'));
         const specs = specsRaw.slice(0, count).map((sp) => (sp && typeof sp === 'object' ? sp : {}));
-        if (!withImages) specs.forEach((sp) => { if (sp.layout === 'imageFocus') sp.layout = 'bullets'; });
+        if (!withImages) specs.forEach((sp) => {
+          if (sp.layout === 'imageFocus') { sp.layout = 'bullets'; if (!nbList(sp.bullets, 4).length) sp.bullets = [sp.caption || sp.title || 'Key idea']; }
+        });
         const ids = specs.map(() => uid());
-        const records = specs.map((sp, i) => ({ id: ids[i], ...nbRenderSlideRecord(sp, themeObj, W, H) }));
-        deckRef.current = specs.map((sp, i) => ({ id: ids[i], spec: sp, thumb: records[i].thumb }));
+        const metas = specs.map((sp, i) => ({ i, n: specs.length, topic: topic.trim(), level }));
+        const records = specs.map((sp, i) => ({ id: ids[i], ...nbRenderSlideRecord(sp, themeObj, W, H, null, metas[i]) }));
+        deckRef.current = specs.map((sp, i) => ({ id: ids[i], spec: sp, thumb: records[i].thumb, meta: metas[i] }));
         setDeck(deckRef.current);
         addGeneratedDeck(records);
         setStatus('');
@@ -9032,8 +9597,7 @@ function SlidesTool({ viewportRef, addGeneratedDeck, updateGeneratedSlide }) {
     })();
   };
 
-  /* Regenerates one already-placed slide in place (same layout, new content/image), without
-     touching the rest of the deck. Reuses the theme and page size the deck was built with. */
+  /* Regenerates one already-placed slide in place (same layout, new content/image). */
   const regenerateSlide = (id) => {
     if (rowBusy[id]) return;
     const row = deckRef.current.find((d) => d.id === id);
@@ -9042,23 +9606,21 @@ function SlidesTool({ viewportRef, addGeneratedDeck, updateGeneratedSlide }) {
     setRowBusy((m) => ({ ...m, [id]: true })); setErr('');
     (async () => {
       try {
-        const out = await nbAiCall({ provider: nbAiProv(s), key: nbAiKey(s), model: s.aiModel, system: NB_SLIDES_SYSTEM, maxTokens: 500, messages: [{ role: 'user', content: nbSingleSlidePrompt(topic, level, row.spec.layout) }] });
+        const out = await nbAiCall({ ...nbAiBase(s), system: NB_SLIDES_SYSTEM, maxTokens: 700, messages: [{ role: 'user', content: nbSingleSlidePrompt(topic, level, row.spec.layout) }] });
         const obj = nbParseSingleSlide(out);
         if (!obj) throw new Error('Could not read that slide. Try again.');
         const spec = { ...obj, layout: row.spec.layout };
         let imgEl = null;
         if (spec.layout === 'imageFocus' && withImages && spec.imagePrompt) {
           const wait = nbImageCooldownUntil - Date.now();
-          if (wait > 0) { setStatus(`Waiting ${Math.ceil(wait / 1000)}s (Pollinations cooldown)…`); await sleepCancellable(wait); setStatus(''); }
+          if (wait > 0) { setStatus(`Waiting ${Math.ceil(wait / 1000)}s (${imgLabel} cooldown)…`); await sleepCancellable(wait); setStatus(''); }
           try {
-            const url = nbImagineUrl(spec.imagePrompt, { styleHint: 'clean educational illustration, no text', width: 1024, height: 768 });
-            await nbImagineLoad(url);
-            const dataUrl = await nbFetchImageDataUrl(url);
-            nbImageCooldownUntil = Date.now() + NB_IMAGE_COOLDOWN_MS;
+            const dataUrl = await nbSlideImage(spec.imagePrompt, imgCfg);
+            nbImageCooldownUntil = Date.now() + cdMs;
             imgEl = await nbLoadImageEl(dataUrl);
-          } catch (e) { nbImageCooldownUntil = Date.now() + NB_IMAGE_COOLDOWN_MS; }
+          } catch (e) { nbImageCooldownUntil = Date.now() + cdMs; }
         }
-        const record = nbRenderSlideRecord(spec, themeObj, dims.W, dims.H, imgEl);
+        const record = nbRenderSlideRecord(spec, themeObj, dims.W, dims.H, imgEl, row.meta);
         updateGeneratedSlide(id, record);
         deckRef.current = deckRef.current.map((d) => (d.id === id ? { ...d, spec, thumb: record.thumb } : d));
         setDeck(deckRef.current);
@@ -9070,10 +9632,10 @@ function SlidesTool({ viewportRef, addGeneratedDeck, updateGeneratedSlide }) {
     })();
   };
 
-  if (!nbAiKey(s)) {
+  if (!nbAiReady(s)) {
     return (
       <div className="space-y-2 text-xs text-slate-300" onPointerDown={stop}>
-        <p>Add a free Gemini, Groq or OpenRouter API key in Settings &gt; AI to generate slide decks.</p>
+        <p>Add a free Gemini, Groq or OpenRouter API key (or your own AI endpoint) in Settings &gt; AI to generate slide decks.</p>
       </div>
     );
   }
@@ -9081,19 +9643,19 @@ function SlidesTool({ viewportRef, addGeneratedDeck, updateGeneratedSlide }) {
   const box = 'w-full px-2 py-1.5 rounded-md bg-slate-900/60 border border-slate-600/50 text-xs text-slate-100';
   return (
     <div className="space-y-2 max-h-[70vh] overflow-y-auto" onPointerDown={stop}>
-      <p className="text-[11px] text-slate-500">Generates a themed slide deck as real board pages — titles, two-column layouts, big stats, quotes — not plain bullet text.</p>
+      <p className="text-[11px] text-slate-500">Designs a themed deck as real board pages: title, cards, timeline, comparison, big-stat, quote and closing slides, each with its own layout.</p>
       <textarea className={`${box} resize-none`} rows={2} value={topic} placeholder="Deck topic, e.g. the water cycle" onChange={(e) => setTopic(e.target.value)} />
       <div className="flex flex-wrap gap-1.5">{NB_SLIDE_LEVELS.map((l) => <button key={l} onClick={() => setLevel(l)} className={`nb-chip ${level === l ? 'on' : 'text-slate-400'}`}>{l}</button>)}</div>
       <div className="flex flex-wrap gap-1.5">
         {NB_SLIDE_THEMES.map(([id, l, t]) => (
           <button key={id} onClick={() => setTheme(id)} className={`nb-chip flex items-center gap-1 ${theme === id ? 'on' : 'text-slate-400'}`}>
-            <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: t.accent }} />{l}
+            <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: `linear-gradient(135deg, ${t.accent}, ${t.accent2})`, boxShadow: t.light ? 'inset 0 0 0 1px rgba(0,0,0,.25)' : 'none' }} />{l}
           </button>
         ))}
       </div>
       <div className="flex items-center gap-2">
         <span className="text-[11px] text-slate-500">Slides</span>
-        {[4, 6, 8].map((n) => <button key={n} onClick={() => setCount(n)} className={`nb-chip ${count === n ? 'on' : 'text-slate-400'}`}>{n}</button>)}
+        {[4, 6, 8, 10].map((n) => <button key={n} onClick={() => setCount(n)} className={`nb-chip ${count === n ? 'on' : 'text-slate-400'}`}>{n}</button>)}
         <label className="flex items-center gap-1 text-[11px] text-slate-400 ml-auto">
           <input type="checkbox" checked={withImages} onChange={(e) => setWithImages(e.target.checked)} /> Images
         </label>
@@ -9105,7 +9667,7 @@ function SlidesTool({ viewportRef, addGeneratedDeck, updateGeneratedSlide }) {
       </div>
       <p className="text-[11px] text-slate-500">Want to bring in an existing deck instead? Use the <b>Import</b> button in the top toolbar — it reads PDF and PowerPoint (.pptx) files and places their pages on the board.</p>
       {status && <div className="text-xs text-slate-500">{status}</div>}
-      {!status && cooldownLeft > 0 && <div className="text-[11px] text-slate-500">Pollinations cooldown: {cooldownLeft}s before the next image can generate.</div>}
+      {!status && cooldownLeft > 0 && <div className="text-[11px] text-slate-500">{imgLabel} cooldown: {cooldownLeft}s before the next image can generate.</div>}
       {err && <div className="text-xs text-red-300" role="alert">{err}</div>}
       {deck.length > 0 && (
         <div className="space-y-1 pt-2 border-t border-slate-700/50">
@@ -9138,13 +9700,14 @@ function AiTool({ viewportRef }) {
   const endRef = useRef(null);
   useEffect(() => { if (endRef.current) endRef.current.scrollTop = endRef.current.scrollHeight; }, [msgs, busy]);
   const stop = (e) => e.stopPropagation();
-  const call = (args) => nbAiCall({ provider: nbAiProv(s), key: nbAiKey(s), model: s.aiModel, system: NB_AI_SYSTEM, ...args });
+  const call = (args) => nbAiCall({ ...nbAiBase(s), system: NB_AI_SYSTEM, maxTokens: nbAiMax(s), ...args });
+  const ctxInfo = nbTrimHistory(msgs, nbAiCtx(s));
   const run = async (fn) => { setBusy(true); setErr(''); try { await fn(); } catch (e) { setErr(e.message || 'Something went wrong.'); } finally { setBusy(false); } };
 
-  if (!nbAiKey(s)) {
+  if (!nbAiReady(s)) {
     return (
       <div className="space-y-2 text-xs text-slate-300" onPointerDown={stop}>
-        <p>Add a free Gemini, Groq or OpenRouter API key to turn on the assistant. It stays in this browser.</p>
+        <p>Add a free Gemini, Groq or OpenRouter API key, or set up your own AI endpoint, to turn on the assistant. It stays in this browser.</p>
         <button className="nb-btn" onClick={() => open && open('ai')}>Open AI settings</button>
       </div>
     );
@@ -9154,7 +9717,8 @@ function AiTool({ viewportRef }) {
     const text = input.trim(); if (!text || busy) return;
     const next = [...msgs, { role: 'user', content: text }];
     setMsgs(next); setInput('');
-    run(async () => { const out = await call({ messages: next.slice(-12) }); setMsgs((m) => [...m, { role: 'assistant', content: out }]); });
+    const sent = nbTrimHistory(next, nbAiCtx(s)).msgs; // oldest turns drop out once the memory limit is reached
+    run(async () => { const out = await call({ messages: sent, truncNote: true }); setMsgs((m) => [...m, { role: 'assistant', content: out }]); });
   };
   const generate = () => {
     if (!topic.trim() || busy) return;
@@ -9194,6 +9758,7 @@ function AiTool({ viewportRef }) {
           <input className={box} value={input} placeholder="Ask anything…" onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') send(); }} />
           <button className="nb-btn" disabled={busy} onClick={send}>Send</button>
         </div>
+        {msgs.length > 0 && <div className="text-[10px] mono text-slate-500">Memory ~{ctxInfo.used}/{nbAiCtx(s)} tokens{ctxInfo.msgs.length < msgs.length ? ' · older messages not sent' : ''} · <button className="underline" onClick={() => open && open('ai')}>adjust</button></div>}
         {msgs.length > 0 && <div className="flex gap-1.5">
           <button className="nb-btn sec" onClick={() => { const l = [...msgs].reverse().find((m) => m.role === 'assistant'); const vp = viewportRef.current; if (l && vp) vp.addAiNotes([l.content]); }}>Add last reply to board</button>
           <button className="nb-btn sec" onClick={() => setMsgs([])}>Clear</button>
